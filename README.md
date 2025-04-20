@@ -1,2 +1,2 @@
 # kogito-4-spark
-A Kogito DMN wrapper for Spark row level and aggregate execution
+A Kogito DMN wrapper for Spark at row level
