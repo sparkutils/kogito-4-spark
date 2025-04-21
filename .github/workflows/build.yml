@@ -1,0 +1,94 @@
+# Full build setup off main, with ~docsOnly commit filter to run just mvn_site then docs.
+name: Default CI
+
+on:
+  push:
+    branches: [ "main", "temp/*" ]
+  pull_request:
+    branches: [ "main", "temp/*" ]
+
+env:
+  MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true"
+  MAVEN_CLI_TESTSHADES_OPTS: "-f testShades/pom.xml --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true"
+  # -Dmaven.repo.local=.m2/repository not needed on github, seems ~/.m2 is supported / expected
+  MAVEN_OPTS: "-Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3 -Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+
+jobs:
+
+  # all versions that can be built with tests - typically oss only.  Fail fast so we can see all compilation or test errors at once
+  testBuilds_2_12_10:
+    uses: sparkutils/building/.github/workflows/run_build.yml@main
+    with:
+      testString: test
+      theMatrix: |
+        {
+          "profile": ["Spark3", "Spark313"],
+          "scala": ["scala_2.12.10"]
+        }  
+    secrets: inherit
+
+  testBuilds_2_12_15_and_13_5:
+    uses: sparkutils/building/.github/workflows/run_build.yml@main
+    with:
+      testString: test
+      theMatrix: |
+        {
+          "profile": [ "Spark32", "Spark321", "Spark332", "Spark341", "Spark350" ],
+          "scala": [ "scala_2.12.15", "scala_2.13.5" ]
+        }
+    secrets: inherit
+
+  noTestBuilds_2_12_10:
+    uses: sparkutils/building/.github/workflows/run_build.yml@main
+    with:
+      testString: -DskipTests
+      theMatrix: |
+        {
+          "profile": ["9.1.dbr"],
+          "scala": ["scala_2.12.10"]
+        }
+    secrets: inherit
+
+  noTestBuilds_2_12_15:
+    uses: sparkutils/building/.github/workflows/run_build.yml@main
+    with:
+      testString: -DskipTests
+      theMatrix: |
+        {
+          "profile": [ "10.4.dbr", "11.3.dbr", "12.2.dbr", "13.1.dbr", "13.3.dbr", "14.0.dbr", "14.3.dbr", "15.4.dbr", "16.3.dbr"  ],
+          "scala": [ "scala_2.12.15" ]
+        }
+    secrets: inherit
+
+  publish_2_12_10:
+    needs: [ testBuilds_2_12_10, noTestBuilds_2_12_10 ]
+    uses: sparkutils/building/.github/workflows/publish_build.yml@main
+    with:
+      theMatrix: |
+        {
+          "profile": ["Spark3", "Spark313", "9.1.dbr"],
+          "scala": ["scala_2.12.10"]
+        }  
+    secrets: inherit
+
+  publish_2_12_15_and_13_5:
+    needs: [testBuilds_2_12_15_and_13_5]
+    uses: sparkutils/building/.github/workflows/publish_build.yml@main
+    with:
+      theMatrix: |
+        {
+          "profile": [ "Spark32", "Spark321", "Spark332", "Spark341", "Spark350" ],
+          "scala": [ "scala_2.12.15", "scala_2.13.5" ]
+        }
+    secrets: inherit
+
+  publish_2_12_15:
+    needs: [noTestBuilds_2_12_15]
+    uses: sparkutils/building/.github/workflows/publish_build.yml@main
+    with:
+      theMatrix: |
+        {
+          "profile": [ "10.4.dbr", "11.3.dbr", "12.2.dbr", "13.1.dbr", "13.3.dbr", "14.0.dbr", "14.3.dbr", "15.4.dbr", "16.3.dbr" ],
+          "scala": [ "scala_2.12.15" ]
+        }
+    secrets: inherit

@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:kie="https://kie.org/dmn/extensions/1.0" expressionLanguage="https://www.omg.org/spec/DMN/20230324/FEEL/" namespace="common" id="common" name="common">
+  <description>common things</description>
+  <itemDefinition id="_FB776935-97B3-4952-AEDC-6B0382D0EEB2" name="strings" isCollection="true">
+    <typeRef>string</typeRef>
+  </itemDefinition>
+  <itemDefinition id="_120D2183-4AAF-4F57-B818-8CB0B150992B" name="TestData" isCollection="false" typeLanguage="https://www.omg.org/spec/DMN/20230324/FEEL/">
+    <description>sample test data</description>
+    <itemComponent id="_4F18FF6D-1209-4A0F-9F25-10FE428E702A" name="location" isCollection="false" typeLanguage="https://www.omg.org/spec/DMN/20230324/FEEL/">
+      <typeRef>string</typeRef>
+    </itemComponent>
+    <itemComponent id="_2E0CFF3E-6986-4F92-977C-53430F105317" name="idPrefix" isCollection="false" typeLanguage="https://www.omg.org/spec/DMN/20230324/FEEL/">
+      <typeRef>string</typeRef>
+    </itemComponent>
+    <itemComponent id="_EF10BACD-1789-44C6-A127-B74D51BE06E0" name="id" isCollection="false" typeLanguage="https://www.omg.org/spec/DMN/20230324/FEEL/">
+      <typeRef>number</typeRef>
+    </itemComponent>
+    <itemComponent id="_6325BA7F-61F1-4A0A-B7E5-4AB9B1350C92" name="page" isCollection="false" typeLanguage="https://www.omg.org/spec/DMN/20230324/FEEL/">
+      <typeRef>number</typeRef>
+    </itemComponent>
+    <itemComponent id="_87593512-5BB4-4357-8E5C-EABC3F5D5DB8" name="department" isCollection="false" typeLanguage="https://www.omg.org/spec/DMN/20230324/FEEL/">
+      <typeRef>string</typeRef>
+    </itemComponent>
+  </itemDefinition>
+  <businessKnowledgeModel name="dq is applicable for" id="_AA35B9A8-1763-497D-9CB8-6155D8017F18">
+    <variable name="dq is applicable for" id="_C5A87564-022F-442C-8C33-0185C3D3F924" typeRef="boolean" />
+    <encapsulatedLogic label="dq is applicable for" typeRef="boolean" id="_CEB2F215-A24D-42AB-838C-8324B857858A" kind="FEEL">
+      <formalParameter id="_02E421B6-1932-4AD0-B60C-18F22E2EA3D8" name="locations" typeRef="string" />
+      <formalParameter id="_EFEA8310-8F76-4465-8822-FE76B6D493D7" name="location" typeRef="string" />
+      <context id="_47F695B3-E1F3-464F-8CAD-F9FFB9AFD0C7" label="Return">
+        <contextEntry id="_817C6393-E20D-4F63-A8D3-326F4800A470">
+          <variable id="_755C135E-4918-49BE-87D2-101A25E89613" name="locations_expanded" typeRef="strings" />
+          <decisionTable id="_C426F0CB-17BE-4A91-B854-E05CA85E3F9A" typeRef="strings" hitPolicy="UNIQUE" label="locations_expanded">
+            <input id="_B45B73AA-999F-4A5D-958C-52D12F33D2B3">
+              <inputExpression typeRef="string">
+                <text>locations</text>
+              </inputExpression>
+            </input>
+            <output id="_32451C9E-FBCD-4B76-BA90-5B003FC0BF7F" />
+            <annotation name="Annotations" />
+            <rule id="_D8FFD09A-78C6-4D58-A5CF-4CBEDE752E2E">
+              <inputEntry id="_013FF5A5-BD37-4B28-BEE0-E8B18E3D41D4">
+                <text>&quot;Non UK&quot;</text>
+              </inputEntry>
+              <outputEntry id="_CC65AF86-CA96-47DC-937E-68BCB5DB203B">
+                <text>[&quot;US&quot;,&quot;CH&quot;,&quot;MX&quot;,&quot;BR&quot;]</text>
+              </outputEntry>
+              <annotationEntry>
+                <text>// Your annotations here</text>
+              </annotationEntry>
+            </rule>
+            <rule id="_448F53B4-B286-4E1B-AD38-90F651126260">
+              <inputEntry id="_F321AAA1-7DB5-489D-823E-67B82EFDC227">
+                <text>&quot;UK &amp; US&quot;</text>
+              </inputEntry>
+              <outputEntry id="_1086D5F3-B6D9-4C84-AD7D-0C3B91B51963">
+                <text>[&quot;US&quot;, &quot;UK&quot;]</text>
+              </outputEntry>
+              <annotationEntry>
+                <text></text>
+              </annotationEntry>
+            </rule>
+            <rule id="_AE8E1253-45E8-454D-A369-73D9FA298979">
+              <inputEntry id="_01978B5C-6727-4019-BCB9-F6E2C7889CD7">
+                <text>&quot;Americas&quot;</text>
+              </inputEntry>
+              <outputEntry id="_A7412C8C-1A7C-444A-A626-7405FB8514BE">
+                <text>[&quot;US&quot;,&quot;MX&quot;,&quot;BR&quot;]</text>
+              </outputEntry>
+              <annotationEntry>
+                <text></text>
+              </annotationEntry>
+            </rule>
+            <rule id="_6006E885-76C6-494D-916D-AF64A8F7ABB1">
+              <inputEntry id="_810D450F-E0F6-46A1-B780-555EDC059354">
+                <text>&quot;Europe&quot;</text>
+              </inputEntry>
+              <outputEntry id="_71E49FA9-9882-481F-AA86-A30BC06AD717">
+                <text>[&quot;CH&quot;]</text>
+              </outputEntry>
+              <annotationEntry>
+                <text></text>
+              </annotationEntry>
+            </rule>
+          </decisionTable>
+        </contextEntry>
+        <contextEntry id="_B2F3E6A1-7CAB-4EC6-B6C7-F2088ADF869C">
+          <literalExpression id="_AB8C7752-EEB2-40A9-8A18-B2EA26CAADA9" label="Return">
+            <text>list contains(locations_expanded, location)</text>
+          </literalExpression>
+        </contextEntry>
+      </context>
+    </encapsulatedLogic>
+  </businessKnowledgeModel>
+  <businessKnowledgeModel name="isMissing" id="_86155CFC-BE4D-4016-B161-D182DD67E11F">
+    <variable name="isMissing" id="_AE776FD6-21A0-45C1-99D0-48F4C690B901" typeRef="boolean" />
+    <encapsulatedLogic label="isMissing" typeRef="boolean" id="_D7AF4181-14DF-412E-89F2-FF294C583618" kind="FEEL">
+      <formalParameter id="_BB0CEBAF-3678-4D85-92FD-D4A032AFFD9C" name="myVar" typeRef="Any" />
+      <literalExpression id="_96318E9F-92B7-4C06-89A2-5F13CB1D57DE" typeRef="boolean" label="Return">
+        <text>if myVar = null then true else matches(string(myVar), &quot;^\s*$&quot;)</text>
+      </literalExpression>
+    </encapsulatedLogic>
+  </businessKnowledgeModel>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="_48462FA5-0B40-4476-BD98-E004EB3D64AD" name="Default DRD" useAlternativeInputDataShape="false">
+      <di:extension>
+        <kie:ComponentsWidthsExtension>
+          <kie:ComponentWidths dmnElementRef="_2C872BBC-EE60-4CBC-B6AD-BE218C90D398">
+            <kie:width>60</kie:width>
+            <kie:width>118</kie:width>
+            <kie:width>118</kie:width>
+            <kie:width>118</kie:width>
+            <kie:width>118</kie:width>
+            <kie:width>118</kie:width>
+            <kie:width>118</kie:width>
+            <kie:width>240</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_41EFFC47-9D9A-4C4B-9670-714B683430AE">
+            <kie:width>120</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_47F695B3-E1F3-464F-8CAD-F9FFB9AFD0C7">
+            <kie:width>120</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_C426F0CB-17BE-4A91-B854-E05CA85E3F9A">
+            <kie:width>60</kie:width>
+            <kie:width>118</kie:width>
+            <kie:width>271</kie:width>
+            <kie:width>425</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_AB8C7752-EEB2-40A9-8A18-B2EA26CAADA9">
+            <kie:width>190</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_96318E9F-92B7-4C06-89A2-5F13CB1D57DE">
+            <kie:width>190</kie:width>
+          </kie:ComponentWidths>
+        </kie:ComponentsWidthsExtension>
+      </di:extension>
+      <dmndi:DMNShape id="_C4344A8B-6647-4465-8C2A-B34BDEE9CC87" dmnElementRef="_AA35B9A8-1763-497D-9CB8-6155D8017F18" isCollapsed="false" isListedInputData="false">
+        <dc:Bounds x="1160" y="440" width="160" height="80" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="_14C8F95C-612D-4C21-924B-B638A19B74A1" dmnElementRef="_86155CFC-BE4D-4016-B161-D182DD67E11F" isCollapsed="false" isListedInputData="false">
+        <dc:Bounds x="1080" y="220" width="160" height="80" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

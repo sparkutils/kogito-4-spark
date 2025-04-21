@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:kie="https://kie.org/dmn/extensions/1.0" xmlns:included0="common" expressionLanguage="https://www.omg.org/spec/DMN/20230324/FEEL/" namespace="decisions" id="_43720B79-E363-4EFF-A334-4F5C5E052DD3" name="decisions">
+  <import id="_DA152350-4541-47CA-B10C-FB92914A6A8D" name="common" importType="http://www.omg.org/spec/DMN/20180521/MODEL/" namespace="common" locationURI="common.dmn" xmlns:drools="http://www.drools.org/kie/dmn/1.1" drools:modelName="common"/>
+  <decision name="evaluate" id="_1B2DFBAA-DD62-4F1D-A375-38FB6A868A8C">
+    <variable name="evaluate" id="_8F01A22B-574F-4596-8AE0-55DC85BC5383" typeRef="context" />
+    <informationRequirement id="_79ECAE34-3BE2-4C00-A98E-91ACD350430A">
+      <requiredInput href="#_39E17322-641A-45A9-B634-BD2253DD419A" />
+    </informationRequirement>
+    <knowledgeRequirement id="_B2132048-8F8C-4156-A24C-77B224374320">
+      <requiredKnowledge href="common#_86155CFC-BE4D-4016-B161-D182DD67E11F" />
+    </knowledgeRequirement>
+    <knowledgeRequirement id="_A8189994-085C-4213-8625-E598F450E92A">
+      <requiredKnowledge href="common#_AA35B9A8-1763-497D-9CB8-6155D8017F18" />
+    </knowledgeRequirement>
+    <context id="_530436C4-9814-4931-9B8D-D72FC63CE97D" typeRef="context" label="evaluate">
+      <contextEntry id="_BE1AB939-26CE-4BE7-9FB8-E9AE858EFA90">
+        <variable id="_2976F475-8616-40E5-9E3E-83C84B6473B7" name="r1" typeRef="boolean" />
+        <literalExpression id="_35B02DB9-6AEB-4B2A-8D0D-C72518664629" typeRef="boolean" label="r1">
+          <text>common.dq is applicable for(&quot;Non UK&quot;, testData.location) and testData.department = &quot;sales&quot;</text>
+        </literalExpression>
+      </contextEntry>
+      <contextEntry id="_99CB78F0-687F-4EC0-8A01-FDFB934594EE">
+        <variable id="_E3C6B1B2-27BA-42B6-BEA9-B4E2F411F735" name="r2" typeRef="boolean">
+          <description></description>
+        </variable>
+        <literalExpression id="_801BFF09-11B4-42DA-835E-C51592B9BBE2" typeRef="boolean" label="r2">
+          <text>common.dq is applicable for(&quot;UK &amp; US&quot;, testData.location) and testData.department = &quot;marketing&quot;</text>
+        </literalExpression>
+      </contextEntry>
+      <contextEntry id="_ABD1BE69-DBA5-492F-A96C-808E95DEF97B">
+        <variable id="_CB2F8341-4AE6-427A-AA8F-EA7D293E3C95" name="r3" typeRef="boolean">
+          <description></description>
+        </variable>
+        <literalExpression id="_F0B940FB-9AF3-435C-8BF4-1E9177E63ED3" typeRef="boolean" label="r3">
+          <text>common.dq is applicable for(&quot;Americas&quot;, testData.location) and testData.department = &quot;hr&quot;</text>
+        </literalExpression>
+      </contextEntry>
+      <contextEntry id="_17797A7A-5C7D-48D4-A064-9F28C6224DDF">
+        <variable id="_1644ABDE-F94E-4855-9010-65F37E558FEF" name="r4" typeRef="boolean">
+          <description></description>
+        </variable>
+        <literalExpression id="_5108F738-8E5A-405E-885F-5DFC044EAF1E" typeRef="boolean" label="r4">
+          <text>common.dq is applicable for(&quot;Europe&quot;, testData.location) and testData.department = &quot;it&quot;</text>
+        </literalExpression>
+      </contextEntry>
+      <contextEntry id="_2E48DD6F-872C-40FE-8DF2-90A7250D7030">
+        <variable id="_4B6CC521-B7AB-42CB-BA6B-B1D3EB4327CE" name="r5" typeRef="boolean">
+          <description></description>
+        </variable>
+        <literalExpression id="_72EF3DE9-8663-4030-A7E2-202B48460844" typeRef="boolean" label="r5">
+          <text>common.isMissing(testData.id) and testData.department = &quot;ops&quot;</text>
+        </literalExpression>
+      </contextEntry>
+      <contextEntry id="_BAE7B5E5-5F1F-413B-BB04-6D73565FD30B">
+        <variable id="_C37675E5-4B65-40CB-A64D-A94B3904DF35" name="r6" typeRef="boolean">
+          <description></description>
+        </variable>
+        <literalExpression id="_B778ADFB-807F-413B-AEF4-BFBA632E5351" typeRef="boolean" label="r6">
+          <text>common.dq is applicable for(&quot;Non UK&quot;, testData.location) and testData.department = &quot;marketing&quot;</text>
+        </literalExpression>
+      </contextEntry>
+      <contextEntry id="_0F3B81C7-B9E8-4EC4-90AC-4A8A68CE5A3B">
+        <variable id="_642AC143-A7DE-4D43-8FCB-A02A0E2CE327" name="r7" typeRef="boolean">
+          <description></description>
+        </variable>
+        <literalExpression id="_B001265D-8469-4DBD-81C8-A24442F491E0" typeRef="boolean" label="r7">
+          <text>common.dq is applicable for(&quot;UK &amp; US&quot;, testData.location) and testData.department = &quot;hr&quot;</text>
+        </literalExpression>
+      </contextEntry>
+      <contextEntry id="_3941E880-D53A-4A07-B917-38C929298ABC">
+        <variable id="_4522288C-38D6-4CB1-A5F2-0FBF27113160" name="r8" typeRef="boolean">
+          <description></description>
+        </variable>
+        <literalExpression id="_E408A677-F091-4E7E-9C52-96DFEF5CEB69" typeRef="boolean" label="r8">
+          <text>common.dq is applicable for(&quot;Americas&quot;, testData.location) and testData.department = &quot;it&quot;</text>
+        </literalExpression>
+      </contextEntry>
+      <contextEntry id="_E94358A6-F11E-4B4A-AB87-02EDFD2F2F08">
+        <variable id="_9070734B-F41E-4506-B82E-6CDAD3CB0687" name="r9" typeRef="boolean">
+          <description></description>
+        </variable>
+        <literalExpression id="_FF42EF4D-7F10-4181-B503-9A1773FD141D" typeRef="boolean" label="r9">
+          <text>common.dq is applicable for(&quot;Europe&quot;, testData.location) and testData.department = &quot;sales&quot;</text>
+        </literalExpression>
+      </contextEntry>
+      <contextEntry id="_E5A6165A-959D-4968-9535-34B4E1CD3077">
+        <variable id="_8D11CD40-325E-41C8-9AD4-F412C64FE92B" name="r10" typeRef="boolean">
+          <description></description>
+        </variable>
+        <literalExpression id="_437BD62B-793D-498C-AE23-5C1A8B9248A2" typeRef="boolean" label="r10">
+          <text>common.isMissing(testData.id) and testData.department = &quot;sales&quot;</text>
+        </literalExpression>
+      </contextEntry>
+      <contextEntry id="_FE8883FC-3C1F-4BCD-8225-D7B57C1BEBA8">
+        <variable id="_13DCC1E9-16CF-4CC1-89EA-680A7BA0CBAA" name="r11" typeRef="boolean">
+          <description></description>
+        </variable>
+        <literalExpression id="_48131F07-7A1A-41F2-8A8A-B54135A45A3E" typeRef="boolean" label="r11">
+          <text>common.dq is applicable for(&quot;Non UK&quot;, testData.location) and testData.department = &quot;sales&quot;</text>
+        </literalExpression>
+      </contextEntry>
+      <contextEntry id="_564740E7-2F0E-4E7D-AC4A-12261EE88066">
+        <variable id="_B011E854-E32E-47DC-9B37-B3D9C0556A0C" name="r12" typeRef="boolean">
+          <description></description>
+        </variable>
+        <literalExpression id="_112DF6F5-13EA-4514-A721-667766B55CEA" typeRef="boolean" label="r12">
+          <text>common.dq is applicable for(&quot;UK &amp; US&quot;, testData.location) and testData.department = &quot;hr&quot;</text>
+        </literalExpression>
+      </contextEntry>
+      <contextEntry id="_9B6BD4C8-ACB8-4F23-887F-C1B9823130BB">
+        <variable id="_5BC6A55E-9BB8-45B9-8174-214D774E0CE3" name="r13" typeRef="boolean">
+          <description></description>
+        </variable>
+        <literalExpression id="_762A60D3-7EFB-4E30-9065-706CD85625AC" typeRef="boolean" label="r13">
+          <text>common.dq is applicable for(&quot;Americas&quot;, testData.location) and testData.department = &quot;sales&quot;</text>
+        </literalExpression>
+      </contextEntry>
+      <contextEntry id="_FD6990CE-739B-4A18-BD2A-9683F3BB82DF">
+        <variable id="_151584F8-777D-494D-A98C-35022D7D048E" name="r14" typeRef="boolean">
+          <description></description>
+        </variable>
+        <literalExpression id="_4F2DA5B5-E031-4929-9650-4244F3515EFC" typeRef="boolean" label="r14">
+          <text>common.dq is applicable for(&quot;Europe&quot;, testData.location) and testData.department = &quot;hr&quot;</text>
+        </literalExpression>
+      </contextEntry>
+      <contextEntry id="_B83128C5-0C8D-433D-AC03-C262AD12D8F9">
+        <variable id="_4CCD8FE9-58C3-4AEC-8B73-11D2196FCD5F" name="r15" typeRef="boolean">
+          <description></description>
+        </variable>
+        <literalExpression id="_6B246DBE-3ADC-4180-BBC6-0C7ABA639277" typeRef="boolean" label="r15">
+          <text>common.isMissing(testData.id) and testData.department = &quot;hr&quot;</text>
+        </literalExpression>
+      </contextEntry>
+      <contextEntry id="_752DE4B2-5CD4-483A-BFDD-2398DA748060">
+        <literalExpression id="_19F151D9-4967-49EB-8A7A-8A5CB8619330" typeRef="context" label="evaluate">
+          <text>[r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15]</text>
+        </literalExpression>
+      </contextEntry>
+    </context>
+  </decision>
+  <decisionService name="DQService" id="_D5EE4628-E48B-4A5D-BF28-FD7EA08C4999">
+    <variable name="DQService" id="_606B39A6-93B8-4320-9F8A-92CF5CD4FF2C" typeRef="common.TestData" />
+    <outputDecision href="#_1B2DFBAA-DD62-4F1D-A375-38FB6A868A8C" />
+    <inputData href="#_39E17322-641A-45A9-B634-BD2253DD419A" />
+  </decisionService>
+  <inputData name="testData" id="_39E17322-641A-45A9-B634-BD2253DD419A">
+    <variable name="testData" id="_62D14DF0-AA72-4B01-9AC1-B60C24DD7BD4" typeRef="common.TestData" />
+  </inputData>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="_2F1C2A67-7772-4BD5-9C7A-433C7ECF0334" name="Default DRD" useAlternativeInputDataShape="false">
+      <di:extension>
+        <kie:ComponentsWidthsExtension>
+          <kie:ComponentWidths dmnElementRef="_530436C4-9814-4931-9B8D-D72FC63CE97D">
+            <kie:width>120</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_35B02DB9-6AEB-4B2A-8D0D-C72518664629">
+            <kie:width>1174</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_801BFF09-11B4-42DA-835E-C51592B9BBE2">
+            <kie:width>1174</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_F0B940FB-9AF3-435C-8BF4-1E9177E63ED3">
+            <kie:width>1174</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_5108F738-8E5A-405E-885F-5DFC044EAF1E">
+            <kie:width>1174</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_72EF3DE9-8663-4030-A7E2-202B48460844">
+            <kie:width>1174</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_B778ADFB-807F-413B-AEF4-BFBA632E5351">
+            <kie:width>1174</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_B001265D-8469-4DBD-81C8-A24442F491E0">
+            <kie:width>1174</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_E408A677-F091-4E7E-9C52-96DFEF5CEB69">
+            <kie:width>1174</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_FF42EF4D-7F10-4181-B503-9A1773FD141D">
+            <kie:width>1174</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_437BD62B-793D-498C-AE23-5C1A8B9248A2">
+            <kie:width>1174</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_48131F07-7A1A-41F2-8A8A-B54135A45A3E">
+            <kie:width>1174</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_112DF6F5-13EA-4514-A721-667766B55CEA">
+            <kie:width>1174</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_762A60D3-7EFB-4E30-9065-706CD85625AC">
+            <kie:width>190</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_4F2DA5B5-E031-4929-9650-4244F3515EFC">
+            <kie:width>190</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_6B246DBE-3ADC-4180-BBC6-0C7ABA639277">
+            <kie:width>190</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_19F151D9-4967-49EB-8A7A-8A5CB8619330">
+            <kie:width>190</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_72F3161F-3488-402F-BA6E-AB15B85B847C">
+            <kie:width>120</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_C2E352EF-03EA-46E8-A5CF-6154819D5E69">
+            <kie:width>120</kie:width>
+          </kie:ComponentWidths>
+        </kie:ComponentsWidthsExtension>
+      </di:extension>
+      <dmndi:DMNShape id="_121C753E-4CE6-4555-B3CE-552C049EC582" dmnElementRef="_1B2DFBAA-DD62-4F1D-A375-38FB6A868A8C" isCollapsed="false" isListedInputData="false">
+        <dc:Bounds x="1180" y="340" width="160" height="80" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="_E633C363-B648-484A-BD5E-3428D79D4693" dmnElementRef="included0:_AA35B9A8-1763-497D-9CB8-6155D8017F18">
+        <dc:Bounds x="180" y="200" width="160" height="80" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="_5B369CA3-8367-45F4-8D8C-56F29F87ED81" dmnElementRef="included0:_86155CFC-BE4D-4016-B161-D182DD67E11F">
+        <dc:Bounds x="560" y="180" width="160" height="80" />
+      </dmndi:DMNShape>
+      <dmndi:DMNEdge id="_85D9B50E-B201-4C15-8DE5-C13D40550926" dmnElementRef="_B2132048-8F8C-4156-A24C-77B224374320" sourceElement="_5B369CA3-8367-45F4-8D8C-56F29F87ED81" targetElement="_121C753E-4CE6-4555-B3CE-552C049EC582">
+        <di:waypoint x="640" y="220" />
+        <di:waypoint x="1260" y="340" />
+      </dmndi:DMNEdge>
+      <dmndi:DMNEdge id="_FE71FBB4-3ED1-4D32-B335-E512246F9B9B" dmnElementRef="_A8189994-085C-4213-8625-E598F450E92A" sourceElement="_E633C363-B648-484A-BD5E-3428D79D4693" targetElement="_121C753E-4CE6-4555-B3CE-552C049EC582">
+        <di:waypoint x="260" y="240" />
+        <di:waypoint x="1180" y="380" />
+      </dmndi:DMNEdge>
+      <dmndi:DMNShape id="_EC9B2B87-92A5-444A-A43F-08081E7DF449" dmnElementRef="_D5EE4628-E48B-4A5D-BF28-FD7EA08C4999" isCollapsed="false" isListedInputData="false">
+        <dc:Bounds x="1120" y="280" width="320" height="320" />
+        <dmndi:DMNDecisionServiceDividerLine id="_F3742DBE-4600-4CF7-8F0C-05F76AEC639F">
+          <di:waypoint x="1120" y="440" />
+          <di:waypoint x="1440" y="440" />
+        </dmndi:DMNDecisionServiceDividerLine>
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="_F81A0B54-FE7B-4B34-9E4F-640D016BD9F3" dmnElementRef="_39E17322-641A-45A9-B634-BD2253DD419A" isCollapsed="false" isListedInputData="false">
+        <dc:Bounds x="740" y="480" width="160" height="80" />
+      </dmndi:DMNShape>
+      <dmndi:DMNEdge id="_65B5CF56-58F3-489C-951B-DE65DB7884E6" dmnElementRef="_79ECAE34-3BE2-4C00-A98E-91ACD350430A" sourceElement="_F81A0B54-FE7B-4B34-9E4F-640D016BD9F3" targetElement="_121C753E-4CE6-4555-B3CE-552C049EC582">
+        <di:waypoint x="820" y="520" />
+        <di:waypoint x="1260" y="420" />
+      </dmndi:DMNEdge>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>
