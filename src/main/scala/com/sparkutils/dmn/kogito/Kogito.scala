@@ -1,10 +1,18 @@
 package com.sparkutils.dmn.kogito
 
 import com.sparkutils.dmn._
+import com.sparkutils.dmn.impl._
+import com.sparkutils.dmn.kogito.Types.MAP
+import org.apache.spark.sql.types.{BinaryType, BooleanType, ByteType, CalendarIntervalType, DataType, DateType, DoubleType, FloatType, IntegerType, LongType, NullType, ShortType, StringType, TimestampType}
+import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.kie.dmn.core.internal.utils.DMNRuntimeBuilder
 import org.kie.internal.io.ResourceFactory
 
+import java.util.Date
+import java.time.{LocalDate, LocalDateTime}
+import java.util
 import scala.collection.JavaConverters._
+import scala.util.Try
 
 case class KogitoDMNResult(result: org.kie.dmn.api.core.DMNResult) extends DMNResult
 
@@ -26,7 +34,7 @@ case class KogitoDMNModel(model: org.kie.dmn.api.core.DMNModel, runtime: org.kie
 /**
  * Represents a repository of DMN, this is the actual root provider
  */
-object KogitoDMNRepository extends DMNRepository {
+class KogitoDMNRepository() extends DMNRepository {
   /**
    * Throws DMNException if it can't be constructed
    * @param dmnFiles
@@ -49,11 +57,93 @@ object KogitoDMNRepository extends DMNRepository {
   }
 
   override def supportsDecisionService: Boolean = true
+
+  override def providerForType(inputField: DMNInputField): DMNContextProvider[_] = {
+    val (path, expr) = (KogitoDMNContextPath(inputField.contextPath), inputField.defaultExpr)
+
+    inputField.providerType.toUpperCase match {
+      case "JSON" => KogitoJSONContextProvider(path, expr)
+      case t if Try(DataType.fromDDL(t)).isSuccess =>
+        val dataType = DataType.fromDDL(t)
+        dataType match {
+          case StringType => StringContextProvider(path, expr)
+          case IntegerType => SimpleContextProvider[Integer](path, expr)
+          case LongType => SimpleContextProvider[Long](path, expr)
+          case BooleanType => SimpleContextProvider[Boolean](path, expr)
+          case DoubleType => SimpleContextProvider[Double](path, expr)
+          case FloatType => SimpleContextProvider[Float](path, expr)
+          case BinaryType => SimpleContextProvider[Array[Byte]](path, expr)
+          case ByteType => SimpleContextProvider[Byte](path, expr)
+          case DateType => SimpleContextProvider[LocalDate](path, expr, Some{t: Any => DateTimeUtils.daysToLocalDate(t.asInstanceOf[Int])}) // an int
+          case TimestampType => SimpleContextProvider[LocalDateTime](path, expr, Some{t: Any => DateTimeUtils.microsToLocalDateTime(t.asInstanceOf[Long])}) // a long
+          // TODO decimals and bigint
+          case t => throw new DMNException(s"Provider type $t is not supported")
+        }
+      case t => throw new DMNException(s"Provider type $t is not supported")
+    }
+
+  }
+
+  override def resultProviderForType(resultProviderType: String): DMNResultProvider = {
+
+    if (resultProviderType.toUpperCase != "ARRAY<BOOLEAN>") {
+      throw new DMNException("Only JSON Right now")
+    }
+
+    KogitoSeqOfBools()
+  }
+}
+
+object Types {
+  type MAP = java.util.Map[String, Object]
 }
 
 case class KogitoDMNContext(ctx: org.kie.dmn.api.core.DMNContext) extends DMNContext {
-  def set(path: DMNContextPath, data: Any): Unit =
-    ctx.set(path.asInstanceOf[KogitoDMNContextPath].path, data)
+
+  def set(path: DMNContextPath, data: Any): Unit = {
+    val bits = path.asInstanceOf[KogitoDMNContextPath].path.split('.')
+    val starter =
+      ctx.get(bits(0)) match {
+        case _ if bits.length == 1 =>
+          ctx.set(bits.head, data)
+          return
+        case null if bits.length > 1 =>
+          val n = new util.HashMap[String, Object]()
+          ctx.set(bits.head, n)
+          n
+        case t: MAP =>
+          t
+        case _ => // TODO log warn
+          ctx.set(bits.head, data)
+          return
+      }
+
+    // top is the root context, bottom is the place we'd store things
+    bits.drop(1).dropRight(1).foldLeft(starter){
+      (map, pathBit) =>
+        map match {
+          case t: MAP =>
+            val n =
+              t.get(pathBit) match {
+                case null => new util.HashMap[String, Object]()
+                case t: MAP => t
+                case _ => new util.HashMap[String, Object]()
+              }
+            t.put(pathBit, n)
+            n
+          case _ => map
+        }
+    }
+
+    def updateContext(bits: Seq[String], map: MAP): MAP =
+      if (bits.size == 1) {
+        map.put(bits.head, data.asInstanceOf[Object])
+        map
+      } else
+        updateContext(bits.drop(1), map.get(bits.head).asInstanceOf[MAP])
+
+    ctx.set(bits.head, updateContext(bits.drop(1), starter)) // drop the 1st as that's for the root context
+  }
 }
 
 case class KogitoDMNRuntime(runtime: org.kie.dmn.api.core.DMNRuntime) extends DMNRuntime {

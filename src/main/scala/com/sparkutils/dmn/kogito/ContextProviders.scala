@@ -1,16 +1,17 @@
 package com.sparkutils.dmn.kogito
 
-import com.sparkutils.dmn.{DMNContextPath, JSONContext}
+import com.sparkutils.dmn.DMNContextPath
+import com.sparkutils.dmn.impl.UTF8StringInputStreamContextProvider
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.kie.dmn.feel.lang.types.impl.ComparablePeriod
 import org.kie.kogito.dmn.rest.DMNFEELComparablePeriodSerializer
-import sparkutilsKogito.com.fasterxml.jackson.databind.{ObjectMapper, SerializationFeature}
 import sparkutilsKogito.com.fasterxml.jackson.databind.module.SimpleModule
+import sparkutilsKogito.com.fasterxml.jackson.databind.{ObjectMapper, SerializationFeature}
 
 import java.io.InputStreamReader
 
 
-case class KogitoJSONContext(contextPath: DMNContextPath, child: Expression) extends JSONContext {
+case class KogitoJSONContextProvider(contextPath: DMNContextPath, child: Expression) extends UTF8StringInputStreamContextProvider[java.util.Map[String, Object]] {
 
   @transient
   lazy val mapper =
@@ -23,7 +24,5 @@ case class KogitoJSONContext(contextPath: DMNContextPath, child: Expression) ext
 
   def withNewChildInternal(newChild: Expression): Expression = copy(child = newChild)
 
-  override val resultClass: Class[_] = classOf[java.util.Map[String, Object]]
-
-  override def readValue(str: InputStreamReader): Any = mapper.readValue(str, resultClass)
+  override def readValue(str: InputStreamReader): java.util.Map[String, Object] = mapper.readValue(str, classOf[java.util.Map[String, Object]])
 }

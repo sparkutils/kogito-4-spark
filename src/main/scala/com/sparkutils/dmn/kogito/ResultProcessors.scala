@@ -1,7 +1,7 @@
 package com.sparkutils.dmn.kogito
 
 import com.sparkutils.dmn
-import com.sparkutils.dmn.SeqOfBools
+import com.sparkutils.dmn.impl.SeqOfBools
 import org.apache.spark.sql.catalyst.util.GenericArrayData
 
 import java.util
