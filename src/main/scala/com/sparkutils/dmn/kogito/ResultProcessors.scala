@@ -60,5 +60,6 @@ case class KogitoJSONResultProvider() extends LeafExpression with DMNResultProvi
 
   override def dataType: DataType = StringType
 
-  override def process(result: core.DMNResult): Any = UTF8String.fromString(mapper.writeValueAsString(result))
+  override def process(result: core.DMNResult): Any =
+    UTF8String.fromString(mapper.writeValueAsString(result.getDecisionResults))
 }

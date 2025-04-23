@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>  <!-- rebuild -->
 
     <groupId>com.sparkutils</groupId>
-    <artifactId>kogito-4-spark_${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
+    <artifactId>kogito-4-spark_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
 
     <packaging>jar</packaging>
     <version>${revision}</version>
@@ -200,10 +200,10 @@
         <shimCompilationVersion>0.2.0-RC1</shimCompilationVersion>
         <shimRuntimeVersion>0.2.0-RC1</shimRuntimeVersion>
 
-        <dmn4SparkVersion>0.0.1-RC1</dmn4SparkVersion>
+        <dmn4SparkVersion>0.0.1-RC2</dmn4SparkVersion>
         <shadedKogitoVersion>0.0.12</shadedKogitoVersion>
     </properties>
-    <!-- -->
+    <!--
     <repositories>
         <repository>
             <id>ossrh</id>
@@ -214,7 +214,7 @@
             <url>https://repository.apache.org/content/repositories/snapshots/</url>
         </repository>
     </repositories>
-
+-->
     <distributionManagement>
         <repository>
             <id>ossrh</id>
@@ -290,7 +290,7 @@
 
         <dependency>
             <groupId>com.sparkutils</groupId>
-            <artifactId>dmn-4-spark_${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
+            <artifactId>dmn-4-spark_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
             <version>${dmn4SparkVersion}</version>
         </dependency>
 
