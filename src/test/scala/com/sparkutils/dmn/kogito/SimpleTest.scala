@@ -91,4 +91,17 @@ class SimpleTest extends FunSuite with Matchers {
   test("Loading of Kogito and sample test should work - evaluate all top level fields") {
     testTopLevelFieldsResults(dmnModel.copy(service = None))
   }
+
+  test("Write as json") {
+    import sparkSession.implicits._
+
+    val ds = Seq(dataBasis).toDS.selectExpr("explode(value) as f").selectExpr("to_json(f) payload")
+
+    val exec = DMNExecution(dmnFiles, dmnModel.copy(resultProvider = "JSON"),
+      Seq(DMNInputField("payload", "JSON", "testData")))
+
+    val res = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec))
+    val strs = res.select("quality").as[String].collect()
+    strs.foreach(println)
+  }
 }

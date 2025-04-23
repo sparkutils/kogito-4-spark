@@ -87,9 +87,11 @@ class KogitoDMNRepository() extends DMNRepository {
   }
 
   override def resultProviderForType(resultProviderType: String): DMNResultProvider =
-    resultProviderType match {
-      case _ if resultProviderType.toUpperCase == "ARRAY<BOOLEAN>" =>
+    resultProviderType.toUpperCase match {
+      case "ARRAY<BOOLEAN>" =>
         KogitoSeqOfBools()
+      case "JSON" =>
+        KogitoJSONResultProvider()
       case _ =>
         utils.loadResultProvider(resultProviderType)
     }
