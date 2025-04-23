@@ -79,19 +79,19 @@ class KogitoDMNRepository() extends DMNRepository {
           // TODO decimals and bigint
           case t => throw new DMNException(s"Provider type $t is not supported")
         }
-      case t => throw new DMNException(s"Provider type $t is not supported")
+      case _ =>
+        utils.loadUnaryContextProvider(inputField.providerType, path, expr)
     }
 
   }
 
-  override def resultProviderForType(resultProviderType: String): DMNResultProvider = {
-
-    if (resultProviderType.toUpperCase != "ARRAY<BOOLEAN>") {
-      throw new DMNException("Only JSON Right now")
+  override def resultProviderForType(resultProviderType: String): DMNResultProvider =
+    resultProviderType match {
+      case _ if resultProviderType.toUpperCase == "ARRAY<BOOLEAN>" =>
+        KogitoSeqOfBools()
+      case _ =>
+        utils.loadResultProvider(resultProviderType)
     }
-
-    KogitoSeqOfBools()
-  }
 }
 
 object Types {
