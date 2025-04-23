@@ -65,6 +65,6 @@ jobs:
       theMatrix: |
         {
           "profile": [ "14.0.dbr", "14.3.dbr", "15.4.dbr", "16.3.dbr" ],
-          "scala": [ "scala_2.12.15" ]
+          "scala": [ "scala_2.12.18" ]
         }
     secrets: inherit
