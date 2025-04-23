@@ -3,12 +3,11 @@ package com.sparkutils.dmn.kogito
 import com.sparkutils.dmn._
 import com.sparkutils.dmn.impl._
 import com.sparkutils.dmn.kogito.Types.MAP
-import org.apache.spark.sql.types.{BinaryType, BooleanType, ByteType, CalendarIntervalType, DataType, DateType, DoubleType, FloatType, IntegerType, LongType, NullType, ShortType, StringType, TimestampType}
+import org.apache.spark.sql.types.{BinaryType, BooleanType, ByteType, DataType, DateType, DoubleType, FloatType, IntegerType, LongType, ShortType, StringType, TimestampType}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.kie.dmn.core.internal.utils.DMNRuntimeBuilder
 import org.kie.internal.io.ResourceFactory
 
-import java.util.Date
 import java.time.{LocalDate, LocalDateTime}
 import java.util
 import scala.collection.JavaConverters._
@@ -75,6 +74,7 @@ class KogitoDMNRepository() extends DMNRepository {
           case FloatType => SimpleContextProvider[Float](path, expr)
           case BinaryType => SimpleContextProvider[Array[Byte]](path, expr)
           case ByteType => SimpleContextProvider[Byte](path, expr)
+          case ShortType => SimpleContextProvider[Short](path, expr)
           case DateType => SimpleContextProvider[LocalDate](path, expr, Some{t: Any => DateTimeUtils.daysToLocalDate(t.asInstanceOf[Int])}) // an int
           case TimestampType => SimpleContextProvider[LocalDateTime](path, expr, Some{t: Any => DateTimeUtils.microsToLocalDateTime(t.asInstanceOf[Long])}) // a long
           // TODO decimals and bigint
