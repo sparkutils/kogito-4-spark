@@ -13,6 +13,7 @@ import java.time.{LocalDate, LocalDateTime}
 import java.util
 import scala.collection.JavaConverters._
 import scala.util.Try
+import scala.collection.immutable.Seq
 
 case class KogitoDMNResult(result: org.kie.dmn.api.core.DMNResult) extends DMNResult
 
@@ -142,7 +143,7 @@ case class KogitoDMNContext(ctx: org.kie.dmn.api.core.DMNContext) extends DMNCon
       } else
         updateContext(bits.drop(1), map.get(bits.head).asInstanceOf[MAP])
 
-    ctx.set(bits.head, updateContext(bits.drop(1), starter)) // drop the 1st as that's for the root context
+    ctx.set(bits.head, updateContext(bits.drop(1).toVector, starter)) // drop the 1st as that's for the root context
   }
 }
 
