@@ -175,7 +175,7 @@
         <apacheCommons>3.5</apacheCommons>
         <junitVersion>4.12</junitVersion>
         <dependencyPluginVersion>3.1.1</dependencyPluginVersion>
-        <scalaCompilerPluginVersion>4.8.0</scalaCompilerPluginVersion>
+        <scalaCompilerPluginVersion>4.9.5</scalaCompilerPluginVersion>
         <mavenCompilerPluginVersion>3.8.1</mavenCompilerPluginVersion>
         <mavenJarPluginVersion>3.2.0</mavenJarPluginVersion>
         <mavenShadePluginVersion>3.2.1</mavenShadePluginVersion>
@@ -392,6 +392,7 @@
                             <goal>testCompile</goal>
                         </goals>
                         <configuration>
+                            <release>18</release>
                             <args>
                                 <arg>-feature</arg>
                                 <arg>-deprecation</arg>
