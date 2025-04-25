@@ -3,6 +3,7 @@ package com.sparkutils.dmn.kogito
 import com.sparkutils.dmn
 import com.sparkutils.dmn.{DMNResult, DMNResultProvider}
 import com.sparkutils.dmn.impl.SeqOfBools
+import com.sparkutils.dmn.kogito.types.ContextInterfaces.Accessor
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.LeafExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
@@ -14,7 +15,9 @@ import org.kie.dmn.feel.lang.types.impl.ComparablePeriod
 import org.kie.kogito.dmn.rest.DMNFEELComparablePeriodSerializer
 import sparkutilsKogito.com.fasterxml.jackson.databind.{ObjectMapper, SerializationFeature}
 import sparkutilsKogito.com.fasterxml.jackson.databind.module.SimpleModule
+import sparkutilsKogito.com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
+import java.lang.annotation.Annotation
 import scala.collection.JavaConverters._
 import java.util
 
@@ -43,13 +46,18 @@ case class KogitoSeqOfBools() extends LeafExpression with SeqOfBools with Kogito
 case class KogitoJSONResultProvider() extends LeafExpression with DMNResultProvider with KogitoProcess {
 
   @transient
-  lazy val mapper =
-    new ObjectMapper()
-      .registerModule(
-        new SimpleModule()
-          .addSerializer(classOf[ComparablePeriod], new DMNFEELComparablePeriodSerializer())
-      )
-      .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+  lazy val mapper = {
+    val om =
+      new ObjectMapper()
+        .registerModule(
+          new SimpleModule()
+            .addSerializer(classOf[ComparablePeriod], new DMNFEELComparablePeriodSerializer())
+        )
+        .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+
+    //om.configOverride(classOf[Accessor[_]]).setIgnorals(JsonIgnoreProperties.Value.forIgnoredProperties("path"))
+    om
+  }
 
 
   override def nullable: Boolean = true
@@ -61,5 +69,7 @@ case class KogitoJSONResultProvider() extends LeafExpression with DMNResultProvi
   override def dataType: DataType = StringType
 
   override def process(result: core.DMNResult): Any =
-    UTF8String.fromString(mapper.writeValueAsString(result.getDecisionResults))
+    UTF8String.fromString(mapper.writeValueAsString(
+      result.getDecisionResults
+    ))
 }

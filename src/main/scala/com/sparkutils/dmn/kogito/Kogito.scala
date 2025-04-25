@@ -3,7 +3,8 @@ package com.sparkutils.dmn.kogito
 import com.sparkutils.dmn._
 import com.sparkutils.dmn.impl._
 import com.sparkutils.dmn.kogito.Types.MAP
-import org.apache.spark.sql.types.{BinaryType, BooleanType, ByteType, DataType, DateType, DoubleType, FloatType, IntegerType, LongType, ShortType, StringType, TimestampType}
+import com.sparkutils.dmn.kogito.types.ContextInterfaces
+import org.apache.spark.sql.types.{BinaryType, BooleanType, ByteType, DataType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, ShortType, StringType, StructType, TimestampType}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.kie.dmn.core.internal.utils.DMNRuntimeBuilder
 import org.kie.internal.io.ResourceFactory
@@ -77,7 +78,10 @@ class KogitoDMNRepository() extends DMNRepository {
           case ShortType => SimpleContextProvider[Short](path, expr)
           case DateType => SimpleContextProvider[LocalDate](path, expr, Some{t: Any => DateTimeUtils.daysToLocalDate(t.asInstanceOf[Int])}) // an int
           case TimestampType => SimpleContextProvider[LocalDateTime](path, expr, Some{t: Any => DateTimeUtils.microsToLocalDateTime(t.asInstanceOf[Long])}) // a long
-          // TODO decimals and bigint
+          case _: DecimalType => SimpleContextProvider[java.math.BigDecimal](path, expr, Some{t: Any => t.asInstanceOf[Decimal].toJavaBigDecimal})
+          case structType: StructType => ContextInterfaces.structProvider(structType, path, expr)
+
+          // calendar interval? TODO top level array and MAP
           case t => throw new DMNException(s"Provider type $t is not supported")
         }
       case _ =>
@@ -151,7 +155,13 @@ case class KogitoDMNContext(ctx: org.kie.dmn.api.core.DMNContext) extends DMNCon
 
 case class KogitoDMNRuntime(runtime: org.kie.dmn.api.core.DMNRuntime) extends DMNRuntime {
 
-  def getModel(name: String, namespace: String): DMNModel = KogitoDMNModel(runtime.getModel(name, namespace), runtime)
+  def getModel(name: String, namespace: String): DMNModel = {
+    val model = runtime.getModel(namespace, name)
+    if (model eq null) {
+      throw new DMNException(s"Could not load model from Kogito runtime with namespace $namespace and name $name - {$namespace}$name")
+    }
+    KogitoDMNModel(model, runtime)
+  }
 
   def context(): DMNContext = KogitoDMNContext(runtime.newContext())
 }

@@ -48,7 +48,6 @@
                 <shimRuntime>3.5.0.oss</shimRuntime>
                 <shimCompilationRuntime>3.5.0.oss</shimCompilationRuntime>
                 <dbrCompatVersion>3.5.0.oss_</dbrCompatVersion>
-                <framelessVersion>0.16.0</framelessVersion>
                 <sparkVersion>3.5.0</sparkVersion>
                 <sparkCompatVersion>3.5</sparkCompatVersion>
                 <profileDir>3.5.0</profileDir>
@@ -70,7 +69,6 @@
                 <shimRuntime>4.0.0.oss</shimRuntime>
                 <shimCompilationRuntime>4.0.0.oss</shimCompilationRuntime>
                 <dbrCompatVersion>4.0.0.oss_</dbrCompatVersion>
-                <framelessVersion>0.16.0</framelessVersion>
                 <sparkVersion>4.1.0-SNAPSHOT</sparkVersion>
                 <sparkCompatVersion>4.1</sparkCompatVersion>
                 <profileDir>4.0.0</profileDir>
@@ -92,7 +90,6 @@
                 <shimRuntime>14.0.dbr</shimRuntime>
                 <shimCompilationRuntime>14.0.dbr</shimCompilationRuntime>
                 <dbrCompatVersion>14.0.dbr_</dbrCompatVersion>
-                <framelessVersion>0.16.0</framelessVersion>
                 <sparkVersion>3.5.0</sparkVersion>
                 <sparkCompatVersion>3.5</sparkCompatVersion>
                 <profileDir>14.0.dbr</profileDir>
@@ -110,7 +107,6 @@
                 <shimRuntime>14.3.dbr</shimRuntime>
                 <shimCompilationRuntime>14.3.dbr</shimCompilationRuntime>
                 <dbrCompatVersion>14.3.dbr_</dbrCompatVersion>
-                <framelessVersion>0.16.0</framelessVersion>
                 <sparkVersion>3.5.0</sparkVersion>
                 <sparkCompatVersion>3.5</sparkCompatVersion>
                 <profileDir>14.3.dbr</profileDir>
@@ -128,7 +124,6 @@
                 <shimRuntime>15.4.dbr</shimRuntime>
                 <shimCompilationRuntime>15.4.dbr</shimCompilationRuntime>
                 <dbrCompatVersion>15.4.dbr_</dbrCompatVersion>
-                <framelessVersion>0.16.0</framelessVersion>
                 <sparkVersion>3.5.0</sparkVersion>
                 <sparkCompatVersion>3.5</sparkCompatVersion>
                 <profileDir>15.4.dbr</profileDir>
@@ -146,7 +141,6 @@
                 <shimRuntime>16.3.dbr</shimRuntime>
                 <shimCompilationRuntime>16.3.dbr</shimCompilationRuntime>
                 <dbrCompatVersion>16.3.dbr_</dbrCompatVersion>
-                <framelessVersion>0.16.0</framelessVersion>
                 <sparkVersion>3.5.0</sparkVersion>
                 <sparkCompatVersion>3.5</sparkCompatVersion>
                 <profileDir>16.3.dbr</profileDir>
@@ -161,7 +155,7 @@
     </profiles>
 
     <properties>
-        <revision>0.0.1-RC1</revision>
+        <revision>0.0.1-RC2-SNAPSHOT</revision>
 
         <mavenFlattenPluginVersion>1.2.7</mavenFlattenPluginVersion>
         <mavenProjectInfoReportsPluginVersion>3.4.5</mavenProjectInfoReportsPluginVersion>
@@ -202,6 +196,10 @@
 
         <dmn4SparkVersion>0.0.1-RC2</dmn4SparkVersion>
         <shadedKogitoVersion>0.0.12</shadedKogitoVersion>
+
+        <framelessVersion>0.17.0</framelessVersion>
+        <framelessRuntime>sparkutils_0.17.0-${sparkCompatVersion}</framelessRuntime>
+        <framelessOrg>com.sparkutils</framelessOrg>
     </properties>
     <!--
     <repositories>
@@ -246,6 +244,34 @@
             <groupId>com.sparkutils</groupId>
             <artifactId>shim_runtime_${shimRuntime}_${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
             <version>${shimRuntimeVersion}</version>
+        </dependency>
+        <dependency>
+            <groupId>${framelessOrg}</groupId>
+            <!-- framelessCoreCompatVersion is used as sparkutils.frameless always publishes the spark major.minor -->
+            <artifactId>frameless-core_${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
+            <version>${framelessVersion}</version>
+            <exclusions>
+                <!-- exclude the shim -->
+                <exclusion>
+                    <groupId>com.sparkutils</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>${framelessOrg}</groupId>
+            <!-- framelessCoreCompatVersion is used as sparkutils.frameless always publishes the spark major.minor -->
+            <artifactId>frameless-dataset_${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
+            <version>${framelessVersion}</version>
+            <exclusions>
+                <!-- exclude the shim -->
+                <exclusion>
+                    <groupId>com.sparkutils</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
