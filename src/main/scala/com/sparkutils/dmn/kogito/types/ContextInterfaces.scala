@@ -47,7 +47,7 @@ object ContextInterfaces {
         ar.map { e =>
           val p = InternalRow(e)
           entryAccessor.forPath(p)
-        }
+        }.toVector.asJava
       } // perhaps it supports Array?
     case MapType(k, v, _) => {
       val kAccessor = forType(k, 0)
@@ -80,7 +80,7 @@ object ContextInterfaces {
   def struct(pairs: Map[String, Accessor[_]]): Accessor[util.Map[String, Object]] =
     (path: Any) => new util.Map[String, Object] {
 
-      override def get(key: Any): AnyRef = pairs(key.toString.toUpperCase).forPath(path).asInstanceOf[AnyRef]
+      override def get(key: Any): AnyRef = pairs(key.toString).forPath(path).asInstanceOf[AnyRef]
 
       // called by Jackson serializing
       override def entrySet(): util.Set[util.Map.Entry[String, Object]] = pairs.map{case (key, accessor) => new util.Map.Entry[String, Object]{

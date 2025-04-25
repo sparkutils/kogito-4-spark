@@ -46,19 +46,13 @@ case class KogitoSeqOfBools() extends LeafExpression with SeqOfBools with Kogito
 case class KogitoJSONResultProvider() extends LeafExpression with DMNResultProvider with KogitoProcess {
 
   @transient
-  lazy val mapper = {
-    val om =
-      new ObjectMapper()
-        .registerModule(
-          new SimpleModule()
-            .addSerializer(classOf[ComparablePeriod], new DMNFEELComparablePeriodSerializer())
-        )
-        .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-
-    //om.configOverride(classOf[Accessor[_]]).setIgnorals(JsonIgnoreProperties.Value.forIgnoredProperties("path"))
-    om
-  }
-
+  lazy val mapper =
+    new ObjectMapper()
+      .registerModule(
+        new SimpleModule()
+          .addSerializer(classOf[ComparablePeriod], new DMNFEELComparablePeriodSerializer())
+      )
+      .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
 
   override def nullable: Boolean = true
 

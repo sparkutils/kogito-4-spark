@@ -6,6 +6,7 @@ import com.sparkutils.dmn.kogito.Types.MAP
 import com.sparkutils.dmn.kogito.types.ContextInterfaces
 import org.apache.spark.sql.types.{BinaryType, BooleanType, ByteType, DataType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, ShortType, StringType, StructType, TimestampType}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
+import org.apache.spark.sql.internal.SQLConf
 import org.kie.dmn.core.internal.utils.DMNRuntimeBuilder
 import org.kie.internal.io.ResourceFactory
 
@@ -62,7 +63,7 @@ class KogitoDMNRepository() extends DMNRepository {
   override def providerForType(inputField: DMNInputField): DMNContextProvider[_] = {
     val (path, expr) = (KogitoDMNContextPath(inputField.contextPath), inputField.defaultExpr)
 
-    inputField.providerType.toUpperCase match {
+    inputField.providerType match {
       case "JSON" => KogitoJSONContextProvider(path, expr)
       case t if Try(DataType.fromDDL(t)).isSuccess =>
         val dataType = DataType.fromDDL(t)

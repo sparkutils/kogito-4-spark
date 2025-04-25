@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/" expressionLanguage="https://www.omg.org/spec/DMN/20230324/FEEL/" namespace="deepns" id="deepid" name="deep_fun" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:kie="https://kie.org/dmn/extensions/1.0">
+<definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:kie="https://kie.org/dmn/extensions/1.0" expressionLanguage="https://www.omg.org/spec/DMN/20230324/FEEL/" namespace="deepns" id="deepid" name="deep_fun">
+  <itemDefinition id="_64B8C382-C1DA-4108-8EAF-55682A39DE6A" name="Structs" isCollection="true" typeLanguage="https://www.omg.org/spec/DMN/20230324/FEEL/">
+    <typeRef>Struct</typeRef>
+  </itemDefinition>
   <itemDefinition id="_98DFBC79-8684-4CD2-81AB-36A595F4EFA9" name="Deeper" isCollection="false" typeLanguage="https://www.omg.org/spec/DMN/20230324/FEEL/">
     <itemComponent id="_C302DBA1-3862-402D-995E-52291ED5E690" name="a" isCollection="false" typeLanguage="https://www.omg.org/spec/DMN/20230324/FEEL/">
       <typeRef>boolean</typeRef>
@@ -29,8 +32,8 @@
     <itemComponent id="_D287F65A-D955-451A-A526-631441B7E614" name="strings" isCollection="true" typeLanguage="https://www.omg.org/spec/DMN/20230324/FEEL/">
       <typeRef>string</typeRef>
     </itemComponent>
-    <itemComponent id="_295923BE-F3BB-44F6-B15C-FFFEA6E4BBF7" name="structs" isCollection="true" typeLanguage="https://www.omg.org/spec/DMN/20230324/FEEL/">
-      <typeRef>Struct</typeRef>
+    <itemComponent id="_295923BE-F3BB-44F6-B15C-FFFEA6E4BBF7" name="structs" isCollection="false" typeLanguage="https://www.omg.org/spec/DMN/20230324/FEEL/">
+      <typeRef>Structs</typeRef>
     </itemComponent>
   </itemDefinition>
   <inputData name="input" id="_17A885F4-6E23-48D9-A137-82C013224124">
@@ -46,9 +49,31 @@
     <informationRequirement id="_AB686314-BBDB-4F50-B0A8-C13CB2CB0CCE">
       <requiredInput href="#_17A885F4-6E23-48D9-A137-82C013224124" />
     </informationRequirement>
-    <literalExpression id="_22978FC6-79E2-42F1-AD81-5E6C6D21B9EE" typeRef="Deep" label="eval">
-      <text>input</text>
-    </literalExpression>
+    <context id="_57FCCD65-BC08-471C-BCE1-F35D249E46AF" typeRef="Deep" label="eval">
+      <contextEntry id="_CFF38323-BA68-497E-AF46-8421A44C6205">
+        <variable id="_63489E91-0835-4C56-9BA3-0DFFA3E21B79" name="top1" typeRef="string" />
+        <literalExpression id="_BD89CEFC-9DC7-43F2-83AD-1F37C3FF3B0B" typeRef="string" label="top1">
+          <text>input.top1 + &quot;a&quot;</text>
+        </literalExpression>
+      </contextEntry>
+      <contextEntry id="_E8B4505D-47F2-4D53-9627-1B928DC9BCAC">
+        <variable id="_7657BDBF-8716-4757-8139-9F6CCAD722A2" name="strings" typeRef="string" />
+        <literalExpression id="_172BEFA6-19F4-44FB-919E-3048ABA2DC13" typeRef="string" label="strings">
+          <text>for i in input.strings return i + &quot;i&quot;</text>
+        </literalExpression>
+      </contextEntry>
+      <contextEntry id="_3AF048B9-9C53-42A6-9681-E3367A81F263">
+        <variable id="_E7E0199E-BAEE-4917-BA65-473D4C3E98AE" name="structs" typeRef="Structs" />
+        <literalExpression id="_5FA79CF6-820E-41C3-836A-5B1C322E9BCF" typeRef="Struct" label="structs">
+          <text>input.structs</text>
+        </literalExpression>
+      </contextEntry>
+      <contextEntry id="_847EA10A-C1F7-4DC9-B9EF-543645BF2557">
+        <literalExpression id="_3FB8D83F-36EE-4227-97E7-8326D054E08D" typeRef="Deep" label="eval">
+          <text>{top1: top1, strings: strings, structs: structs}</text>
+        </literalExpression>
+      </contextEntry>
+    </context>
   </decision>
   <dmndi:DMNDI>
     <dmndi:DMNDiagram id="_921AAA39-1A6C-45CC-88B4-339C24E77D82" name="Default DRD" useAlternativeInputDataShape="false">
@@ -61,6 +86,39 @@
             <kie:width>190</kie:width>
           </kie:ComponentWidths>
           <kie:ComponentWidths dmnElementRef="_22978FC6-79E2-42F1-AD81-5E6C6D21B9EE">
+            <kie:width>190</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_57FCCD65-BC08-471C-BCE1-F35D249E46AF">
+            <kie:width>120</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_BD89CEFC-9DC7-43F2-83AD-1F37C3FF3B0B">
+            <kie:width>190</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_172BEFA6-19F4-44FB-919E-3048ABA2DC13">
+            <kie:width>190</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_5FA79CF6-820E-41C3-836A-5B1C322E9BCF">
+            <kie:width>190</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_C8EB0BA3-4BCC-4012-85E2-4C442248C5BE">
+            <kie:width>120</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_ACBEACDD-8717-463C-A5C7-70FB3872272C">
+            <kie:width>190</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_0374D5ED-3543-4EAC-AD40-8E4634E3FA5F">
+            <kie:width>120</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_EB645E46-56B6-4D36-9665-6973E4F39DDB">
+            <kie:width>190</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_ACD70407-6B72-4926-8CB1-FC0E59A4AA94">
+            <kie:width>190</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_9B8C4671-B272-417C-AA16-5C2E63AF9334">
+            <kie:width>190</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_3FB8D83F-36EE-4227-97E7-8326D054E08D">
             <kie:width>190</kie:width>
           </kie:ComponentWidths>
         </kie:ComponentsWidthsExtension>
