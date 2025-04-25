@@ -4,7 +4,7 @@ import com.sparkutils.dmn._
 import com.sparkutils.dmn.impl._
 import com.sparkutils.dmn.kogito.Types.MAP
 import com.sparkutils.dmn.kogito.types.ContextInterfaces
-import org.apache.spark.sql.types.{BinaryType, BooleanType, ByteType, DataType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, ShortType, StringType, StructType, TimestampType}
+import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DataType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, MapType, ShortType, StringType, StructType, TimestampType}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.internal.SQLConf
 import org.kie.dmn.core.internal.utils.DMNRuntimeBuilder
@@ -81,8 +81,9 @@ class KogitoDMNRepository() extends DMNRepository {
           case TimestampType => SimpleContextProvider[LocalDateTime](path, expr, Some{t: Any => DateTimeUtils.microsToLocalDateTime(t.asInstanceOf[Long])}) // a long
           case _: DecimalType => SimpleContextProvider[java.math.BigDecimal](path, expr, Some{t: Any => t.asInstanceOf[Decimal].toJavaBigDecimal})
           case structType: StructType => ContextInterfaces.structProvider(structType, path, expr)
-
-          // calendar interval? TODO top level array and MAP
+          case mapType: MapType => ContextInterfaces.mapProvider(mapType, path, expr)
+          case arrayType: ArrayType => ContextInterfaces.arrayProvider(arrayType, path, expr)
+          // calendar interval?
           case t => throw new DMNException(s"Provider type $t is not supported")
         }
       case _ =>

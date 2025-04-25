@@ -6,7 +6,7 @@ import org.apache.spark.sql.{DataFrame, Encoder, SparkSession}
 import org.apache.spark.sql.functions.col
 import org.scalatest.{FunSuite, Matchers}
 
-import scala.collection.immutable.Seq
+//import scala.collection.immutable.Seq
 import scala.reflect.ClassTag
 
 import frameless._
@@ -61,8 +61,8 @@ class DeepTest extends FunSuite with Matchers {
     val ds = dataBasis(maps).toDS()
 
     val res = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(
-      DMNExecution(dmnFiles = dmnFiles, model = dmnModel(mapType, outputProvider), contextProviders =
-        Seq(DMNInputField("top", theType(mapType), "input"))
+      DMNExecution(dmnFiles = scala.collection.immutable.Seq() ++ dmnFiles, model = dmnModel(mapType, outputProvider), contextProviders =
+        scala.collection.immutable.Seq() ++ Seq(DMNInputField("top", theType(mapType), "input"))
       )
     ))
     val asSeqs = res.select("quality").as[R].collect()

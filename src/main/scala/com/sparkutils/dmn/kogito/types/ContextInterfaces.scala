@@ -20,7 +20,7 @@ object ContextInterfaces {
 
   def forType(dataType: DataType, i: Int): Accessor[_] = dataType match {
     case structType: StructType =>
-      val s = struct(structType.fields.zipWithIndex.map{case (f, i) => (f.name, forType(f.dataType, i))}.toMap)
+      val s = struct(structType.fields.zipWithIndex.map { case (f, i) => (f.name, forType(f.dataType, i)) }.toMap)
       new Accessor[util.Map[String, Object]] {
         override def forPath(path: Any): util.Map[String, Object] = {
           val r = path.asInstanceOf[InternalRow]
@@ -67,14 +67,30 @@ object ContextInterfaces {
     case _ => throw new DMNException(s"Could not load Kogito Context Accessor for dataType $dataType")
   }
 
+  def mapProvider(mapType: MapType, path: DMNContextPath, expr: Expression): DMNContextProvider[util.Map[String, Object]] = {
+    val sa = forType(mapType, 0)
+    SimpleContextProvider[util.Map[String, Object]](path, expr, Some{t: Any =>
+      sa.forPath(InternalRow(t)).asInstanceOf[util.Map[String, Object]]
+    })
+  }
+
+  def arrayProvider(arrayType: ArrayType, path: DMNContextPath, expr: Expression): DMNContextProvider[util.List[Object]] = {
+    val sa = forType(arrayType, 0)
+    SimpleContextProvider[util.List[Object]](path, expr, Some{t: Any =>
+      sa.forPath(InternalRow(t)).asInstanceOf[util.List[Object]]
+    })
+  }
+
   /**
    * Provides a map interface over underlying struct data
    * @param structType
    * @return
    */
-  def structProvider(structType: StructType, path: DMNContextPath, expr: Expression): DMNContextProvider[java.util.Map[String, Object]] = {
-    val structAccessor = struct(structType.fields.zipWithIndex.map{case (f, i) => (f.name, forType(f.dataType, i))}.toMap)
-    SimpleContextProvider[java.util.Map[String, Object]](path, expr, Some{t: Any => structAccessor.forPath(t) })
+  def structProvider(structType: StructType, path: DMNContextPath, expr: Expression): DMNContextProvider[util.Map[String, Object]] = {
+    val sa = forType(structType, 0)
+    SimpleContextProvider[util.Map[String, Object]](path, expr, Some{t: Any =>
+      sa.forPath(InternalRow(t)).asInstanceOf[util.Map[String, Object]]
+    })
   }
 
   def struct(pairs: Map[String, Accessor[_]]): Accessor[util.Map[String, Object]] =
