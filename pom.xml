@@ -201,7 +201,7 @@
         <framelessRuntime>sparkutils_0.17.0-${sparkCompatVersion}</framelessRuntime>
         <framelessOrg>com.sparkutils</framelessOrg>
     </properties>
-    <!--
+    <!-- -->
     <repositories>
         <repository>
             <id>ossrh</id>
@@ -212,7 +212,7 @@
             <url>https://repository.apache.org/content/repositories/snapshots/</url>
         </repository>
     </repositories>
--->
+
     <distributionManagement>
         <repository>
             <id>ossrh</id>
