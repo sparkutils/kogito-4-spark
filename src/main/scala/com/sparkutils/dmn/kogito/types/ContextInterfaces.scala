@@ -39,7 +39,9 @@ object ContextInterfaces {
     case ShortType => (path: Any) => path.asInstanceOf[InternalRow].getShort(i)
     case DateType => (path: Any) => DateTimeUtils.daysToLocalDate( path.asInstanceOf[InternalRow].getInt(i) )
     case TimestampType => (path: Any) => DateTimeUtils.microsToLocalDateTime( path.asInstanceOf[InternalRow].getLong(i) )
-    case dt: DecimalType => (path: Any) => path.asInstanceOf[InternalRow].getDecimal(i, dt.precision, dt.scale).toJavaBigDecimal
+    case _: DecimalType => (path: Any) =>
+      // max needed as Spark's past 3.4 move everything to max anyway, 1.0 comes back as 1.0 instead of 2016...
+      path.asInstanceOf[InternalRow].getDecimal(i, DecimalType.MAX_PRECISION, DecimalType.DEFAULT_SCALE).toJavaBigDecimal
     case ArrayType(typ, _) =>
       val entryAccessor = forType(typ, 0)
       (path: Any) => {

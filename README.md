@@ -32,7 +32,28 @@ Non DDL Unary DMNContextProviders may be provided via a fully qualified class na
 ## Supported DMNResultProviders
 
 * JSON - Serializes the org.kie.dmn.api.core.DMNResult.getDecisionResults
-* ARRAY<BOOLEAN> - Serializes the first result when the type is an array of Booleans (used by tests, definitely not general)
+* Struct<...> DDL - with each field representing a decision name to result mapping
 
 Other DMNResultProviders may be provided via a fully qualified class name. 
  
+When Struct DDL is used each decisionName in the Kogito DMNResult will be stored against that struct.  Where the decisionName is not present null is used, each element will therefore be set to nullable by the library.  Where a decision result is provided which is not the in the DDL it will be ignored.
+
+Use JSON to handle result schema evolution until a possible solution via Variants in Spark 4 is investigated. 
+
+### Debug mode
+
+Use debugMode when calling evaluate to force the full DMNResult structure (without results) to be written out into an additional debugMdoe field, in the case where no issues are present this is likely overkill and should be kept for debug information only.
+
+In this mode the output DDL more closely mimics the Kogito DMNResult, the two output types are not compatible. 
+
+The JSON provider when in debug mode serializes the entire DMNResult structure, when not the structure mimics the output of the Struct ddl counterpart e.g.:
+
+```json
+{"eval":{"top1":"0a","strings":["a0i","b0i","c0i","d0i"],"structs":[{"a":"0","b":2061584302.16,"d":{"a":true,"b":true},"c":{"a1":"b1"}}]}}
+```
+
+becomes:
+
+```json
+[{"decisionId":"_5BD6B443-5DB7-4CA4-84E2-AC86D643FB15","decisionName":"eval","result":{"top1":"0a","strings":["a0i","b0i","c0i","d0i"],"structs":[{"a":"0","b":2061584302.16,"d":{"a":true,"b":true},"c":{"a1":"b1"}}]},"messages":[],"evaluationStatus":"SUCCEEDED"}]
+```

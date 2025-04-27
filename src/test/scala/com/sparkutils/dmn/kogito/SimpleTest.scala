@@ -1,6 +1,6 @@
 package com.sparkutils.dmn.kogito
 
-import com.sparkutils.dmn.{DMNDecisionService, DMNExecution, DMNFile, DMNInputField, DMNModelService}
+import com.sparkutils.dmn.{DMNConfiguration, DMNDecisionService, DMNExecution, DMNFile, DMNInputField, DMNModelService}
 import org.apache.spark.sql.ShimUtils.{column, expression}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.functions.col
@@ -9,6 +9,10 @@ import org.scalatest.{FunSuite, Matchers}
 import scala.collection.immutable.Seq
 
 case class TestData(location: String, idPrefix: String, id: Int, page: Long, department: String)
+
+object Empty {
+  val configuration = DMNConfiguration("")
+}
 
 class SimpleTest extends FunSuite with Matchers {
 
@@ -28,7 +32,7 @@ class SimpleTest extends FunSuite with Matchers {
       this.getClass.getClassLoader.getResourceAsStream("decisions.dmn").readAllBytes()
     )
   )
-  val dmnModel = DMNModelService(ns, ns, Some("DQService"), "array<boolean>")
+  val dmnModel = DMNModelService(ns, ns, Some("DQService"), "struct<evaluate: array<boolean>>")
   val dataBasis = Seq(
     TestData("US", "a", 1, 1, "sales"),
     TestData("UK", "a", 1, 2, "marketing"),
@@ -36,11 +40,11 @@ class SimpleTest extends FunSuite with Matchers {
     TestData("MX", "a", 1, 4, "it"),
     TestData("BR", "a", 1, 5, "ops"),
   )
-  def testResults(ds: DataFrame, exec: DMNExecution): Unit = {
+
+  def testResults(res: DataFrame): Unit = {
     import sparkSession.implicits._
 
-    val res = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec))
-    val asSeqs = res.select("quality").as[Seq[Boolean]].collect()
+    val asSeqs = res.select("quality.evaluate").as[Seq[Boolean]].collect()
 
     asSeqs.forall(_.size == 15) shouldBe true
     asSeqs(0).head shouldBe true
@@ -51,13 +55,26 @@ class SimpleTest extends FunSuite with Matchers {
     asSeqs(1).count(identity) shouldBe 1
   }
 
+  val testDebug = KogitoResult("_1B2DFBAA-DD62-4F1D-A375-38FB6A868A8C", "evaluate", false, Seq(), "SUCCEEDED")
+
+  def testResults(ds: DataFrame, exec: DMNExecution): Unit = {
+    import sparkSession.implicits._
+
+    val res = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec))
+    testResults(res)
+    val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec, debug = true))
+    testResults(dres)
+    val debugs = dres.select("quality.debugMode").as[Seq[KogitoResult]].collect
+    debugs.forall( _ == Seq(testDebug)) shouldBe true
+  }
+
   def testJSONResults(service: DMNModelService): Unit = {
     import sparkSession.implicits._
 
     val ds = Seq(dataBasis).toDS.selectExpr("explode(value) as f").selectExpr("to_json(f) payload")
 
     val exec = DMNExecution(dmnFiles, service,
-      Seq(DMNInputField("payload", "JSON", "testData")))
+      Seq(DMNInputField("payload", "JSON", "testData")), Empty.configuration)
     testResults(ds, exec)
   }
 
@@ -72,7 +89,7 @@ class SimpleTest extends FunSuite with Matchers {
         DMNInputField("id", "Int", "testData.id"),
         DMNInputField("page", "Long", "testData.page"),
         DMNInputField("department", "String", "testData.department")
-      )) //location: String, idPrefix: String, id: Int, page: Long, department: String)
+      ), Empty.configuration) //location: String, idPrefix: String, id: Int, page: Long, department: String)
     testResults(ds, exec)
   }
 
@@ -84,7 +101,7 @@ class SimpleTest extends FunSuite with Matchers {
     val exec = DMNExecution(dmnFiles, service,
       Seq(DMNInputField("f",
         "struct<location: String, idPrefix: String, id: Int, page: Long, department: String>", "testData")
-      )) //location: String, idPrefix: String, id: Int, page: Long, department: String)
+      ), Empty.configuration) //location: String, idPrefix: String, id: Int, page: Long, department: String)
     testResults(ds, exec)
   }
 
@@ -118,9 +135,9 @@ class SimpleTest extends FunSuite with Matchers {
     val ds = Seq(dataBasis).toDS.selectExpr("explode(value) as f").selectExpr("to_json(f) payload")
 
     val exec = DMNExecution(dmnFiles, dmnModel.copy(resultProvider = "JSON"),
-      Seq(DMNInputField("payload", "JSON", "testData")))
+      Seq(DMNInputField("payload", "JSON", "testData")), Empty.configuration)
 
-    val res = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec))
+    val res = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec, debug = true))
     val strs = res.select("quality").as[String].collect()
     strs shouldBe Array( """[{"decisionId":"_1B2DFBAA-DD62-4F1D-A375-38FB6A868A8C","decisionName":"evaluate","result":[true,false,false,false,false,false,false,false,false,false,true,false,true,false,false],"messages":[],"evaluationStatus":"SUCCEEDED"}]""",
       """[{"decisionId":"_1B2DFBAA-DD62-4F1D-A375-38FB6A868A8C","decisionName":"evaluate","result":[false,true,false,false,false,false,false,false,false,false,false,false,false,false,false],"messages":[],"evaluationStatus":"SUCCEEDED"}]""",

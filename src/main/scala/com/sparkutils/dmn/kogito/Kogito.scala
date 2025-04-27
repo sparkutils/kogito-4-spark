@@ -42,7 +42,7 @@ class KogitoDMNRepository() extends DMNRepository {
    * @param dmnFiles
    * @return
    */
-  def dmnRuntimeFor(dmnFiles: Seq[DMNFile]): DMNRuntime = {
+  def dmnRuntimeFor(dmnFiles: Seq[DMNFile], dmnConfiguration: DMNConfiguration): DMNRuntime = {
 
     val resources = dmnFiles.map{ f =>
       val r = ResourceFactory.newByteArrayResource(f.bytes)
@@ -60,7 +60,7 @@ class KogitoDMNRepository() extends DMNRepository {
 
   override def supportsDecisionService: Boolean = true
 
-  override def providerForType(inputField: DMNInputField): DMNContextProvider[_] = {
+  override def providerForType(inputField: DMNInputField, debug: Boolean, dmnConfiguration: DMNConfiguration): DMNContextProvider[_] = {
     val (path, expr) = (KogitoDMNContextPath(inputField.contextPath), inputField.defaultExpr)
 
     inputField.providerType match {
@@ -92,14 +92,19 @@ class KogitoDMNRepository() extends DMNRepository {
 
   }
 
-  override def resultProviderForType(resultProviderType: String): DMNResultProvider =
-    resultProviderType.toUpperCase match {
-      case "ARRAY<BOOLEAN>" =>
-        KogitoSeqOfBools()
-      case "JSON" =>
-        KogitoJSONResultProvider()
+  override def resultProviderForType(resultProviderType: String, debug: Boolean, dmnConfiguration: DMNConfiguration): DMNResultProvider =
+    resultProviderType match {
+      case _ if resultProviderType.toUpperCase == "JSON" =>
+        KogitoJSONResultProvider(debug)
+      case t if Try(DataType.fromDDL(t)).isSuccess =>
+        val dataType = DataType.fromDDL(t)
+        dataType match {
+          case s: StructType =>
+            KogitoDDLResult(debug = debug, underlyingType = s)
+          case _ => throw new DMNException(s"ResultProvider type $t is not supported, only JSON and Struct is")
+        }
       case _ =>
-        utils.loadResultProvider(resultProviderType)
+        utils.loadResultProvider(resultProviderType, debug)
     }
 }
 
@@ -167,3 +172,16 @@ case class KogitoDMNRuntime(runtime: org.kie.dmn.api.core.DMNRuntime) extends DM
 
   def context(): DMNContext = KogitoDMNContext(runtime.newContext())
 }
+
+case class KogitoFeelEvent(severity: String, message: String, line: Int, column: Int, sourceException: String, offendingSymbol: String)
+
+case class KogitoMessage(sourceId: String, sourceReference: String, exception: String, feelEvent: KogitoFeelEvent)
+
+/**
+ * Represents the DDL provider outout type for debugMode
+ * @param decisionId
+ * @param decisionName
+ * @param hasErrors
+ * @param messages
+ */
+case class KogitoResult(decisionId: String, decisionName: String, hasErrors: Boolean, messages: Seq[KogitoMessage], evaluationStatus: String)
