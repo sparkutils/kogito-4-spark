@@ -3,8 +3,8 @@ package com.sparkutils.dmn.kogito.types
 import com.sparkutils.dmn.{DMNContextPath, DMNContextProvider, DMNException}
 import com.sparkutils.dmn.impl.{SimpleContextProvider, StringContextProvider}
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.Expression
-import org.apache.spark.sql.catalyst.util.DateTimeUtils
+import org.apache.spark.sql.catalyst.expressions.{Expression, SpecializedGetters}
+import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
 import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DataType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, MapType, ShortType, StringType, StructType, TimestampType}
 import sparkutilsKogito.com.fasterxml.jackson.annotation.{JsonIgnore, JsonIgnoreProperties}
 
@@ -15,71 +15,81 @@ import java.util
 object ContextInterfaces {
 
   trait Accessor[T] extends Serializable {
-    def forPath(path: Any): T
+    def forPath(path: Any, i: Int): T
   }
 
-  def forType(dataType: DataType, i: Int): Accessor[_] = dataType match {
+  // -1 as top level field, only for struct/map/array
+  def forType(dataType: DataType): Accessor[_] = dataType match {
     case structType: StructType =>
-      val s = struct(structType.fields.zipWithIndex.map { case (f, i) => (f.name, forType(f.dataType, i)) }.toMap)
+      val s = struct(structType.fields.zipWithIndex.map { case (f, i) => (f.name, (i, forType(f.dataType))) }.toMap)
       new Accessor[util.Map[String, Object]] {
-        override def forPath(path: Any): util.Map[String, Object] = {
-          val r = path.asInstanceOf[InternalRow]
-          val input = r.getStruct(i, structType.fields.size)
-          s.forPath(input)
+        override def forPath(path: Any, i: Int): util.Map[String, Object] = {
+          val r = path.asInstanceOf[SpecializedGetters]
+          val input =
+            if (i == -1)
+              r
+            else
+              r.getStruct(i, structType.fields.size)
+          s.forPath(input, i)
         }
       }
-    case StringType => (path: Any) => path.asInstanceOf[InternalRow].getString(i).toString
-    case IntegerType => (path: Any) => path.asInstanceOf[InternalRow].getInt(i)
-    case LongType => (path: Any) => path.asInstanceOf[InternalRow].getLong(i)
-    case BooleanType => (path: Any) => path.asInstanceOf[InternalRow].getBoolean(i)
-    case DoubleType => (path: Any) => path.asInstanceOf[InternalRow].getDouble(i)
-    case FloatType => (path: Any) => path.asInstanceOf[InternalRow].getFloat(i)
-    case BinaryType => (path: Any) => path.asInstanceOf[InternalRow].getBinary(i)
-    case ByteType => (path: Any) => path.asInstanceOf[InternalRow].getByte(i)
-    case ShortType => (path: Any) => path.asInstanceOf[InternalRow].getShort(i)
-    case DateType => (path: Any) => DateTimeUtils.daysToLocalDate( path.asInstanceOf[InternalRow].getInt(i) )
-    case TimestampType => (path: Any) => DateTimeUtils.microsToLocalDateTime( path.asInstanceOf[InternalRow].getLong(i) )
-    case _: DecimalType => (path: Any) =>
+    case StringType => (path: Any, i: Int) => path.asInstanceOf[SpecializedGetters].getUTF8String(i).toString
+    case IntegerType => (path: Any, i: Int) => path.asInstanceOf[SpecializedGetters].getInt(i)
+    case LongType => (path: Any, i: Int) => path.asInstanceOf[SpecializedGetters].getLong(i)
+    case BooleanType => (path: Any, i: Int) => path.asInstanceOf[SpecializedGetters].getBoolean(i)
+    case DoubleType => (path: Any, i: Int) => path.asInstanceOf[SpecializedGetters].getDouble(i)
+    case FloatType => (path: Any, i: Int) => path.asInstanceOf[SpecializedGetters].getFloat(i)
+    case BinaryType => (path: Any, i: Int) => path.asInstanceOf[SpecializedGetters].getBinary(i)
+    case ByteType => (path: Any, i: Int) => path.asInstanceOf[SpecializedGetters].getByte(i)
+    case ShortType => (path: Any, i: Int) => path.asInstanceOf[SpecializedGetters].getShort(i)
+    case DateType => (path: Any, i: Int) => DateTimeUtils.daysToLocalDate( path.asInstanceOf[SpecializedGetters].getInt(i) )
+    case TimestampType => (path: Any, i: Int) => DateTimeUtils.microsToLocalDateTime( path.asInstanceOf[SpecializedGetters].getLong(i) )
+    case _: DecimalType => (path: Any, i: Int) =>
       // max needed as Spark's past 3.4 move everything to max anyway, 1.0 comes back as 1.0 instead of 2016...
-      path.asInstanceOf[InternalRow].getDecimal(i, DecimalType.MAX_PRECISION, DecimalType.DEFAULT_SCALE).toJavaBigDecimal
+      path.asInstanceOf[SpecializedGetters].getDecimal(i, DecimalType.MAX_PRECISION, DecimalType.DEFAULT_SCALE).toJavaBigDecimal
     case ArrayType(typ, _) =>
-      val entryAccessor = forType(typ, 0)
-      (path: Any) => {
-        val ar = Arrays.toArray(path.asInstanceOf[InternalRow].getArray(i), typ)
-        ar.map { e =>
-          val p = InternalRow(e)
-          entryAccessor.forPath(p)
-        }.toVector.asJava
+      val entryAccessor = forType(typ)
+      (path: Any, i: Int) => {
+        val ar = {
+          if (i == - 1)
+            path.asInstanceOf[ArrayData]
+          else
+            path.asInstanceOf[SpecializedGetters].getArray(i)
+        }
+        arrayOfType(entryAccessor, ar).asJava
       } // perhaps it supports Array?
     case MapType(k, v, _) => {
-      val kAccessor = forType(k, 0)
-      val vAccessor = forType(v, 0)
-      (path: Any) => {
-        val m = path.asInstanceOf[InternalRow].getMap(i)
-        val map = (Arrays.toArray(m.keyArray(), k) zip Arrays.toArray(m.valueArray(), v)) map {
-          case (k, v) =>
-            val key = kAccessor.forPath(InternalRow(k))
-            val value = vAccessor.forPath(InternalRow(v))
-            key -> value
-        }
-        val mm = map.toMap
-        mapAsJavaMap(mm)
+      val kAccessor = forType(k)
+      val vAccessor = forType(v)
+      (path: Any, i: Int) => {
+        val m =
+          if (i == -1)
+            path.asInstanceOf[MapData]
+          else
+            path.asInstanceOf[SpecializedGetters].getMap(i)
+        val ka = arrayOfType(kAccessor, m.keyArray())
+        val va = arrayOfType(vAccessor, m.valueArray())
+        (ka zip va).toMap.asJava
       }
     }
     case _ => throw new DMNException(s"Could not load Kogito Context Accessor for dataType $dataType")
   }
 
+  private def arrayOfType(entryAccessor: Accessor[_], ar: ArrayData) =
+    for {i <- 0 until ar.numElements()}
+      yield entryAccessor.forPath(ar, i)
+
   def mapProvider(mapType: MapType, path: DMNContextPath, expr: Expression): DMNContextProvider[util.Map[String, Object]] = {
-    val sa = forType(mapType, 0)
+    val sa = forType(mapType)
     SimpleContextProvider[util.Map[String, Object]](path, expr, Some{t: Any =>
-      sa.forPath(InternalRow(t)).asInstanceOf[util.Map[String, Object]]
+      sa.forPath(t, -1).asInstanceOf[util.Map[String, Object]]
     })
   }
 
   def arrayProvider(arrayType: ArrayType, path: DMNContextPath, expr: Expression): DMNContextProvider[util.List[Object]] = {
-    val sa = forType(arrayType, 0)
+    val sa = forType(arrayType)
     SimpleContextProvider[util.List[Object]](path, expr, Some{t: Any =>
-      sa.forPath(InternalRow(t)).asInstanceOf[util.List[Object]]
+      sa.forPath(t, -1).asInstanceOf[util.List[Object]]
     })
   }
 
@@ -89,22 +99,25 @@ object ContextInterfaces {
    * @return
    */
   def structProvider(structType: StructType, path: DMNContextPath, expr: Expression): DMNContextProvider[util.Map[String, Object]] = {
-    val sa = forType(structType, 0)
+    val sa = forType(structType)
     SimpleContextProvider[util.Map[String, Object]](path, expr, Some{t: Any =>
-      sa.forPath(InternalRow(t)).asInstanceOf[util.Map[String, Object]]
+      sa.forPath(t,-1).asInstanceOf[util.Map[String, Object]]
     })
   }
 
-  def struct(pairs: Map[String, Accessor[_]]): Accessor[util.Map[String, Object]] =
-    (path: Any) => new util.Map[String, Object] {
+  def struct(pairs: Map[String, (Int, Accessor[_])]): Accessor[util.Map[String, Object]] =
+    (path: Any, i: Int) => new util.Map[String, Object] {
 
-      override def get(key: Any): AnyRef = pairs(key.toString).forPath(path).asInstanceOf[AnyRef]
+      override def get(key: Any): AnyRef = {
+        val (i, a) = pairs(key.toString)
+        a.forPath(path, i).asInstanceOf[AnyRef]
+      }
 
       // called by Jackson serializing
-      override def entrySet(): util.Set[util.Map.Entry[String, Object]] = pairs.map{case (key, accessor) => new util.Map.Entry[String, Object]{
+      override def entrySet(): util.Set[util.Map.Entry[String, Object]] = pairs.map{case (key, (i, accessor)) => new util.Map.Entry[String, Object]{
         override def getKey: String = key
 
-        override def getValue: Object = accessor.forPath(path).asInstanceOf[AnyRef]
+        override def getValue: Object = accessor.forPath(path, i).asInstanceOf[AnyRef]
 
         override def setValue(value: Object): AnyRef = ???
       }}.toSet.asJava
