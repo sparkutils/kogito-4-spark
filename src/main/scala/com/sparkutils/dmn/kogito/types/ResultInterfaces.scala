@@ -17,6 +17,7 @@ object ResultInterfaces {
 
   val evalStatusEnding = "_dmnEvalStatus"
 
+  val NOT_FOUND: Byte = -6.toByte // DDL has a decision which isn't in the DMN, possibly a typo or the dmn decision was removed / not there yet
   val NOT_EVALUATED: Byte = -5.toByte // shouldn't happen
   val EVALUATING: Byte = -4.toByte // shouldn't happen as it'll be overwritten in KogitoDDLResult
   val SUCCEEDED: Byte  = 1.toByte
@@ -31,7 +32,7 @@ object ResultInterfaces {
   def forType(dataType: DataType): Getter = dataType match {
     case structType: StructType =>
 
-      val s= structType.fields.map { f =>
+      val s = structType.fields.map { f =>
         (f.name,
           if (f.name.endsWith(evalStatusEnding))
             ((path: Any) => EVALUATING): Getter

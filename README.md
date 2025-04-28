@@ -36,7 +36,13 @@ Non DDL Unary DMNContextProviders may be provided via a fully qualified class na
 
 Other DMNResultProviders may be provided via a fully qualified class name. 
  
-When Struct DDL is used each decisionName in the Kogito DMNResult will be stored against that struct.  Where the decisionName is not present null is used, each element will therefore be set to nullable by the library.  Where a decision result is provided which is not the in the DDL it will be ignored.
+When Struct DDL is used each decisionName in the Kogito DMNResult will be stored against that struct, e.g. for a decision name "evaluate" which returns a list of booleans the DDL:
+
+```ddl
+struct<evaluate: array<boolean>>
+```
+
+should be used.  Where the decisionName is not present in the results null is used, each element will therefore be set to nullable by the library.  Where a decision result is provided which is not the in the DDL it will be ignored (debug information may however be provided).
 
 Use JSON to handle result schema evolution until a possible solution via Variants in Spark 4 is investigated. 
 
@@ -48,18 +54,21 @@ In order to identify if a null result is due to an error or not a "_dmnEvalStatu
 struct<evaluate: array<boolean>, evaluate_dmnEvalStatus: Byte>
 ```
 
-will store the Kogito DMNDecisionResult.getEvaluationStatus as an Int with the following values:
+will store the Kogito DMNDecisionResult.getEvaluationStatus as a Byte with the following values:
 
-| DecisionEvaluationStatus (Severity)                | _dmnEvalStatus Int stored |
-|----------------------------------------------------|---------------------------|
-| NOT_EVALUATED                                      | -5 (Should not happen)    |
-| EVALUATING                                         | -4 (Should not happen)    |
-| SUCCEEDED                                          | 1                         |
-| SKIPPED (WARN Msg.MISSING_EXPRESSION_FOR_DECISION) | -3                        |
-| SKIPPED (ERROR)                                    | -2                        |
-| FAILED                                             | 0                         |
+| DecisionEvaluationStatus (Severity)              | _dmnEvalStatus Int stored                |
+|--------------------------------------------------|------------------------------------------|
+| NOT_FOUND (kogito-4-spark only[^1])                  | -6 (Typically a sign of a name mismatch) |
+| NOT_EVALUATED                                    | -5 (Should not happen)                   |
+| EVALUATING                                       | -4 (Should not happen)                   |
+| SUCCEEDED                                        | 1                                        |
+| SKIPPED (WARN Msg.MISSING_EXPRESSION_FOR_DECISION) | -3                                       |
+| SKIPPED (ERROR)                                  | -2                                       |
+| FAILED                                           | 0                                        |
 
 These status' only replicate the Kogito [DecisionEvaluationStatus usage](https://github.com/kiegroup/drools/blob/7373d109e9020535f5f1c727852946405ea21912/kie-dmn/kie-dmn-core/src/main/java/org/kie/dmn/core/impl/DMNRuntimeImpl.java#L669) and do not represent any business logic from the underlying DMN, that must of course be encoded in the result DLL directly. 
+
+[^1]: The NOT_FOUND status is provided by the library and is for the case where a _dmnEvalStatus field is provided in the ddl but this decision name that does not exist in the dmn.
 
 ### Debug mode
 

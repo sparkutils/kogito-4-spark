@@ -4,7 +4,7 @@ import com.sparkutils.dmn
 import com.sparkutils.dmn.{DMNResult, DMNResultProvider}
 import com.sparkutils.dmn.kogito.types.ContextInterfaces.Accessor
 import com.sparkutils.dmn.kogito.types.ResultInterfaces
-import com.sparkutils.dmn.kogito.types.ResultInterfaces.{EVALUATING, FAILED, NOT_EVALUATED, SKIPPED_ERROR, SKIPPED_WARN, SUCCEEDED, evalStatusEnding}
+import com.sparkutils.dmn.kogito.types.ResultInterfaces.{EVALUATING, FAILED, NOT_EVALUATED, NOT_FOUND, SKIPPED_ERROR, SKIPPED_WARN, SUCCEEDED, evalStatusEnding}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{GenericInternalRow, LeafExpression}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
@@ -93,6 +93,8 @@ case class KogitoDDLResult(debug: Boolean, underlyingType: StructType) extends L
                 case DecisionEvaluationStatus.SKIPPED => SKIPPED_WARN
                 case DecisionEvaluationStatus.FAILED => FAILED
               })
+            } else {
+              row.update(i, NOT_FOUND)
             }
             row
         }

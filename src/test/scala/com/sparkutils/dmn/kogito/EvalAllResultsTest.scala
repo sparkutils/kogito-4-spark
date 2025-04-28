@@ -1,7 +1,7 @@
 package com.sparkutils.dmn.kogito
 
 import com.sparkutils.dmn.kogito.types.ResultInterfaces
-import com.sparkutils.dmn.kogito.types.ResultInterfaces.{FAILED, SKIPPED_ERROR, SKIPPED_WARN, SUCCEEDED, evalStatusEnding}
+import com.sparkutils.dmn.kogito.types.ResultInterfaces.{FAILED, NOT_EVALUATED, NOT_FOUND, SKIPPED_ERROR, SKIPPED_WARN, SUCCEEDED, evalStatusEnding}
 import com.sparkutils.dmn.{DMN, DMNConfiguration, DMNDecisionService, DMNExecution, DMNFile, DMNInputField, DMNModelService}
 import org.apache.spark.sql.ShimUtils.{column, expression}
 import org.apache.spark.sql.{DataFrame, SparkSession}
@@ -17,7 +17,17 @@ case class AllTest(badInputAndOutput: String, badInputAndOutput_dmnEvalStatus: B
                    wrongOutputType: String, wrongOutputType_dmnEvalStatus: Byte,
                    badExpr: String, badExpr_dmnEvalStatus: Byte
                   )
-
+case class DifferentTest(aBadInputAndOutput: String, aBadInputAndOutput_dmnEvalStatus: Byte,
+                   outstring: String, outstring_dmnEvalStatus: Byte,
+                   missingExpr: String, missingExpr_dmnEvalStatus: Byte,
+                   wrongOutputType: String, wrongOutputType_dmnEvalStatus: Byte,
+                   badExpr: String, badExpr_dmnEvalStatus: Byte
+                  )
+case class MissingInStruct(outstring: String, outstring_dmnEvalStatus: Byte,
+                   missingExpr: String, missingExpr_dmnEvalStatus: Byte,
+                   wrongOutputType: String, wrongOutputType_dmnEvalStatus: Byte,
+                   badExpr: String, badExpr_dmnEvalStatus: Byte
+                  )
 class EvalAllResultsTest extends FunSuite with Matchers {
 
   lazy val sparkSession = {
@@ -57,6 +67,46 @@ class EvalAllResultsTest extends FunSuite with Matchers {
 
     asSeqs.size shouldBe 1
     asSeqs.head shouldBe AllTest(null, SKIPPED_ERROR,
+      "a", SUCCEEDED,
+      null, SKIPPED_WARN,
+      "a", SUCCEEDED,
+      null, FAILED
+    )
+  }
+
+  test("Missing decisions in struct") {
+    import sparkSession.implicits._
+
+    val ds = data.toDS
+    val res = ds.withColumn("quality", DMN.dmnEval(DMNExecution(dmnFiles = dmnFiles,
+      model = dmnModel.copy(resultProvider = dmnModel.resultProvider.replace(s"badInputAndOutput: String, badInputAndOutput$evalStatusEnding: Byte,","")),
+      contextProviders = Seq(DMNInputField("value", "String", "inString")
+      ), configuration = Empty.configuration)))
+    val asSeqs = res.select("quality.*").as[MissingInStruct].collect()
+
+    asSeqs.size shouldBe 1
+    asSeqs.head shouldBe MissingInStruct(
+      "a", SUCCEEDED,
+      null, SKIPPED_WARN,
+      "a", SUCCEEDED,
+      null, FAILED
+    )
+  }
+
+  test("Extra decisions in struct") {
+    import sparkSession.implicits._
+
+    val ds = data.toDS
+    val res = ds.withColumn("quality", DMN.dmnEval(DMNExecution(dmnFiles = dmnFiles,
+      model = dmnModel.copy(resultProvider = dmnModel.resultProvider.replace(s"badInputAndOutput: String, badInputAndOutput$evalStatusEnding: Byte,",
+        s"aBadInputAndOutput: String, aBadInputAndOutput$evalStatusEnding: Byte,")),
+      contextProviders = Seq(DMNInputField("value", "String", "inString")
+      ), configuration = Empty.configuration)))
+    val asSeqs = res.select("quality.*").as[DifferentTest].collect()
+
+    asSeqs.size shouldBe 1
+    asSeqs.head shouldBe DifferentTest(
+      null, NOT_FOUND,
       "a", SUCCEEDED,
       null, SKIPPED_WARN,
       "a", SUCCEEDED,
