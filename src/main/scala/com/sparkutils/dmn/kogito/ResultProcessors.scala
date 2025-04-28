@@ -44,7 +44,7 @@ trait KogitoProcess extends DMNResultProvider {
           StructField("severity", StringType),
           StructField("message", StringType),
           StructField("line", IntegerType),
-          StructField("column", IntegerType), // TODO should this be structs for DMNModelInstrumentedBase ?
+          StructField("column", IntegerType),
           StructField("sourceException", StringType, nullable = true),
           StructField("offendingSymbol", StringType)
         )))
