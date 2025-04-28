@@ -40,6 +40,27 @@ When Struct DDL is used each decisionName in the Kogito DMNResult will be stored
 
 Use JSON to handle result schema evolution until a possible solution via Variants in Spark 4 is investigated. 
 
+### Result Processing
+
+In order to identify if a null result is due to an error or not a "_dmnEvalStatus: Byte" field can be added to the Struct DDL, e.g.:
+
+```ddl
+struct<evaluate: array<boolean>, evaluate_dmnEvalStatus: Byte>
+```
+
+will store the Kogito DMNDecisionResult.getEvaluationStatus as an Int with the following values:
+
+| DecisionEvaluationStatus (Severity)                | _dmnEvalStatus Int stored |
+|----------------------------------------------------|---------------------------|
+| NOT_EVALUATED                                      | -5 (Should not happen)    |
+| EVALUATING                                         | -4 (Should not happen)    |
+| SUCCEEDED                                          | 1                         |
+| SKIPPED (WARN Msg.MISSING_EXPRESSION_FOR_DECISION) | -3                        |
+| SKIPPED (ERROR)                                    | -2                        |
+| FAILED                                             | 0                         |
+
+These status' only replicate the Kogito [DecisionEvaluationStatus usage](https://github.com/kiegroup/drools/blob/7373d109e9020535f5f1c727852946405ea21912/kie-dmn/kie-dmn-core/src/main/java/org/kie/dmn/core/impl/DMNRuntimeImpl.java#L669) and do not represent any business logic from the underlying DMN, that must of course be encoded in the result DLL directly. 
+
 ### Debug mode
 
 Use debugMode when calling evaluate to force the full DMNResult structure (without results) to be written out into an additional debugMdoe field, in the case where no issues are present this is likely overkill and should be kept for debug information only.

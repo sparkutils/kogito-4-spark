@@ -15,6 +15,15 @@ import scala.collection.JavaConverters._
  */
 object ResultInterfaces {
 
+  val evalStatusEnding = "_dmnEvalStatus"
+
+  val NOT_EVALUATED: Byte = -5.toByte // shouldn't happen
+  val EVALUATING: Byte = -4.toByte // shouldn't happen as it'll be overwritten in KogitoDDLResult
+  val SUCCEEDED: Byte  = 1.toByte
+  val SKIPPED_WARN: Byte  = -3.toByte
+  val SKIPPED_ERROR: Byte  = -2.toByte
+  val FAILED: Byte  = 0.toByte
+
   trait Getter {
     def get(path: Any): Any
   }
@@ -22,7 +31,14 @@ object ResultInterfaces {
   def forType(dataType: DataType): Getter = dataType match {
     case structType: StructType =>
 
-      val s = structType.fields.map { f => f.name -> forType(f.dataType) }
+      val s= structType.fields.map { f =>
+        (f.name,
+          if (f.name.endsWith(evalStatusEnding))
+            ((path: Any) => EVALUATING): Getter
+          else
+            forType(f.dataType)
+        )
+      }
 
       (path: Any) => {
         val m = path.asInstanceOf[util.Map[String, Object]]
