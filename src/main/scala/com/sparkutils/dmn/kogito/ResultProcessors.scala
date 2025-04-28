@@ -99,7 +99,7 @@ case class KogitoDDLResult(debug: Boolean, underlyingType: StructType) extends L
     }
 
     // create a map over the results
-    if (res.hasErrors || res.getDecisionResults.isEmpty)
+    if (res.getDecisionResults.isEmpty)
       null
     else
       if (debug)

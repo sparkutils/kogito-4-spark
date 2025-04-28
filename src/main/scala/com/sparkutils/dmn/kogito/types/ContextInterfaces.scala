@@ -24,52 +24,58 @@ object ContextInterfaces {
       val s = struct(structType.fields.zipWithIndex.map { case (f, i) => (f.name, (i, forType(f.dataType))) }.toMap)
       new Accessor[util.Map[String, Object]] {
         override def forPath(path: Any, i: Int): util.Map[String, Object] = {
-          val r = path.asInstanceOf[SpecializedGetters]
-          val input =
-            if (i == -1)
-              r
-            else
-              r.getStruct(i, structType.fields.size)
-          s.forPath(input, i)
+          if (path == null) null else {
+            val r = path.asInstanceOf[SpecializedGetters]
+            val input =
+              if (i == -1)
+                r
+              else
+                r.getStruct(i, structType.fields.size)
+            s.forPath(input, i)
+          }
         }
       }
-    case StringType => (path: Any, i: Int) => path.asInstanceOf[SpecializedGetters].getUTF8String(i).toString
-    case IntegerType => (path: Any, i: Int) => path.asInstanceOf[SpecializedGetters].getInt(i)
-    case LongType => (path: Any, i: Int) => path.asInstanceOf[SpecializedGetters].getLong(i)
-    case BooleanType => (path: Any, i: Int) => path.asInstanceOf[SpecializedGetters].getBoolean(i)
-    case DoubleType => (path: Any, i: Int) => path.asInstanceOf[SpecializedGetters].getDouble(i)
-    case FloatType => (path: Any, i: Int) => path.asInstanceOf[SpecializedGetters].getFloat(i)
-    case BinaryType => (path: Any, i: Int) => path.asInstanceOf[SpecializedGetters].getBinary(i)
-    case ByteType => (path: Any, i: Int) => path.asInstanceOf[SpecializedGetters].getByte(i)
-    case ShortType => (path: Any, i: Int) => path.asInstanceOf[SpecializedGetters].getShort(i)
-    case DateType => (path: Any, i: Int) => DateTimeUtils.daysToLocalDate( path.asInstanceOf[SpecializedGetters].getInt(i) )
-    case TimestampType => (path: Any, i: Int) => DateTimeUtils.microsToLocalDateTime( path.asInstanceOf[SpecializedGetters].getLong(i) )
+    case StringType => (path: Any, i: Int) => if (path == null) null else path.asInstanceOf[SpecializedGetters].getUTF8String(i).toString
+    case IntegerType => (path: Any, i: Int) => if (path == null) null else path.asInstanceOf[SpecializedGetters].getInt(i)
+    case LongType => (path: Any, i: Int) => if (path == null) null else path.asInstanceOf[SpecializedGetters].getLong(i)
+    case BooleanType => (path: Any, i: Int) => if (path == null) null else path.asInstanceOf[SpecializedGetters].getBoolean(i)
+    case DoubleType => (path: Any, i: Int) => if (path == null) null else path.asInstanceOf[SpecializedGetters].getDouble(i)
+    case FloatType => (path: Any, i: Int) => if (path == null) null else path.asInstanceOf[SpecializedGetters].getFloat(i)
+    case BinaryType => (path: Any, i: Int) => if (path == null) null else path.asInstanceOf[SpecializedGetters].getBinary(i)
+    case ByteType => (path: Any, i: Int) => if (path == null) null else path.asInstanceOf[SpecializedGetters].getByte(i)
+    case ShortType => (path: Any, i: Int) => if (path == null) null else path.asInstanceOf[SpecializedGetters].getShort(i)
+    case DateType => (path: Any, i: Int) => if (path == null) null else DateTimeUtils.daysToLocalDate( path.asInstanceOf[SpecializedGetters].getInt(i) )
+    case TimestampType => (path: Any, i: Int) => if (path == null) null else DateTimeUtils.microsToLocalDateTime( path.asInstanceOf[SpecializedGetters].getLong(i) )
     case _: DecimalType => (path: Any, i: Int) =>
       // max needed as Spark's past 3.4 move everything to max anyway, 1.0 comes back as 1.0 instead of 2016...
-      path.asInstanceOf[SpecializedGetters].getDecimal(i, DecimalType.MAX_PRECISION, DecimalType.DEFAULT_SCALE).toJavaBigDecimal
+      if (path == null) null else path.asInstanceOf[SpecializedGetters].getDecimal(i, DecimalType.MAX_PRECISION, DecimalType.DEFAULT_SCALE).toJavaBigDecimal
     case ArrayType(typ, _) =>
       val entryAccessor = forType(typ)
       (path: Any, i: Int) => {
-        val ar = {
-          if (i == - 1)
-            path.asInstanceOf[ArrayData]
-          else
-            path.asInstanceOf[SpecializedGetters].getArray(i)
+        if (path == null) null else {
+          val ar = {
+            if (i == -1)
+              path.asInstanceOf[ArrayData]
+            else
+              path.asInstanceOf[SpecializedGetters].getArray(i)
+          }
+          arrayOfType(entryAccessor, ar).asJava
         }
-        arrayOfType(entryAccessor, ar).asJava
       } // perhaps it supports Array?
     case MapType(k, v, _) => {
       val kAccessor = forType(k)
       val vAccessor = forType(v)
       (path: Any, i: Int) => {
-        val m =
-          if (i == -1)
-            path.asInstanceOf[MapData]
-          else
-            path.asInstanceOf[SpecializedGetters].getMap(i)
-        val ka = arrayOfType(kAccessor, m.keyArray())
-        val va = arrayOfType(vAccessor, m.valueArray())
-        (ka zip va).toMap.asJava
+        if (path == null) null else {
+          val m =
+            if (i == -1)
+              path.asInstanceOf[MapData]
+            else
+              path.asInstanceOf[SpecializedGetters].getMap(i)
+          val ka = arrayOfType(kAccessor, m.keyArray())
+          val va = arrayOfType(vAccessor, m.valueArray())
+          (ka zip va).toMap.asJava
+        }
       }
     }
     case _ => throw new DMNException(s"Could not load Kogito Context Accessor for dataType $dataType")
@@ -78,6 +84,8 @@ object ContextInterfaces {
   private def arrayOfType(entryAccessor: Accessor[_], ar: ArrayData) =
     for {i <- 0 until ar.numElements()}
       yield entryAccessor.forPath(ar, i)
+
+  // NOTE -1 must be provided for top level as we don't know the index the data is taken from
 
   def mapProvider(mapType: MapType, path: DMNContextPath, expr: Expression): DMNContextProvider[util.Map[String, Object]] = {
     val sa = forType(mapType)
@@ -101,7 +109,7 @@ object ContextInterfaces {
   def structProvider(structType: StructType, path: DMNContextPath, expr: Expression): DMNContextProvider[util.Map[String, Object]] = {
     val sa = forType(structType)
     SimpleContextProvider[util.Map[String, Object]](path, expr, Some{t: Any =>
-      sa.forPath(t,-1).asInstanceOf[util.Map[String, Object]]
+      sa.forPath(t, -1).asInstanceOf[util.Map[String, Object]]
     })
   }
 
@@ -110,14 +118,18 @@ object ContextInterfaces {
 
       override def get(key: Any): AnyRef = {
         val (i, a) = pairs(key.toString)
-        a.forPath(path, i).asInstanceOf[AnyRef]
+        val t = a.forPath(path, i)
+        if (t == null) null else t.asInstanceOf[AnyRef]
       }
 
       // called by Jackson serializing
       override def entrySet(): util.Set[util.Map.Entry[String, Object]] = pairs.map{case (key, (i, accessor)) => new util.Map.Entry[String, Object]{
         override def getKey: String = key
 
-        override def getValue: Object = accessor.forPath(path, i).asInstanceOf[AnyRef]
+        override def getValue: Object = {
+          val t = accessor.forPath(path, i)
+          if (t == null) null else t.asInstanceOf[AnyRef]
+        }
 
         override def setValue(value: Object): AnyRef = ???
       }}.toSet.asJava

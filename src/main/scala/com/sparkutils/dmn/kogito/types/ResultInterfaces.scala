@@ -41,34 +41,40 @@ object ResultInterfaces {
       }
 
       (path: Any) => {
-        val m = path.asInstanceOf[util.Map[String, Object]]
-        InternalRow(s.map { case (name, g) => g.get(m.get(name)) }: _*)
+        if (path == null) null else {
+          val m = path.asInstanceOf[util.Map[String, Object]]
+          InternalRow(s.map { case (name, g) => g.get(m.get(name)) }: _*)
+        }
       }
-    case StringType => (path: Any) => UTF8String.fromString( path.toString )
-    case IntegerType => (path: Any) => path.asInstanceOf[Integer]
-    case LongType => (path: Any) => path.asInstanceOf[Long]
-    case BooleanType => (path: Any) => path.asInstanceOf[Boolean]
-    case DoubleType => (path: Any) => path.asInstanceOf[Double]
-    case FloatType => (path: Any) => path.asInstanceOf[Float]
-    case BinaryType => (path: Any) => path.asInstanceOf[Array[Byte]]
-    case ByteType => (path: Any) => path.asInstanceOf[Byte]
-    case ShortType => (path: Any) => path.asInstanceOf[Short]
-    case DateType => (path: Any) => DateTimeUtils.localDateToDays( path.asInstanceOf[LocalDate] )
-    case TimestampType => (path: Any) => DateTimeUtils.localDateTimeToMicros( path.asInstanceOf[LocalDateTime] )
+    case StringType => (path: Any) => if (path == null) null else UTF8String.fromString( path.toString )
+    case IntegerType => (path: Any) => if (path == null) null else path.asInstanceOf[Integer]
+    case LongType => (path: Any) => if (path == null) null else path.asInstanceOf[Long]
+    case BooleanType => (path: Any) => if (path == null) null else path.asInstanceOf[Boolean]
+    case DoubleType => (path: Any) => if (path == null) null else path.asInstanceOf[Double]
+    case FloatType => (path: Any) => if (path == null) null else path.asInstanceOf[Float]
+    case BinaryType => (path: Any) => if (path == null) null else path.asInstanceOf[Array[Byte]]
+    case ByteType => (path: Any) => if (path == null) null else path.asInstanceOf[Byte]
+    case ShortType => (path: Any) => if (path == null) null else path.asInstanceOf[Short]
+    case DateType => (path: Any) => if (path == null) null else DateTimeUtils.localDateToDays( path.asInstanceOf[LocalDate] )
+    case TimestampType => (path: Any) => if (path == null) null else DateTimeUtils.localDateTimeToMicros( path.asInstanceOf[LocalDateTime] )
     case _: DecimalType => (path: Any) =>
-      Decimal.apply(path.asInstanceOf[java.math.BigDecimal])
+      if (path == null) null else Decimal.apply(path.asInstanceOf[java.math.BigDecimal])
     case ArrayType(typ, _) =>
       val g = forType(typ)
       (path: Any) => {
-        val a = path.asInstanceOf[util.List[_]].toArray.map(g.get(_))
-        new GenericArrayData(a)
+        if (path == null) null else {
+          val a = path.asInstanceOf[util.List[_]].toArray.map(g.get(_))
+          new GenericArrayData(a)
+        }
       }
     case MapType(k, v, _) =>
       val kG = forType(k)
       val vG = forType(v)
       (path: Any) => {
-        val m = path.asInstanceOf[util.Map[Object, Object]].asScala.toMap.map(e => kG.get(e._1) -> vG.get(e._2))
-        new ArrayBasedMapData(new GenericArrayData(m.keys.toArray), new GenericArrayData(m.values.toArray))
+        if (path == null) null else {
+          val m = path.asInstanceOf[util.Map[Object, Object]].asScala.toMap.map(e => kG.get(e._1) -> vG.get(e._2))
+          new ArrayBasedMapData(new GenericArrayData(m.keys.toArray), new GenericArrayData(m.values.toArray))
+        }
       }
     case _ => throw new DMNException(s"Could not load Kogito Result Provider for dataType $dataType")
   }
