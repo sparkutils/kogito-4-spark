@@ -30,7 +30,7 @@ or source them from byte arrays in a dataset using the api serialization.readVer
 Define the model you wish to run (the namespace and name must be present in one of the DMNFiles):
 
 ```scala
-val dmnModel = DMNModelService(ns, ns, Some("DQService"), "struct<evaluate: array<boolean>>")
+val dmnModel = DMNModelService(name, namespace, Some("DQService"), "struct<evaluate: array<boolean>>")
 ```
 
 when the DecisionService is provided, DQService the above example, only it will be executed, using None will trigger evaluateAll semantics.  The struct definition at the end defines your output structure, use JSON to serialize the DMNResult into JSON.  You can also use the serialization.readVersionedModelServicesFromDF to load models. 
