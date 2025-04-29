@@ -1,20 +1,13 @@
 package com.sparkutils.dmn.kogito
 
-import com.sparkutils.dmn.kogito.types.ResultInterfaces
 import com.sparkutils.dmn.kogito.types.ResultInterfaces.{SUCCEEDED, evalStatusEnding}
-import com.sparkutils.dmn.{DMNConfiguration, DMNDecisionService, DMNExecution, DMNFile, DMNInputField, DMNModelService}
-import org.apache.spark.sql.ShimUtils.{column, expression}
+import com.sparkutils.dmn.{DMNExecution, DMNFile, DMNInputField, DMNModelService}
 import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.apache.spark.sql.functions.col
 import org.scalatest.{FunSuite, Matchers}
 
 import scala.collection.immutable.Seq
 
 case class TestData(location: String, idPrefix: String, id: Int, page: Long, department: String)
-
-object Empty {
-  val configuration = DMNConfiguration("")
-}
 
 class SimpleTest extends FunSuite with Matchers {
 
@@ -80,7 +73,7 @@ class SimpleTest extends FunSuite with Matchers {
     val ds = Seq(dataBasis).toDS.selectExpr("explode(value) as f").selectExpr("to_json(f) payload")
 
     val exec = DMNExecution(dmnFiles, service,
-      Seq(DMNInputField("payload", "JSON", "testData")), Empty.configuration)
+      Seq(DMNInputField("payload", "JSON", "testData")))
     testResults(ds, exec)
   }
 
@@ -95,7 +88,7 @@ class SimpleTest extends FunSuite with Matchers {
         DMNInputField("id", "Int", "testData.id"),
         DMNInputField("page", "Long", "testData.page"),
         DMNInputField("department", "String", "testData.department")
-      ), Empty.configuration) //location: String, idPrefix: String, id: Int, page: Long, department: String)
+      )) //location: String, idPrefix: String, id: Int, page: Long, department: String)
     testResults(ds, exec)
   }
 
@@ -107,7 +100,7 @@ class SimpleTest extends FunSuite with Matchers {
     val exec = DMNExecution(dmnFiles, service,
       Seq(DMNInputField("f",
         "struct<location: String, idPrefix: String, id: Int, page: Long, department: String>", "testData")
-      ), Empty.configuration) //location: String, idPrefix: String, id: Int, page: Long, department: String)
+      )) //location: String, idPrefix: String, id: Int, page: Long, department: String)
     testResults(ds, exec)
   }
 
@@ -168,7 +161,7 @@ class SimpleTest extends FunSuite with Matchers {
     val ds = Seq(dataBasis).toDS.selectExpr("explode(value) as f").selectExpr("to_json(f) payload")
 
     val exec = DMNExecution(dmnFiles, dmnModel.copy(resultProvider = "JSON"),
-      Seq(DMNInputField("payload", "JSON", "testData")), Empty.configuration)
+      Seq(DMNInputField("payload", "JSON", "testData")))
 
     val res = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec, debug = true))
     val strs = res.select("quality").as[String].collect()

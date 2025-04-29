@@ -52,10 +52,10 @@ this use the fields location, idPrefix, id, page and department to set entries i
 Then combine the variables into the DMNExecution you wish to run with any additional configuration (currently ignored by kogito-4-spark):
 
 ```scala
-val exec = DMNExecution(dmnFiles, service, inputFields, DMNConfiguration(""))
+val exec = DMNExecution(dmnFiles, service, inputFields, DMNConfiguration.empty /* default value */)
 ```
 
-DMNExecutions too can be loaded from serialization.readVersionedExecutionsFromDF but requires you to provide all of the other input datasets (configuration as well via serialization.readVersionedConfigurationDF)
+DMNExecutions too can be loaded from serialization.readVersionedExecutionsFromDF but requires you to provide all of the other input datasets (configuration can be optionally provided via serialization.readVersionedConfigurationDF).
 
 finally register the DMN on your dataset (which contains the input fields):
 

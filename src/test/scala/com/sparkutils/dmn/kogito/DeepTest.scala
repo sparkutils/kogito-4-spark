@@ -68,7 +68,7 @@ class DeepTest extends FunSuite with Matchers {
 
     val res = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(
       DMNExecution(dmnFiles = scala.collection.immutable.Seq() ++ dmnFiles, model = dmnModel(outputProvider), contextProviders =
-        scala.collection.immutable.Seq() ++ Seq(DMNInputField("top", theType(mapType), "input")), Empty.configuration
+        scala.collection.immutable.Seq() ++ Seq(DMNInputField("top", theType(mapType), "input"))
       )
     , debug = debug))
 

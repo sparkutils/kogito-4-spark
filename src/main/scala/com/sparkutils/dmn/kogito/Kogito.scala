@@ -178,7 +178,7 @@ case class KogitoFeelEvent(severity: String, message: String, line: Int, column:
 case class KogitoMessage(sourceId: String, sourceReference: String, exception: String, feelEvent: KogitoFeelEvent)
 
 /**
- * Represents the DDL provider outout type for debugMode
+ * Represents the DDL provider output type for debugMode
  * @param decisionId
  * @param decisionName
  * @param hasErrors

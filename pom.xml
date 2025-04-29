@@ -155,7 +155,7 @@
     </profiles>
 
     <properties>
-        <revision>0.0.1-RC5</revision>
+        <revision>0.0.1-RC6</revision>
 
         <mavenFlattenPluginVersion>1.2.7</mavenFlattenPluginVersion>
         <mavenProjectInfoReportsPluginVersion>3.4.5</mavenProjectInfoReportsPluginVersion>
@@ -194,7 +194,7 @@
         <shimCompilationVersion>0.2.0-RC1</shimCompilationVersion>
         <shimRuntimeVersion>0.2.0-RC1</shimRuntimeVersion>
 
-        <dmn4SparkVersion>0.0.1-RC3</dmn4SparkVersion>
+        <dmn4SparkVersion>0.0.1-RC4</dmn4SparkVersion>
         <shadedKogitoVersion>0.0.12</shadedKogitoVersion>
 
         <framelessVersion>0.17.0</framelessVersion>

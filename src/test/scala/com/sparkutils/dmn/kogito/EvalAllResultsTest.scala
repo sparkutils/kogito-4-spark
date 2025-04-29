@@ -1,15 +1,11 @@
 package com.sparkutils.dmn.kogito
 
-import com.sparkutils.dmn.kogito.types.ResultInterfaces
-import com.sparkutils.dmn.kogito.types.ResultInterfaces.{FAILED, NOT_EVALUATED, NOT_FOUND, SKIPPED_ERROR, SKIPPED_WARN, SUCCEEDED, evalStatusEnding}
-import com.sparkutils.dmn.{DMN, DMNConfiguration, DMNDecisionService, DMNExecution, DMNFile, DMNInputField, DMNModelService}
-import org.apache.spark.sql.ShimUtils.{column, expression}
-import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.apache.spark.sql.functions.col
+import com.sparkutils.dmn.kogito.types.ResultInterfaces.{FAILED, NOT_FOUND, SKIPPED_ERROR, SKIPPED_WARN, SUCCEEDED, evalStatusEnding}
+import com.sparkutils.dmn.{DMN, DMNExecution, DMNFile, DMNInputField, DMNModelService}
+import org.apache.spark.sql.SparkSession
 import org.scalatest.{FunSuite, Matchers}
 
 import scala.collection.immutable.Seq
-
 
 case class AllTest(badInputAndOutput: String, badInputAndOutput_dmnEvalStatus: Byte,
                    outstring: String, outstring_dmnEvalStatus: Byte,
@@ -62,7 +58,7 @@ class EvalAllResultsTest extends FunSuite with Matchers {
     val ds = data.toDS
     val res = ds.withColumn("quality", DMN.dmnEval(DMNExecution(dmnFiles = dmnFiles, model = dmnModel,
       contextProviders = Seq(DMNInputField("value", "String", "inString")
-      ), configuration = Empty.configuration)))
+      ))))
     val asSeqs = res.select("quality.*").as[AllTest].collect()
 
     asSeqs.size shouldBe 1
@@ -81,7 +77,7 @@ class EvalAllResultsTest extends FunSuite with Matchers {
     val res = ds.withColumn("quality", DMN.dmnEval(DMNExecution(dmnFiles = dmnFiles,
       model = dmnModel.copy(resultProvider = dmnModel.resultProvider.replace(s"badInputAndOutput: String, badInputAndOutput$evalStatusEnding: Byte,","")),
       contextProviders = Seq(DMNInputField("value", "String", "inString")
-      ), configuration = Empty.configuration)))
+      ))))
     val asSeqs = res.select("quality.*").as[MissingInStruct].collect()
 
     asSeqs.size shouldBe 1
@@ -101,7 +97,7 @@ class EvalAllResultsTest extends FunSuite with Matchers {
       model = dmnModel.copy(resultProvider = dmnModel.resultProvider.replace(s"badInputAndOutput: String, badInputAndOutput$evalStatusEnding: Byte,",
         s"aBadInputAndOutput: String, aBadInputAndOutput$evalStatusEnding: Byte,")),
       contextProviders = Seq(DMNInputField("value", "String", "inString")
-      ), configuration = Empty.configuration)))
+      ))))
     val asSeqs = res.select("quality.*").as[DifferentTest].collect()
 
     asSeqs.size shouldBe 1
