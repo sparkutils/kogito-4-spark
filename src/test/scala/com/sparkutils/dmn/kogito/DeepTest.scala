@@ -1,7 +1,7 @@
 package com.sparkutils.dmn.kogito
 
 import com.sparkutils.dmn.{DMNExecution, DMNFile, DMNInputField, DMNModelService}
-import org.apache.spark.sql.{Encoder, SparkSession}
+import org.apache.spark.sql.{Encoder, SaveMode, SparkSession}
 import org.scalatest.{FunSuite, Matchers}
 
 //import scala.collection.immutable.Seq
@@ -21,13 +21,7 @@ case class DebugResult[A,B](eval: Top[A,B], debugMode: Seq[KogitoResult]) extend
 
 case class DebugQuality[A,B](quality: DebugResult[A,B]) extends Serializable
 
-class DeepTest extends FunSuite with Matchers {
-
-  lazy val sparkSession = {
-    val s = SparkSession.builder().config("spark.master", "local[*]").config("spark.ui.enabled", false).getOrCreate()
-    s.sparkContext.setLogLevel("ERROR") // set to debug to get actual code lines etc.
-    s
-  }
+class DeepTest extends FunSuite with Matchers with TestUtils {
 
   val oneDotZero = "1.000000000000000000"
 
@@ -76,7 +70,7 @@ class DeepTest extends FunSuite with Matchers {
     asSeqs.toVector
   }
 
-  test("Deep test JSON 1:1 Reply - String, String context") {
+  test("Deep test JSON 1:1 Reply - String, String context") { evalCodeGens {
     import sparkSession.implicits._
 
     val res = testResults[String, String, String]( (1 to 5). map( i => Map(s"a$i" -> s"b$i") ), "<String, String>", "JSON", deep_struct)
@@ -87,10 +81,10 @@ class DeepTest extends FunSuite with Matchers {
       s"""{"eval":{"top1":"3a","strings":["a3i","b3i","c3i","d3i"],"structs":[{"a":"3","b":$oneDotZero,"d":{"a":true,"b":true},"c":{"a4":"b4"}}]}}""",
       s"""{"eval":{"top1":"4a","strings":["a4i","b4i","c4i","d4i"],"structs":[{"a":"4","b":$oneDotZero,"d":{"a":true,"b":true},"c":{"a5":"b5"}}]}}"""
     )
-  }
+  } }
 
 
-  test("Deep test JSON 1:1 Reply - String, String context - debug") {
+  test("Deep test JSON 1:1 Reply - String, String context - debug") { forceCodeGen { ////evalCodeGens {
     import sparkSession.implicits._
 
     val res = testResults[String, String, String]( (1 to 5). map( i => Map(s"a$i" -> s"b$i") ), "<String, String>", "JSON", deep_struct, debug = true)
@@ -101,9 +95,9 @@ class DeepTest extends FunSuite with Matchers {
       s"""[{"decisionId":"_5BD6B443-5DB7-4CA4-84E2-AC86D643FB15","decisionName":"eval","result":{"top1":"3a","strings":["a3i","b3i","c3i","d3i"],"structs":[{"a":"3","b":$oneDotZero,"d":{"a":true,"b":true},"c":{"a4":"b4"}}]},"messages":[],"evaluationStatus":"SUCCEEDED"}]""",
       s"""[{"decisionId":"_5BD6B443-5DB7-4CA4-84E2-AC86D643FB15","decisionName":"eval","result":{"top1":"4a","strings":["a4i","b4i","c4i","d4i"],"structs":[{"a":"4","b":$oneDotZero,"d":{"a":true,"b":true},"c":{"a5":"b5"}}]},"messages":[],"evaluationStatus":"SUCCEEDED"}]"""
     )
-  }
+  }}
 
-  test("Deep test JSON 1:1 Reply - String, Boolean context") {
+  test("Deep test JSON 1:1 Reply - String, Boolean context") {evalCodeGens {
     import sparkSession.implicits._
 
     val res = testResults[String, Boolean, String]( (1 to 5). map( i => Map(s"a$i" -> true, s"b$i" -> false, s"c$i" -> true) ), "<String, Boolean>", "JSON", deep_struct)
@@ -114,9 +108,9 @@ class DeepTest extends FunSuite with Matchers {
       s"""{"eval":{"top1":"3a","strings":["a3i","b3i","c3i","d3i"],"structs":[{"a":"3","b":$oneDotZero,"d":{"a":true,"b":true},"c":{"a4":true,"b4":false,"c4":true}}]}}""",
       s"""{"eval":{"top1":"4a","strings":["a4i","b4i","c4i","d4i"],"structs":[{"a":"4","b":$oneDotZero,"d":{"a":true,"b":true},"c":{"a5":true,"b5":false,"c5":true}}]}}"""
     )
-  }
+  }}
 
-  test("Deep test JSON 1:1 Reply - String, Boolean context - debug") {
+  test("Deep test JSON 1:1 Reply - String, Boolean context - debug") {evalCodeGens {
     import sparkSession.implicits._
 
     val res = testResults[String, Boolean, String]( (1 to 5). map( i => Map(s"a$i" -> true, s"b$i" -> false, s"c$i" -> true) ), "<String, Boolean>", "JSON", deep_struct, debug = true)
@@ -127,9 +121,9 @@ class DeepTest extends FunSuite with Matchers {
       s"""[{"decisionId":"_5BD6B443-5DB7-4CA4-84E2-AC86D643FB15","decisionName":"eval","result":{"top1":"3a","strings":["a3i","b3i","c3i","d3i"],"structs":[{"a":"3","b":$oneDotZero,"d":{"a":true,"b":true},"c":{"a4":true,"b4":false,"c4":true}}]},"messages":[],"evaluationStatus":"SUCCEEDED"}]""",
       s"""[{"decisionId":"_5BD6B443-5DB7-4CA4-84E2-AC86D643FB15","decisionName":"eval","result":{"top1":"4a","strings":["a4i","b4i","c4i","d4i"],"structs":[{"a":"4","b":$oneDotZero,"d":{"a":true,"b":true},"c":{"a5":true,"b5":false,"c5":true}}]},"messages":[],"evaluationStatus":"SUCCEEDED"}]"""
     )
-  }
+  }}
 
-  test("Deep test JSON 1:1 Reply - String, Pair context") {
+  test("Deep test JSON 1:1 Reply - String, Pair context") {evalCodeGens {
     import sparkSession.implicits._
 
     val res = testResults[String, Pair, String]( (1 to 5). map( i => Map(s"a$i" -> Pair(true, false), s"b$i" -> Pair(false, true), s"c$i" -> Pair(true,false)) ), "<String, struct<a: boolean, b: boolean>>", "JSON", deep_struct)
@@ -140,8 +134,9 @@ class DeepTest extends FunSuite with Matchers {
       s"""{"eval":{"top1":"3a","strings":["a3i","b3i","c3i","d3i"],"structs":[{"a":"3","b":$oneDotZero,"d":{"a":true,"b":true},"c":{"a4":{"a":true,"b":false},"b4":{"a":false,"b":true},"c4":{"a":true,"b":false}}}]}}""",
       s"""{"eval":{"top1":"4a","strings":["a4i","b4i","c4i","d4i"],"structs":[{"a":"4","b":$oneDotZero,"d":{"a":true,"b":true},"c":{"a5":{"a":true,"b":false},"b5":{"a":false,"b":true},"c5":{"a":true,"b":false}}}]}}"""
     )
-  }
-  test("Deep test JSON 1:1 Reply - String, Pair context - debug") {
+  }}
+
+  test("Deep test JSON 1:1 Reply - String, Pair context - debug") {evalCodeGens {
     import sparkSession.implicits._
 
     val res = testResults[String, Pair, String]( (1 to 5). map( i => Map(s"a$i" -> Pair(true, false), s"b$i" -> Pair(false, true), s"c$i" -> Pair(true,false)) ), "<String, struct<a: boolean, b: boolean>>", "JSON", deep_struct, debug = true)
@@ -152,15 +147,15 @@ class DeepTest extends FunSuite with Matchers {
       s"""[{"decisionId":"_5BD6B443-5DB7-4CA4-84E2-AC86D643FB15","decisionName":"eval","result":{"top1":"3a","strings":["a3i","b3i","c3i","d3i"],"structs":[{"a":"3","b":$oneDotZero,"d":{"a":true,"b":true},"c":{"a4":{"a":true,"b":false},"b4":{"a":false,"b":true},"c4":{"a":true,"b":false}}}]},"messages":[],"evaluationStatus":"SUCCEEDED"}]""",
       s"""[{"decisionId":"_5BD6B443-5DB7-4CA4-84E2-AC86D643FB15","decisionName":"eval","result":{"top1":"4a","strings":["a4i","b4i","c4i","d4i"],"structs":[{"a":"4","b":$oneDotZero,"d":{"a":true,"b":true},"c":{"a5":{"a":true,"b":false},"b5":{"a":false,"b":true},"c5":{"a":true,"b":false}}}]},"messages":[],"evaluationStatus":"SUCCEEDED"}]"""
     )
-  }
+  }}
 
-  def testStructs[A: RecordFieldEncoder,B: RecordFieldEncoder](extra: String, maps: Seq[Map[A, B]])(implicit enc: Encoder[Quality[A,B]]): Unit = {
+  def testStructs[A: RecordFieldEncoder,B: RecordFieldEncoder](extra: String, maps: Seq[Map[A, B]])(implicit enc: Encoder[Quality[A,B]]): Unit = evalCodeGens {
     val data = dataBasis(maps)
     val res = testResults[A, B, Quality[A, B]]( maps, extra, s"struct<eval: ${theType(extra)}>", deep_struct)
     res shouldBe data.map(t => Quality(Result(t.top.copy(top1 = t.top.top1 +"a", strings = t.top.strings.map(_+"i") ))))
   }
 
-  def testDebugStructs[A: RecordFieldEncoder,B: RecordFieldEncoder](extra: String, maps: Seq[Map[A, B]])(implicit enc: Encoder[DebugQuality[A,B]]): Unit = {
+  def testDebugStructs[A: RecordFieldEncoder,B: RecordFieldEncoder](extra: String, maps: Seq[Map[A, B]])(implicit enc: Encoder[DebugQuality[A,B]]): Unit = evalCodeGens {
     val data = dataBasis(maps)
     val res = testResults[A, B, DebugQuality[A, B]]( maps, extra, s"struct<eval: ${theType(extra)}>", deep_struct, debug = true)
     res shouldBe data.map(t => DebugQuality(DebugResult(t.top.copy(top1 = t.top.top1 +"a", strings = t.top.strings.map(_+"i") ), Seq(testDebug))))

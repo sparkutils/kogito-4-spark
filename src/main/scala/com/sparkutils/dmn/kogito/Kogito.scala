@@ -77,9 +77,18 @@ class KogitoDMNRepository() extends DMNRepository {
           case BinaryType => SimpleContextProvider[Array[Byte]](path, expr)
           case ByteType => SimpleContextProvider[Byte](path, expr)
           case ShortType => SimpleContextProvider[Short](path, expr)
-          case DateType => SimpleContextProvider[LocalDate](path, expr, Some{t: Any => DateTimeUtils.daysToLocalDate(t.asInstanceOf[Int])}) // an int
-          case TimestampType => SimpleContextProvider[LocalDateTime](path, expr, Some{t: Any => DateTimeUtils.microsToLocalDateTime(t.asInstanceOf[Long])}) // a long
-          case _: DecimalType => SimpleContextProvider[java.math.BigDecimal](path, expr, Some{t: Any => t.asInstanceOf[Decimal].toJavaBigDecimal})
+          case DateType => SimpleContextProvider[LocalDate](path, expr,
+            Some(((t: Any) => DateTimeUtils.daysToLocalDate(t.asInstanceOf[Int]),
+              (codegen, input) => s"org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate((int)$input)"))
+          ) // an int
+          case TimestampType => SimpleContextProvider[LocalDateTime](path, expr,
+            Some(((t: Any) => DateTimeUtils.microsToLocalDateTime(t.asInstanceOf[Long]),
+              (codegen, input) => s"org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime((long)$input)"))
+          ) // a long
+          case _: DecimalType => SimpleContextProvider[java.math.BigDecimal](path, expr,
+            Some(((t: Any) => t.asInstanceOf[Decimal].toJavaBigDecimal,
+              (codegen, input) => s"((${classOf[Decimal].getName})$input).toJavaBigDecimal()"))
+          )
           case structType: StructType => ContextInterfaces.structProvider(structType, path, expr)
           case mapType: MapType => ContextInterfaces.mapProvider(mapType, path, expr)
           case arrayType: ArrayType => ContextInterfaces.arrayProvider(arrayType, path, expr)

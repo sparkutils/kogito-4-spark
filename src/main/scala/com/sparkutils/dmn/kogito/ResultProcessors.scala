@@ -1,13 +1,13 @@
 package com.sparkutils.dmn.kogito
 
 import com.sparkutils.dmn
-import com.sparkutils.dmn.{DMNResult, DMNResultProvider}
-import com.sparkutils.dmn.kogito.types.ContextInterfaces.Accessor
+import com.sparkutils.dmn.DMNResultProvider
 import com.sparkutils.dmn.kogito.types.ResultInterfaces
 import com.sparkutils.dmn.kogito.types.ResultInterfaces.{EVALUATING, FAILED, NOT_EVALUATED, NOT_FOUND, SKIPPED_ERROR, SKIPPED_WARN, SUCCEEDED, evalStatusEnding}
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper
 import org.apache.spark.sql.catalyst.expressions.{GenericInternalRow, LeafExpression}
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, CodegenFallback, ExprCode}
 import org.apache.spark.sql.catalyst.util.GenericArrayData
 import org.apache.spark.sql.types.{ArrayType, BooleanType, DataType, IntegerType, StringType, StructField, StructType}
 import org.apache.spark.unsafe.types.UTF8String
@@ -17,7 +17,6 @@ import org.kie.dmn.feel.lang.types.impl.ComparablePeriod
 import org.kie.kogito.dmn.rest.DMNFEELComparablePeriodSerializer
 import sparkutilsKogito.com.fasterxml.jackson.databind.{ObjectMapper, SerializationFeature}
 import sparkutilsKogito.com.fasterxml.jackson.databind.module.SimpleModule
-import sparkutilsKogito.com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
 import java.lang.annotation.Annotation
 import scala.collection.JavaConverters._
@@ -47,7 +46,7 @@ trait KogitoProcess extends DMNResultProvider {
           StructField("column", IntegerType),
           StructField("sourceException", StringType, nullable = true),
           StructField("offendingSymbol", StringType)
-        )))
+        )), nullable = true)
       )))),
       StructField("evaluationStatus", StringType),
     )))
@@ -65,9 +64,11 @@ trait KogitoProcess extends DMNResultProvider {
     val res = dmnResult.asInstanceOf[KogitoDMNResult].result
     process(res)
   }
+
+  val kogitoResultStr = s"((${classOf[KogitoDMNResult].getName})dmnResult).result()"
 }
 
-case class KogitoDDLResult(debug: Boolean, underlyingType: StructType) extends LeafExpression with KogitoProcess {
+case class KogitoDDLResult(debug: Boolean, underlyingType: StructType) extends LeafExpression with KogitoProcess with CodegenFallback {
 
   lazy val getter = ResultInterfaces.forType(underlyingType)
 
@@ -119,6 +120,7 @@ case class KogitoDDLResult(debug: Boolean, underlyingType: StructType) extends L
                         UTF8String.fromString(m.getSourceId),
                         UTF8String.fromString(m.getSourceReference.toString),
                         if (m.getException eq null) null else UTF8String.fromString(m.getException.getMessage),
+                        if (m.getFeelEvent eq null) null else
                         InternalRow(
                           UTF8String.fromString(m.getFeelEvent.getSeverity.toString),
                           UTF8String.fromString(m.getFeelEvent.getMessage),
@@ -140,7 +142,6 @@ case class KogitoDDLResult(debug: Boolean, underlyingType: StructType) extends L
 
   override def eval(input: InternalRow): Any = ???
 
-  override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = ???
 }
 
 /**
@@ -163,20 +164,60 @@ case class KogitoJSONResultProvider(debug: Boolean) extends LeafExpression with 
 
   override def eval(input: InternalRow): Any = ???
 
-  override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = ???
-
   override def dataType: DataType = StringType
 
   override def process(result: core.DMNResult): Any = {
     val what =
       if (debug)
         result.getDecisionResults
-      else {
+      else
         result.getDecisionResults.asScala.map(r => r.getDecisionName -> r.getResult).toMap.asJava
-      }
 
     UTF8String.fromString(mapper.writeValueAsString(
       what
     ))
+  }
+
+  override def genCode(ctx: CodegenContext): ExprCode =
+    super.genCode(ctx)
+
+  override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
+    val mapperName = ctx.addMutableState(classOf[ObjectMapper].getName, "mapper", v =>
+      s"""
+         $v = new ${classOf[ObjectMapper].getName}().registerModule(
+            new ${classOf[SimpleModule].getName}()
+              .addSerializer(${classOf[ComparablePeriod].getName}.class, new ${classOf[DMNFEELComparablePeriodSerializer].getName}())
+          )
+          .disable(${classOf[SerializationFeature].getName}.FAIL_ON_EMPTY_BEANS);
+         """)
+
+    ev.copy(code =
+      code"""
+         UTF8String ${ev.value} = null;
+         boolean ${ev.isNull} = false;
+         final java.util.List<org.kie.dmn.api.core.DMNDecisionResult> decisionResults = $kogitoResultStr.getDecisionResults();
+         Object what = ${
+          if (debug)
+            s"decisionResults;"
+          else
+            s"""
+                new java.util.HashMap<String, Object>() {
+                    {{java.util.Iterator<org.kie.dmn.api.core.DMNDecisionResult> itr = decisionResults.iterator();
+                        while (itr.hasNext()){
+                            org.kie.dmn.api.core.DMNDecisionResult r = (org.kie.dmn.api.core.DMNDecisionResult) itr.next();
+                            put(r.getDecisionName(), r.getResult());
+                    }}}
+                };
+               """
+          }
+          try {
+            ${ev.value} = UTF8String.fromString($mapperName.writeValueAsString(
+              what
+            ));
+            ${ev.isNull} = ${ev.value} == null;
+          } catch (sparkutilsKogito.com.fasterxml.jackson.core.JsonProcessingException e) {
+            ${ev.isNull} = true;
+          }
+      """)
   }
 }

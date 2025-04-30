@@ -3,7 +3,8 @@ package com.sparkutils.dmn.kogito.types
 import com.sparkutils.dmn.{DMNContextPath, DMNContextProvider, DMNException}
 import com.sparkutils.dmn.impl.{SimpleContextProvider, StringContextProvider}
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{Expression, SpecializedGetters}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodeGenerator, CodegenContext, CodegenFallback, ExprCode}
+import org.apache.spark.sql.catalyst.expressions.{Expression, SpecializedGetters, UnaryExpression}
 import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
 import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DataType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, MapType, ShortType, StringType, StructType, TimestampType}
 import sparkutilsKogito.com.fasterxml.jackson.annotation.{JsonIgnore, JsonIgnoreProperties}
@@ -11,6 +12,7 @@ import sparkutilsKogito.com.fasterxml.jackson.annotation.{JsonIgnore, JsonIgnore
 import java.time.{LocalDate, LocalDateTime}
 import scala.collection.JavaConverters._
 import java.util
+import scala.reflect.{ClassTag, classTag}
 
 object ContextInterfaces {
 
@@ -61,7 +63,7 @@ object ContextInterfaces {
           }
           arrayOfType(entryAccessor, ar).asJava
         }
-      } // perhaps it supports Array?
+      }
     case MapType(k, v, _) => {
       val kAccessor = forType(k)
       val vAccessor = forType(v)
@@ -88,17 +90,13 @@ object ContextInterfaces {
   // NOTE -1 must be provided for top level as we don't know the index the data is taken from
 
   def mapProvider(mapType: MapType, path: DMNContextPath, expr: Expression): DMNContextProvider[util.Map[String, Object]] = {
-    val sa = forType(mapType)
-    SimpleContextProvider[util.Map[String, Object]](path, expr, Some{t: Any =>
-      sa.forPath(t, -1).asInstanceOf[util.Map[String, Object]]
-    })
+    val ma = forType(mapType)
+    ComplexContextProvider[util.Map[String, Object]](ma, path, expr)
   }
 
   def arrayProvider(arrayType: ArrayType, path: DMNContextPath, expr: Expression): DMNContextProvider[util.List[Object]] = {
-    val sa = forType(arrayType)
-    SimpleContextProvider[util.List[Object]](path, expr, Some{t: Any =>
-      sa.forPath(t, -1).asInstanceOf[util.List[Object]]
-    })
+    val aa = forType(arrayType)
+    ComplexContextProvider[util.List[Object]](aa, path, expr)
   }
 
   /**
@@ -108,13 +106,44 @@ object ContextInterfaces {
    */
   def structProvider(structType: StructType, path: DMNContextPath, expr: Expression): DMNContextProvider[util.Map[String, Object]] = {
     val sa = forType(structType)
-    SimpleContextProvider[util.Map[String, Object]](path, expr, Some{t: Any =>
-      sa.forPath(t, -1).asInstanceOf[util.Map[String, Object]]
-    })
+    ComplexContextProvider[util.Map[String, Object]](sa, path, expr)
+  }
+
+  case class ComplexContextProvider[T: ClassTag](accessor: Accessor[_], contextPath: DMNContextPath, child: Expression) extends UnaryExpression with DMNContextProvider[T] with CodegenFallback {
+
+    def withNewChildInternal(newChild: Expression): Expression = copy(child = newChild)
+
+    override def nullSafeEval(input: Any): Any = {
+      // TODO - compile the -1 logic out
+      (contextPath, accessor.forPath(input, -1).asInstanceOf[T])
+    }
+
+    /**
+     * Result class type
+     */
+    override val resultType: Class[T] = classTag[T].runtimeClass.asInstanceOf[Class[T]]
+/*
+    override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
+      val (contextClassName, contextPath) = genContext(ctx)
+      val rClassName = resultType.getName
+
+      val boxed = CodeGenerator.boxedType(rClassName)
+
+      nullSafeCodeGen(ctx, ev, input => s"""
+      $rClassName res = ${
+        converter.fold(input)( p =>
+          p._2(ctx, input)
+        )
+      };
+      ${ev.value} = new scala.Tuple2<$contextClassName, String>($contextPath, ($boxed) res);
+    """)
+    }*/
   }
 
   def struct(pairs: Map[String, (Int, Accessor[_])]): Accessor[util.Map[String, Object]] =
-    (path: Any, i: Int) => new util.Map[String, Object] {
+    (path: Any, i: Int) => new BaseKogitoMap(path, pairs)
+
+  class BaseKogitoMap(path: Any, pairs: Map[String, (Int, Accessor[_])]) extends util.Map[String, Object] {
 
       override def get(key: Any): AnyRef = {
         val (i, a) = pairs(key.toString)
