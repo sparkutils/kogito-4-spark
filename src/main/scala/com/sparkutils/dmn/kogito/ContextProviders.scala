@@ -27,7 +27,8 @@ case class KogitoJSONContextProvider(contextPath: DMNContextPath, child: Express
 
   def withNewChildInternal(newChild: Expression): Expression = copy(child = newChild)
 
-  override def readValue(str: InputStreamReader): java.util.Map[String, Object] = mapper.readValue(str, classOf[java.util.Map[String, Object]])
+//  override def readValue(str: InputStreamReader): java.util.Map[String, Object] = mapper.readValue(str, classOf[java.util.Map[String, Object]])
+  override def readValue(str: String): java.util.Map[String, Object] = mapper.readValue(str, classOf[java.util.Map[String, Object]])
 
   override def codeGen(inputStreamReaderVal: String, ctx: CodegenContext): String = {
     val mapperName = ctx.addMutableState(classOf[ObjectMapper].getName, "mapper", v =>
