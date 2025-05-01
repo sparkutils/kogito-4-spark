@@ -11,7 +11,6 @@ import sparkutilsKogito.com.fasterxml.jackson.databind.{ObjectMapper, Serializat
 
 import java.io.InputStreamReader
 import java.util
-import scala.reflect.ClassTag
 
 
 case class KogitoJSONContextProvider(contextPath: DMNContextPath, child: Expression) extends UTF8StringInputStreamContextProvider[java.util.Map[String, Object]] {
