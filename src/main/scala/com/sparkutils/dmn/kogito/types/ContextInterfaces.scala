@@ -252,7 +252,7 @@ object ContextInterfaces {
                 return $varsFinal[index];
               }
 
-              private final String[] names = { ${structType.fields.map(f => s"\"${f.name}\"").mkString(",")} };
+              private final String[] names = { ${structType.fields.map(f => s""""${f.name}"""").mkString(",")} };
               private final java.util.Map.Entry<String, Object>[] backingSet = {
                 ${structType.fields.indices.map(i => s"new com.sparkutils.dmn.kogito.types.ArrayEntry<String, Object>(names, $varsFinal, $i)").mkString(",")}
               };
