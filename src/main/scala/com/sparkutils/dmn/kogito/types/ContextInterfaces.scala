@@ -1,14 +1,11 @@
 package com.sparkutils.dmn.kogito.types
 
 import com.sparkutils.dmn.{DMNContextPath, DMNContextProvider, DMNException}
-import com.sparkutils.dmn.impl.{SimpleContextProvider, StringContextProvider}
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper
-import org.apache.spark.sql.catalyst.expressions.codegen.{Block, CodeGenerator, CodegenContext, CodegenFallback, ExprCode, FalseLiteral, JavaCode, VariableValue}
+import org.apache.spark.sql.catalyst.expressions.codegen.{Block, CodeGenerator, CodegenContext, ExprCode, JavaCode}
 import org.apache.spark.sql.catalyst.expressions.{Expression, SpecializedGetters, UnaryExpression}
 import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
-import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DataType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, MapType, ShortType, StringType, StructType, TimestampType}
-import sparkutilsKogito.com.fasterxml.jackson.annotation.{JsonIgnore, JsonIgnoreProperties}
+import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DataType, DateType, DecimalType, DoubleType, FloatType, IntegerType, LongType, MapType, ShortType, StringType, StructType, TimestampType}
 
 import java.time.{LocalDate, LocalDateTime}
 import scala.collection.JavaConverters._
@@ -22,9 +19,9 @@ object ContextInterfaces {
   }
 
   // -1 as top level field, only for struct/map/array
-  def forType(dataType: DataType): Accessor[_] = dataType match {
+  def forType(dataType: DataType, dmnConfiguration: Map[String, String]): Accessor[_] = dataType match {
     case structType: StructType =>
-      val s = struct(structType.fields.zipWithIndex.map { case (f, i) => (f.name, (i, forType(f.dataType))) }.toMap)
+      val s = struct(structType.fields.zipWithIndex.map { case (f, i) => (f.name, (i, forType(f.dataType, dmnConfiguration))) }.toMap)
       new Accessor[util.Map[String, Object]] {
         override def forPath(path: Any, i: Int): util.Map[String, Object] = {
           if (path == null) null else {
@@ -53,7 +50,7 @@ object ContextInterfaces {
       // max needed as Spark's past 3.4 move everything to max anyway, 1.0 comes back as 1.0 instead of 2016...
       if (path == null) null else path.asInstanceOf[SpecializedGetters].getDecimal(i, DecimalType.MAX_PRECISION, DecimalType.DEFAULT_SCALE).toJavaBigDecimal
     case ArrayType(typ, _) =>
-      val entryAccessor = forType(typ)
+      val entryAccessor = forType(typ, dmnConfiguration)
       (path: Any, i: Int) => {
         if (path == null) null else {
           val ar = {
@@ -66,8 +63,8 @@ object ContextInterfaces {
         }
       }
     case MapType(k, v, _) => {
-      val kAccessor = forType(k)
-      val vAccessor = forType(v)
+      val kAccessor = forType(k, dmnConfiguration)
+      val vAccessor = forType(v, dmnConfiguration)
       (path: Any, i: Int) => {
         if (path == null) null else {
           val m =
@@ -121,7 +118,7 @@ object ContextInterfaces {
           """)
   }
 
-  def forTypeCodeGen(dataType: DataType, inCollection: Boolean, topLevel: Boolean = false): AccessorCodeGen = dataType match {
+  def forTypeCodeGen(dataType: DataType, inCollection: Boolean, dmnConfiguration: Map[String,String], topLevel: Boolean = false): AccessorCodeGen = dataType match {
     case structType: StructType =>  (ctx: CodegenContext, pathName: String, iName: String) => {
       // when inCollection is true we cannot have a static map or results
       val struct = ctx.freshName("struct")
@@ -129,7 +126,7 @@ object ContextInterfaces {
       val (theHash, vars) = generateHashMap(ctx, structType, inCollection)
 
       val expr = exprCode(classOf[util.Map[_,_]], ctx)
-      val setup = structType.fields.zipWithIndex.map { case (f, i) => (i, forTypeCodeGen(f.dataType, inCollection).forPath(ctx, struct, i.toString)) }.foldLeft(code""){
+      val setup = structType.fields.zipWithIndex.map { case (f, i) => (i, forTypeCodeGen(f.dataType, inCollection, dmnConfiguration).forPath(ctx, struct, i.toString)) }.foldLeft(code""){
         case (c, (i, e)) =>
           code"""
             $c
@@ -165,7 +162,7 @@ object ContextInterfaces {
         val arr = ctx.freshVariable("arr", dataType)
         val i = ctx.freshVariable("i", classOf[Int])
 
-        val typCode = forTypeCodeGen(typ, inCollection = true).forPath(ctx, arr, i)
+        val typCode = forTypeCodeGen(typ, inCollection = true, dmnConfiguration).forPath(ctx, arr, i)
         val arrRes = ctx.freshVariable("arrRes", dataType)
 
         val expr = exprCode(classOf[java.util.List[_]], ctx)
@@ -190,8 +187,14 @@ object ContextInterfaces {
         val values = ctx.freshVariable("values", ArrayType(v))
         val i = ctx.freshVariable("i", classOf[Int])
 
-        val kCode = forTypeCodeGen(k, inCollection = true).forPath(ctx, keys, i)
-        val vCode = forTypeCodeGen(v, inCollection = true).forPath(ctx, values, i)
+        val kCode = forTypeCodeGen(k, inCollection = true, dmnConfiguration).forPath(ctx, keys, i)
+        val vCode = forTypeCodeGen(v, inCollection = true, dmnConfiguration).forPath(ctx, values, i)
+
+        val mapImpl =
+          if (dmnConfiguration.getOrElse("useTreeMap", "false").toBooleanOption.getOrElse(false))
+            "TreeMap"
+          else
+            "HashMap"
 
         val expr = exprCode(classOf[java.util.Map[_,_]], ctx)
         expr.copy(
@@ -200,7 +203,7 @@ object ContextInterfaces {
               ${CodeGenerator.javaType(dataType)} $map = ${if (topLevel) pathName else s"$pathName.getMap($iName)"};
               ${keys.javaType.getName} $keys = $map.keyArray();
               ${values.javaType.getName} $values = $map.valueArray();
-              java.util.Map ${expr.value} = new java.util.TreeMap();
+              java.util.Map ${expr.value} = new java.util.$mapImpl();
               for (int $i = 0; $i < $keys.numElements(); $i++) {
                 ${kCode.code}
                 ${vCode.code}
@@ -294,14 +297,14 @@ object ContextInterfaces {
 
   // NOTE -1 must be provided for top level as we don't know the index the data is taken from
 
-  def mapProvider(mapType: MapType, path: DMNContextPath, expr: Expression): DMNContextProvider[util.Map[String, Object]] = {
-    val ma = forType(mapType)
-    ComplexContextProvider[util.Map[String, Object]](mapType, ma, path, expr)
+  def mapProvider(mapType: MapType, path: DMNContextPath, expr: Expression, dmnConfiguration: Map[String,String]): DMNContextProvider[util.Map[String, Object]] = {
+    val ma = forType(mapType, dmnConfiguration)
+    ComplexContextProvider[util.Map[String, Object]](mapType, dmnConfiguration, ma, path, expr)
   }
 
-  def arrayProvider(arrayType: ArrayType, path: DMNContextPath, expr: Expression): DMNContextProvider[util.List[Object]] = {
-    val aa = forType(arrayType)
-    ComplexContextProvider[util.List[Object]](arrayType, aa, path, expr)
+  def arrayProvider(arrayType: ArrayType, path: DMNContextPath, expr: Expression, dmnConfiguration: Map[String,String]): DMNContextProvider[util.List[Object]] = {
+    val aa = forType(arrayType, dmnConfiguration)
+    ComplexContextProvider[util.List[Object]](arrayType, dmnConfiguration, aa, path, expr)
   }
 
   /**
@@ -309,12 +312,12 @@ object ContextInterfaces {
    * @param structType
    * @return
    */
-  def structProvider(structType: StructType, path: DMNContextPath, expr: Expression): DMNContextProvider[util.Map[String, Object]] = {
-    val sa = forType(structType)
-    ComplexContextProvider[util.Map[String, Object]](structType, sa, path, expr)
+  def structProvider(structType: StructType, path: DMNContextPath, expr: Expression, dmnConfiguration: Map[String,String]): DMNContextProvider[util.Map[String, Object]] = {
+    val sa = forType(structType, dmnConfiguration)
+    ComplexContextProvider[util.Map[String, Object]](structType, dmnConfiguration, sa, path, expr)
   }
 
-  case class ComplexContextProvider[T: ClassTag](actualDataType: DataType, accessor: Accessor[_], contextPath: DMNContextPath, child: Expression) extends UnaryExpression with DMNContextProvider[T] {
+  case class ComplexContextProvider[T: ClassTag](actualDataType: DataType, dmnConfiguration: Map[String,String], accessor: Accessor[_], contextPath: DMNContextPath, child: Expression) extends UnaryExpression with DMNContextProvider[T] {
 
     def withNewChildInternal(newChild: Expression): Expression = copy(child = newChild)
 
@@ -332,7 +335,7 @@ object ContextInterfaces {
       val boxed = CodeGenerator.boxedType(rClassName)
 
       nullSafeCodeGen(ctx, ev, f = input => {
-        val typeCode = forTypeCodeGen(actualDataType, inCollection = false, topLevel = true).forPath(ctx, input, "")
+        val typeCode = forTypeCodeGen(actualDataType, inCollection = false, dmnConfiguration, topLevel = true).forPath(ctx, input, "")
         s"""
         // kogito-4-spark context provider - start
         ${typeCode.code}

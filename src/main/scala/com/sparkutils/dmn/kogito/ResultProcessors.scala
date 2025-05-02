@@ -2,6 +2,7 @@ package com.sparkutils.dmn.kogito
 
 import com.sparkutils.dmn
 import com.sparkutils.dmn.DMNResultProvider
+import com.sparkutils.dmn.impl.DMNExpression
 import com.sparkutils.dmn.kogito.types.ResultInterfaces
 import com.sparkutils.dmn.kogito.types.ResultInterfaces.{EVALUATING, FAILED, NOT_EVALUATED, NOT_FOUND, SKIPPED_ERROR, SKIPPED_WARN, SUCCEEDED, evalStatusEnding}
 import org.apache.spark.sql.catalyst.InternalRow
@@ -18,9 +19,7 @@ import org.kie.kogito.dmn.rest.DMNFEELComparablePeriodSerializer
 import sparkutilsKogito.com.fasterxml.jackson.databind.{ObjectMapper, SerializationFeature}
 import sparkutilsKogito.com.fasterxml.jackson.databind.module.SimpleModule
 
-import java.lang.annotation.Annotation
 import scala.collection.JavaConverters._
-import java.util
 
 trait KogitoProcess extends DMNResultProvider {
 
@@ -65,7 +64,7 @@ trait KogitoProcess extends DMNResultProvider {
     process(res)
   }
 
-  val kogitoResultStr = s"((${classOf[KogitoDMNResult].getName})dmnResult).result()"
+  def kogitoResultStr = s"((${classOf[KogitoDMNResult].getName})${DMNExpression.runtimeVar.get()}).result()"
 }
 
 case class KogitoDDLResult(debug: Boolean, underlyingType: StructType) extends LeafExpression with KogitoProcess with CodegenFallback {
@@ -81,24 +80,7 @@ case class KogitoDDLResult(debug: Boolean, underlyingType: StructType) extends L
       if (evalStatus.length == 0)
         tres
       else
-        evalStatus.foldLeft(tres){
-          case (row, (field, i)) =>
-            val decisionName = field.name.dropRight(evalStatusEnding.length)
-            val dr = res.getDecisionResultByName(decisionName)
-            if (dr ne null) {
-              row.update(i, dr.getEvaluationStatus match {
-                case DecisionEvaluationStatus.NOT_EVALUATED => NOT_EVALUATED
-                case DecisionEvaluationStatus.EVALUATING => EVALUATING
-                case DecisionEvaluationStatus.SUCCEEDED => SUCCEEDED
-                case DecisionEvaluationStatus.SKIPPED if dr.hasErrors => SKIPPED_ERROR
-                case DecisionEvaluationStatus.SKIPPED => SKIPPED_WARN
-                case DecisionEvaluationStatus.FAILED => FAILED
-              })
-            } else {
-              row.update(i, NOT_FOUND)
-            }
-            row
-        }
+        setStatuses(tres, res)
     }
 
     // create a map over the results
@@ -139,6 +121,26 @@ case class KogitoDDLResult(debug: Boolean, underlyingType: StructType) extends L
       else
         ires
   }
+
+  def setStatuses(tres: GenericInternalRow, res: org.kie.dmn.api.core.DMNResult): GenericInternalRow =
+    evalStatus.foldLeft(tres) {
+      case (row, (field, i)) =>
+        val decisionName = field.name.dropRight(evalStatusEnding.length)
+        val dr = res.getDecisionResultByName(decisionName)
+        if (dr ne null) {
+          row.update(i, dr.getEvaluationStatus match {
+            case DecisionEvaluationStatus.NOT_EVALUATED => NOT_EVALUATED
+            case DecisionEvaluationStatus.EVALUATING => EVALUATING
+            case DecisionEvaluationStatus.SUCCEEDED => SUCCEEDED
+            case DecisionEvaluationStatus.SKIPPED if dr.hasErrors => SKIPPED_ERROR
+            case DecisionEvaluationStatus.SKIPPED => SKIPPED_WARN
+            case DecisionEvaluationStatus.FAILED => FAILED
+          })
+        } else {
+          row.update(i, NOT_FOUND)
+        }
+        row
+    }
 
   override def eval(input: InternalRow): Any = ???
 
@@ -191,18 +193,21 @@ case class KogitoJSONResultProvider(debug: Boolean) extends LeafExpression with 
           .disable(${classOf[SerializationFeature].getName}.FAIL_ON_EMPTY_BEANS);
          """)
 
+    val decisionResults = ctx.freshName("decisionResults")
+    val what = ctx.freshName("what")
+
     ev.copy(code =
       code"""
          UTF8String ${ev.value} = null;
          boolean ${ev.isNull} = false;
-         final java.util.List<org.kie.dmn.api.core.DMNDecisionResult> decisionResults = $kogitoResultStr.getDecisionResults();
-         Object what = ${
+         final java.util.List<org.kie.dmn.api.core.DMNDecisionResult> $decisionResults = $kogitoResultStr.getDecisionResults();
+         Object $what = ${
           if (debug)
-            s"decisionResults;"
+            s"$decisionResults;"
           else
             s"""
                 new java.util.HashMap<String, Object>() {
-                    {{java.util.Iterator<org.kie.dmn.api.core.DMNDecisionResult> itr = decisionResults.iterator();
+                    {{java.util.Iterator<org.kie.dmn.api.core.DMNDecisionResult> itr = $decisionResults.iterator();
                         while (itr.hasNext()){
                             org.kie.dmn.api.core.DMNDecisionResult r = (org.kie.dmn.api.core.DMNDecisionResult) itr.next();
                             put(r.getDecisionName(), r.getResult());
@@ -212,7 +217,7 @@ case class KogitoJSONResultProvider(debug: Boolean) extends LeafExpression with 
           }
           try {
             ${ev.value} = UTF8String.fromString($mapperName.writeValueAsString(
-              what
+              $what
             ));
             ${ev.isNull} = ${ev.value} == null;
           } catch (sparkutilsKogito.com.fasterxml.jackson.core.JsonProcessingException e) {

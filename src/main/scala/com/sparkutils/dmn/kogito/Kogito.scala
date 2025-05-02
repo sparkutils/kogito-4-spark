@@ -2,6 +2,7 @@ package com.sparkutils.dmn.kogito
 
 import com.sparkutils.dmn._
 import com.sparkutils.dmn.impl._
+import com.sparkutils.dmn.impl.utils.configMap
 import com.sparkutils.dmn.kogito.Types.MAP
 import com.sparkutils.dmn.kogito.types.ContextInterfaces
 import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DataType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, MapType, ShortType, StringType, StructType, TimestampType}
@@ -63,6 +64,8 @@ class KogitoDMNRepository() extends DMNRepository {
   override def providerForType(inputField: DMNInputField, debug: Boolean, dmnConfiguration: DMNConfiguration): DMNContextProvider[_] = {
     val (path, expr) = (KogitoDMNContextPath(inputField.contextPath), inputField.defaultExpr)
 
+    val config = configMap(dmnConfiguration)
+
     inputField.providerType match {
       case "JSON" => KogitoJSONContextProvider(path, expr)
       case t if Try(DataType.fromDDL(t)).isSuccess =>
@@ -89,9 +92,9 @@ class KogitoDMNRepository() extends DMNRepository {
             Some(((t: Any) => t.asInstanceOf[Decimal].toJavaBigDecimal,
               (codegen, input) => s"((${classOf[Decimal].getName})$input).toJavaBigDecimal()"))
           )
-          case structType: StructType => ContextInterfaces.structProvider(structType, path, expr)
-          case mapType: MapType => ContextInterfaces.mapProvider(mapType, path, expr)
-          case arrayType: ArrayType => ContextInterfaces.arrayProvider(arrayType, path, expr)
+          case structType: StructType => ContextInterfaces.structProvider(structType, path, expr, config)
+          case mapType: MapType => ContextInterfaces.mapProvider(mapType, path, expr, config)
+          case arrayType: ArrayType => ContextInterfaces.arrayProvider(arrayType, path, expr, config)
           // calendar interval?
           case t => throw new DMNException(s"Provider type $t is not supported")
         }

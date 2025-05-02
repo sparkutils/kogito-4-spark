@@ -1,5 +1,6 @@
 package com.sparkutils.dmn.kogito.types
 
+import com.sparkutils.dmn.DMNConfiguration
 import org.apache.spark.sql.catalyst.expressions.UnsafeArrayData
 import org.apache.spark.sql.catalyst.util.ArrayData
 import org.apache.spark.sql.types.DataType

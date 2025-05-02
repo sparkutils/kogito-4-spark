@@ -1,6 +1,6 @@
 package com.sparkutils.dmn.kogito
 
-import com.sparkutils.dmn.{DMNExecution, DMNFile, DMNInputField, DMNModelService}
+import com.sparkutils.dmn.{DMNConfiguration, DMNExecution, DMNFile, DMNInputField, DMNModelService}
 import org.apache.spark.sql.{Encoder, SaveMode, SparkSession}
 import org.scalatest.{FunSuite, Matchers}
 
@@ -59,7 +59,8 @@ class DeepTest extends FunSuite with Matchers with TestUtils {
 
     val res = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(
       DMNExecution(dmnFiles = scala.collection.immutable.Seq() ++ dmnFiles, model = dmnModel(outputProvider), contextProviders =
-        scala.collection.immutable.Seq() ++ Seq(DMNInputField("top", theType(mapType), "input"))
+        scala.collection.immutable.Seq() ++ Seq(DMNInputField("top", theType(mapType), "input")),
+        configuration = DMNConfiguration(options = "useTreeMap=true")
       )
     , debug = debug))
 
