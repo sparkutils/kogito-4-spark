@@ -11,6 +11,7 @@ import java.time.{LocalDate, LocalDateTime}
 import scala.collection.JavaConverters._
 import java.util
 import scala.reflect.{ClassTag, classTag}
+import scala.util.Try
 
 object ContextInterfaces {
 
@@ -191,7 +192,7 @@ object ContextInterfaces {
         val vCode = forTypeCodeGen(v, inCollection = true, dmnConfiguration).forPath(ctx, values, i)
 
         val mapImpl =
-          if (dmnConfiguration.getOrElse("useTreeMap", "false").toBooleanOption.getOrElse(false))
+          if (Try(dmnConfiguration.getOrElse("useTreeMap", "false").toBoolean).fold(_ => false, identity))
             "TreeMap"
           else
             "HashMap"
