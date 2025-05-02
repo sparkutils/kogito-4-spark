@@ -1,6 +1,8 @@
 package com.sparkutils.dmn.kogito.types
 
 import org.apache.spark.sql.catalyst.expressions.UnsafeArrayData
+import org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper
+import org.apache.spark.sql.catalyst.expressions.codegen.{Block, CodegenContext, ExprCode, JavaCode}
 import org.apache.spark.sql.catalyst.util.ArrayData
 import org.apache.spark.sql.types.DataType
 
@@ -23,7 +25,7 @@ object Arrays {
         res
       case _ => array.array.map(f)
     }
-
+/*
   /**
    * gets an array out of UnsafeArrayData or others
    * @param array
@@ -36,5 +38,32 @@ object Arrays {
         mapArray(array, dataType, identity)
       case _ => array.array
     }
+*/
+
+  def exprCode(clazz: Class[_], ctx: CodegenContext): ExprCode = {
+    val isNull = ctx.freshName("isNull")
+    val value = ctx.freshName("value")
+
+    val expr = ExprCode(
+      JavaCode.isNullVariable(isNull),
+      JavaCode.variable(value, clazz)
+    )
+    expr
+  }
+
+  def exprCode(boxed: Class[_], ctx: CodegenContext, code: Block, cast: Boolean = true): ExprCode = {
+    val isNull = ctx.freshName("isNull")
+    val value = ctx.freshName("value")
+
+    val expr = ExprCode(
+      JavaCode.isNullVariable(isNull),
+      JavaCode.variable(value, classOf[Object])
+    )
+    expr.copy(code =
+      code"""
+        Object ${expr.value} = ${if (cast) s"(${boxed.getName})" else ""} $code
+        boolean ${expr.isNull} = (${expr.value} == null);
+          """)
+  }
 
 }

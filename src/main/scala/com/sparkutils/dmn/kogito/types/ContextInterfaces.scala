@@ -1,8 +1,9 @@
 package com.sparkutils.dmn.kogito.types
 
+import com.sparkutils.dmn.kogito.types.Arrays.exprCode
 import com.sparkutils.dmn.{DMNContextPath, DMNContextProvider, DMNException}
 import org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper
-import org.apache.spark.sql.catalyst.expressions.codegen.{Block, CodeGenerator, CodegenContext, ExprCode, JavaCode}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodeGenerator, CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Expression, SpecializedGetters, UnaryExpression}
 import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
 import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DataType, DateType, DecimalType, DoubleType, FloatType, IntegerType, LongType, MapType, ShortType, StringType, StructType, TimestampType}
@@ -91,32 +92,6 @@ object ContextInterfaces {
      * @return generated code which returns either the underlying type or util.map/util.list
      */
     def forPath(ctx: CodegenContext, pathName: String, iName: String): ExprCode
-  }
-
-  def exprCode(clazz: Class[_], ctx: CodegenContext): ExprCode = {
-    val isNull = ctx.freshName("isNull")
-    val value = ctx.freshName("value")
-
-    val expr = ExprCode(
-      JavaCode.isNullVariable(isNull),
-      JavaCode.variable(value, clazz)
-    )
-    expr
-  }
-
-  def exprCode(boxed: Class[_], ctx: CodegenContext, code: Block): ExprCode = {
-    val isNull = ctx.freshName("isNull")
-    val value = ctx.freshName("value")
-
-    val expr = ExprCode(
-      JavaCode.isNullVariable(isNull),
-      JavaCode.variable(value, classOf[Object])
-    )
-    expr.copy(code =
-      code"""
-        Object ${expr.value} = (${boxed.getName}) $code
-        boolean ${expr.isNull} = (${expr.value} == null);
-          """)
   }
 
   def forTypeCodeGen(dataType: DataType, inCollection: Boolean, dmnConfiguration: Map[String,String], topLevel: Boolean = false): AccessorCodeGen = dataType match {

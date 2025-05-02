@@ -4,7 +4,7 @@ import com.sparkutils.dmn
 import com.sparkutils.dmn.DMNResultProvider
 import com.sparkutils.dmn.impl.DMNExpression
 import com.sparkutils.dmn.kogito.types.ResultInterfaces
-import com.sparkutils.dmn.kogito.types.ResultInterfaces.{EVALUATING, FAILED, NOT_EVALUATED, NOT_FOUND, SKIPPED_ERROR, SKIPPED_WARN, SUCCEEDED, evalStatusEnding}
+import com.sparkutils.dmn.kogito.types.ResultInterfaces.{EVALUATING, FAILED, NOT_EVALUATED, NOT_FOUND, SKIPPED_ERROR, SKIPPED_WARN, SUCCEEDED, evalStatusEnding, forTypeCodeGen}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper
 import org.apache.spark.sql.catalyst.expressions.{GenericInternalRow, LeafExpression}
@@ -14,6 +14,7 @@ import org.apache.spark.sql.types.{ArrayType, BooleanType, DataType, IntegerType
 import org.apache.spark.unsafe.types.UTF8String
 import org.kie.dmn.api.core
 import org.kie.dmn.api.core.DMNDecisionResult.DecisionEvaluationStatus
+import org.kie.dmn.api.core.DMNResult
 import org.kie.dmn.feel.lang.types.impl.ComparablePeriod
 import org.kie.kogito.dmn.rest.DMNFEELComparablePeriodSerializer
 import sparkutilsKogito.com.fasterxml.jackson.databind.{ObjectMapper, SerializationFeature}
@@ -65,9 +66,22 @@ trait KogitoProcess extends DMNResultProvider {
   }
 
   def kogitoResultStr = s"((${classOf[KogitoDMNResult].getName})${DMNExpression.runtimeVar.get()}).result()"
+
+
+  def decisionMap(decisionResults: String) =
+    s"""
+      new java.util.HashMap<String, Object>() {
+          {{java.util.Iterator<org.kie.dmn.api.core.DMNDecisionResult> itr = $decisionResults.iterator();
+              while (itr.hasNext()){
+                  org.kie.dmn.api.core.DMNDecisionResult r = (org.kie.dmn.api.core.DMNDecisionResult) itr.next();
+                  put(r.getDecisionName(), r.getResult());
+          }}}
+      };
+     """
+
 }
 
-case class KogitoDDLResult(debug: Boolean, underlyingType: StructType) extends LeafExpression with KogitoProcess with CodegenFallback {
+case class KogitoDDLResult(debug: Boolean, underlyingType: StructType) extends LeafExpression with KogitoProcess {
 
   lazy val getter = ResultInterfaces.forType(underlyingType)
 
@@ -88,38 +102,42 @@ case class KogitoDDLResult(debug: Boolean, underlyingType: StructType) extends L
       null
     else
       if (debug)
-        new GenericInternalRow(ires.values :+ new GenericArrayData(
-          res.getDecisionResults.asScala.map{
-            d =>
-              InternalRow(
-                UTF8String.fromString(d.getDecisionId),
-                UTF8String.fromString(d.getDecisionName),
-                d.hasErrors,
-                new GenericArrayData(
-                  d.getMessages.asScala.map{
-                    m =>
-                      InternalRow(
-                        UTF8String.fromString(m.getSourceId),
-                        UTF8String.fromString(m.getSourceReference.toString),
-                        if (m.getException eq null) null else UTF8String.fromString(m.getException.getMessage),
-                        if (m.getFeelEvent eq null) null else
-                        InternalRow(
-                          UTF8String.fromString(m.getFeelEvent.getSeverity.toString),
-                          UTF8String.fromString(m.getFeelEvent.getMessage),
-                          m.getFeelEvent.getLine,
-                          m.getFeelEvent.getColumn,
-                          if (m.getFeelEvent.getSourceException eq null) null else UTF8String.fromString(m.getFeelEvent.getSourceException.getMessage),
-                          UTF8String.fromString(m.getFeelEvent.getOffendingSymbol.toString)
-                        )
-                      )
-                  }
-                ),
-                UTF8String.fromString(d.getEvaluationStatus.toString)
-              )
-          }
-        ))
+        withDebug(res, ires)
       else
         ires
+  }
+
+  def withDebug(res: DMNResult, ires: GenericInternalRow) = {
+    new GenericInternalRow(ires.values :+ new GenericArrayData(
+      res.getDecisionResults.asScala.map {
+        d =>
+          InternalRow(
+            UTF8String.fromString(d.getDecisionId),
+            UTF8String.fromString(d.getDecisionName),
+            d.hasErrors,
+            new GenericArrayData(
+              d.getMessages.asScala.map {
+                m =>
+                  InternalRow(
+                    UTF8String.fromString(m.getSourceId),
+                    UTF8String.fromString(m.getSourceReference.toString),
+                    if (m.getException eq null) null else UTF8String.fromString(m.getException.getMessage),
+                    if (m.getFeelEvent eq null) null else
+                      InternalRow(
+                        UTF8String.fromString(m.getFeelEvent.getSeverity.toString),
+                        UTF8String.fromString(m.getFeelEvent.getMessage),
+                        m.getFeelEvent.getLine,
+                        m.getFeelEvent.getColumn,
+                        if (m.getFeelEvent.getSourceException eq null) null else UTF8String.fromString(m.getFeelEvent.getSourceException.getMessage),
+                        UTF8String.fromString(m.getFeelEvent.getOffendingSymbol.toString)
+                      )
+                  )
+              }
+            ),
+            UTF8String.fromString(d.getEvaluationStatus.toString)
+          )
+      }
+    ))
   }
 
   def setStatuses(tres: GenericInternalRow, res: org.kie.dmn.api.core.DMNResult): GenericInternalRow =
@@ -144,6 +162,38 @@ case class KogitoDDLResult(debug: Boolean, underlyingType: StructType) extends L
 
   override def eval(input: InternalRow): Any = ???
 
+  override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
+    ctx.references += this
+    val ddlResultClassName = classOf[KogitoDDLResult].getName
+
+    val resultIdx = ctx.references.size - 1
+
+    val decisionResults = ctx.freshName("decisionResults")
+    val decisionMapN = ctx.freshName("decisionResultsMap")
+
+    val getExpr = forTypeCodeGen(underlyingType).forPath(ctx, decisionMapN, ev.isNull)
+
+    ev.copy(code =
+      code"""
+         org.apache.spark.sql.catalyst.expressions.GenericInternalRow ${ev.value} = null;
+         boolean ${ev.isNull} = ($kogitoResultStr == null);
+         if (!${ev.isNull}) {
+           final java.util.List<org.kie.dmn.api.core.DMNDecisionResult> $decisionResults = $kogitoResultStr.getDecisionResults();
+           java.util.Map $decisionMapN = ${decisionMap(decisionResults)}
+           ${getExpr.code}
+
+           ${ev.value} = ${getExpr.value};
+
+           ${ev.isNull} = (${ev.value} == null);
+           if (!${ev.isNull}) {
+             ${if (evalStatus.nonEmpty) code"""${ev.value} = (($ddlResultClassName)references[$resultIdx]).setStatuses(${getExpr.value}, $kogitoResultStr);""" else code""}
+
+             ${if (debug) code"${ev.value} = (($ddlResultClassName)references[$resultIdx]).withDebug($kogitoResultStr, ${ev.value});" else code""}
+             ${ev.isNull} = (${ev.value} == null);
+           }
+         }
+          """)
+  }
 }
 
 /**
@@ -205,15 +255,7 @@ case class KogitoJSONResultProvider(debug: Boolean) extends LeafExpression with 
           if (debug)
             s"$decisionResults;"
           else
-            s"""
-                new java.util.HashMap<String, Object>() {
-                    {{java.util.Iterator<org.kie.dmn.api.core.DMNDecisionResult> itr = $decisionResults.iterator();
-                        while (itr.hasNext()){
-                            org.kie.dmn.api.core.DMNDecisionResult r = (org.kie.dmn.api.core.DMNDecisionResult) itr.next();
-                            put(r.getDecisionName(), r.getResult());
-                    }}}
-                };
-               """
+            decisionMap(decisionResults)
           }
           try {
             ${ev.value} = UTF8String.fromString($mapperName.writeValueAsString(
