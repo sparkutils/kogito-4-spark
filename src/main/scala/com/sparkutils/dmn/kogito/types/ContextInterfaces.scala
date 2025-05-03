@@ -306,16 +306,17 @@ object ContextInterfaces {
      */
     override val resultType: Class[T] = classTag[T].runtimeClass.asInstanceOf[Class[T]]
     override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
-      val (contextClassName, contextPath) = genContext(ctx)
+      val (_, contextPath) = genContext(ctx)
       val rClassName = resultType.getName
       val boxed = CodeGenerator.boxedType(rClassName)
 
-      nullSafeCodeGen(ctx, ev, f = input => {
+      nullSafeCodeGen(child, ctx, ev, f = input => {
         val typeCode = forTypeCodeGen(actualDataType, inCollection = false, dmnConfiguration, topLevel = true).forPath(ctx, input, "")
         s"""
         // kogito-4-spark context provider - start
         ${typeCode.code}
-        ${ev.value} = new scala.Tuple2<$contextClassName, String>($contextPath, ($boxed) ${typeCode.value});
+        ${ev.value}[0] = $contextPath;
+        ${ev.value}[1] = ($boxed) ${typeCode.value};
         // kogito-4-spark context provider - end
       """
       })

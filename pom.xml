@@ -155,7 +155,7 @@
     </profiles>
 
     <properties>
-        <revision>0.0.1-RC7</revision>
+        <revision>0.0.1-RC8-SNAPSHOT</revision>
 
         <mavenFlattenPluginVersion>1.2.7</mavenFlattenPluginVersion>
         <mavenProjectInfoReportsPluginVersion>3.4.5</mavenProjectInfoReportsPluginVersion>
@@ -194,7 +194,7 @@
         <shimCompilationVersion>0.2.0-RC1</shimCompilationVersion>
         <shimRuntimeVersion>0.2.0-RC1</shimRuntimeVersion>
 
-        <dmn4SparkVersion>0.0.1-RC5</dmn4SparkVersion>
+        <dmn4SparkVersion>0.0.1-RC6-SNAPSHOT</dmn4SparkVersion>
         <shadedKogitoVersion>0.0.12</shadedKogitoVersion>
 
         <framelessVersion>0.17.0</framelessVersion>
@@ -202,7 +202,7 @@
         <framelessOrg>com.sparkutils</framelessOrg>
 
     </properties>
-    <!-- -->
+    <!--
     <repositories>
         <repository>
             <id>ossrh</id>
@@ -212,7 +212,7 @@
             <id>apache_snaps</id>
             <url>https://repository.apache.org/content/repositories/snapshots/</url>
         </repository>
-    </repositories>
+    </repositories>-->
 
     <distributionManagement>
         <repository>
