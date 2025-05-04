@@ -1,6 +1,7 @@
 package com.sparkutils.dmn.kogito.types
 
 import com.sparkutils.dmn.kogito.types.Arrays.exprCode
+import com.sparkutils.dmn.kogito.types.ContextInterfaces.Accessor
 import com.sparkutils.dmn.{DMNContextPath, DMNContextProvider, DMNException}
 import org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeGenerator, CodegenContext, ExprCode}
@@ -325,105 +326,5 @@ object ContextInterfaces {
 
   def struct(pairs: Map[String, (Int, Accessor[_])]): Accessor[util.Map[String, Object]] =
     (path: Any, i: Int) => new BaseKogitoMap(path, pairs)
-
-  class BaseKogitoMap(path: Any, pairs: Map[String, (Int, Accessor[_])]) extends SimpleMap {
-    override def get(key: Any): AnyRef = {
-      val (i, a) = pairs(key.toString)
-      val t = a.forPath(path, i)
-      if (t == null) null else t.asInstanceOf[AnyRef]
-    }
-
-    // called by Jackson serializing
-    override def entrySet(): util.Set[util.Map.Entry[String, Object]] = pairs.map{case (key, (i, accessor)) => new util.Map.Entry[String, Object]{
-      override def getKey: String = key
-
-      override def getValue: Object = {
-        val t = accessor.forPath(path, i)
-        if (t == null) null else t.asInstanceOf[AnyRef]
-      }
-
-      override def setValue(value: Object): AnyRef = ???
-    }}.toSet.asJava
-
-    override def size(): Int = pairs.size
-  }
 }
 
-
-class SimpleMap() extends util.Map[String, Object] {
-
-  override def get(key: Any): AnyRef = ???
-
-  // called by Jackson serializing
-  override def entrySet(): util.Set[util.Map.Entry[String, Object]] = ???
-
-  // Never called by kogito
-
-  override def keySet(): util.Set[String] = ??? //pairs.keySet.asJava
-
-  override def size(): Int = ??? //pairs.size
-
-  override def isEmpty: Boolean = false
-
-  override def containsKey(key: Any): Boolean = ??? // pairs.contains(key.toString)
-
-  // Never being implemented
-
-  override def containsValue(value: Any): Boolean = ???
-
-  override def values(): util.Collection[Object] = ???
-
-  override def put(key: String, value: Object): AnyRef = ???
-
-  override def remove(key: Any): AnyRef = ???
-
-  override def putAll(m: util.Map[_ <: String, _ <: Object]): Unit = ???
-
-  override def clear(): Unit = ???
-}
-
-class ArrayEntry[K, V](keys: Array[K], values: Array[V], i: Int) extends java.util.Map.Entry[K, V] {
-
-  override def getKey: K = keys(i)
-
-  override def getValue: V = values(i)
-
-  override def setValue(value: V): V = ???
-}
-
-class ArraySet[E](backed: Array[E]) extends java.util.Set[E] {
-
-  override def size(): Int = backed.length
-
-  override def isEmpty: Boolean = backed.isEmpty
-
-  override def contains(o: Any): Boolean =
-    o match {
-      case o: E =>  backed.contains(o)
-      case _ => false
-    }
-
-  override def iterator(): util.Iterator[E] = backed.iterator.asJava
-
-  override def toArray: Array[AnyRef] = backed.asInstanceOf[Array[AnyRef]]
-
-  // ERROR in intellij is not present in actual compiler
-  override def toArray[T](a: Array[T with Object]): Array[T with Object] = {
-    System.arraycopy(backed, 0, a, 0, backed.length)
-    a
-  }
-
-  override def add(e: E): Boolean = ???
-
-  override def remove(o: Any): Boolean = ???
-
-  override def containsAll(c: util.Collection[_]): Boolean = ???
-
-  override def addAll(c: util.Collection[_ <: E]): Boolean = ???
-
-  override def retainAll(c: util.Collection[_]): Boolean = ???
-
-  override def removeAll(c: util.Collection[_]): Boolean = ???
-
-  override def clear(): Unit = ???
-}

@@ -107,12 +107,12 @@ class KogitoDMNRepository() extends DMNRepository {
   override def resultProviderForType(resultProviderType: String, debug: Boolean, dmnConfiguration: DMNConfiguration): DMNResultProvider =
     resultProviderType match {
       case _ if resultProviderType.toUpperCase == "JSON" =>
-        KogitoJSONResultProvider(debug)
+        KogitoJSONResultProvider(debug, configMap(dmnConfiguration))
       case t if Try(DataType.fromDDL(t)).isSuccess =>
         val dataType = DataType.fromDDL(t)
         dataType match {
           case s: StructType =>
-            KogitoDDLResult(debug = debug, underlyingType = s)
+            KogitoDDLResult(debug = debug, underlyingType = s, configMap(dmnConfiguration))
           case _ => throw new DMNException(s"ResultProvider type $t is not supported, only JSON and Struct is")
         }
       case _ =>

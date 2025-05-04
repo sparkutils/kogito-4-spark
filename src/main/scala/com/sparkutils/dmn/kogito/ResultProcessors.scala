@@ -3,6 +3,7 @@ package com.sparkutils.dmn.kogito
 import com.sparkutils.dmn
 import com.sparkutils.dmn.DMNResultProvider
 import com.sparkutils.dmn.impl.DMNExpression
+import com.sparkutils.dmn.kogito.types.Arrays.exprCode
 import com.sparkutils.dmn.kogito.types.ResultInterfaces
 import com.sparkutils.dmn.kogito.types.ResultInterfaces.{EVALUATING, FAILED, NOT_EVALUATED, NOT_FOUND, SKIPPED_ERROR, SKIPPED_WARN, SUCCEEDED, evalStatusEnding, forTypeCodeGen}
 import org.apache.spark.sql.catalyst.InternalRow
@@ -21,6 +22,7 @@ import sparkutilsKogito.com.fasterxml.jackson.databind.{ObjectMapper, Serializat
 import sparkutilsKogito.com.fasterxml.jackson.databind.module.SimpleModule
 
 import scala.collection.JavaConverters._
+import scala.util.Try
 
 trait KogitoProcess extends DMNResultProvider {
 
@@ -67,21 +69,47 @@ trait KogitoProcess extends DMNResultProvider {
 
   def kogitoResultStr = s"((${classOf[KogitoDMNResult].getName})${DMNExpression.runtimeVar.get()}).result()"
 
+  val config: Map[String, String]
 
-  def decisionMap(decisionResults: String) =
-    s"""
-      new java.util.HashMap<String, Object>() {
-          {{java.util.Iterator<org.kie.dmn.api.core.DMNDecisionResult> itr = $decisionResults.iterator();
-              while (itr.hasNext()){
-                  org.kie.dmn.api.core.DMNDecisionResult r = (org.kie.dmn.api.core.DMNDecisionResult) itr.next();
-                  put(r.getDecisionName(), r.getResult());
-          }}}
-      };
-     """
+  def decisionMap(ctx: CodegenContext, decisionResults: String,
+                  fullProxy: Boolean = Try(config.getOrElse("fullProxyDS", "true").toBoolean).
+                    fold(_ => true, identity)): ExprCode = {
+    val ex = exprCode(classOf[java.util.Map[_,_]], ctx)
+
+    // assumption there aren't tonnes of decisions, ddl only asks for specific, json uses iterator.  Scala's map asJava is lazy and proxies iterator
+    if (fullProxy) {
+      val pe = ctx.addMutableState("com.sparkutils.dmn.kogito.types.DecisionResultFullProxyEntry", ctx.freshName("proxyEntryDS"),
+        n => s"$n = new com.sparkutils.dmn.kogito.types.DecisionResultFullProxyEntry();"
+        , useFreshName = false)
+      val pm = ctx.addMutableState("com.sparkutils.dmn.kogito.types.ProxyMap", ctx.freshName("proxyEntryDS"),
+        n => s"$n = new com.sparkutils.dmn.kogito.types.ProxyMap(0, null, $pe);"
+        , useFreshName = false)
+
+      ex.copy(
+        code"""
+          $pm.reset(  $decisionResults.size(),  $decisionResults );
+          java.util.Map ${ex.value} = $pm;
+          boolean ${ex.isNull} = false;
+       """)
+    } else
+      ex.copy(
+        code"""
+          java.util.Map ${ex.value} = null;
+          boolean ${ex.isNull} = false;
+          ${ex.value} = new java.util.HashMap<String, Object>() {
+              {{java.util.Iterator<org.kie.dmn.api.core.DMNDecisionResult> itr = $decisionResults.iterator();
+                  while (itr.hasNext()){
+                      org.kie.dmn.api.core.DMNDecisionResult r = (org.kie.dmn.api.core.DMNDecisionResult) itr.next();
+                      put(r.getDecisionName(), r.getResult());
+              }}}
+          };
+
+       """)
+  }
 
 }
 
-case class KogitoDDLResult(debug: Boolean, underlyingType: StructType) extends LeafExpression with KogitoProcess {
+case class KogitoDDLResult(debug: Boolean, underlyingType: StructType, config: Map[String, String]) extends LeafExpression with KogitoProcess {
 
   lazy val getter = ResultInterfaces.forType(underlyingType)
 
@@ -169,7 +197,9 @@ case class KogitoDDLResult(debug: Boolean, underlyingType: StructType) extends L
     val resultIdx = ctx.references.size - 1
 
     val decisionResults = ctx.freshName("decisionResults")
-    val decisionMapN = ctx.freshName("decisionResultsMap")
+    val dm = decisionMap(ctx, decisionResults)
+    val decisionMapN = dm.value
+
 
     val getExpr = forTypeCodeGen(underlyingType).forPath(ctx, decisionMapN, ev.isNull)
 
@@ -179,7 +209,7 @@ case class KogitoDDLResult(debug: Boolean, underlyingType: StructType) extends L
          boolean ${ev.isNull} = ($kogitoResultStr == null);
          if (!${ev.isNull}) {
            final java.util.List<org.kie.dmn.api.core.DMNDecisionResult> $decisionResults = $kogitoResultStr.getDecisionResults();
-           java.util.Map $decisionMapN = ${decisionMap(decisionResults)}
+           ${dm.code}
            ${getExpr.code}
 
            ${ev.value} = ${getExpr.value};
@@ -199,7 +229,7 @@ case class KogitoDDLResult(debug: Boolean, underlyingType: StructType) extends L
 /**
  * @param debug
  */
-case class KogitoJSONResultProvider(debug: Boolean) extends LeafExpression with DMNResultProvider with KogitoProcess {
+case class KogitoJSONResultProvider(debug: Boolean, config: Map[String, String]) extends LeafExpression with DMNResultProvider with KogitoProcess {
 
   override def underlyingType: StructType = ???
 
@@ -245,17 +275,19 @@ case class KogitoJSONResultProvider(debug: Boolean) extends LeafExpression with 
 
     val decisionResults = ctx.freshName("decisionResults")
     val what = ctx.freshName("what")
+    val dm = decisionMap(ctx, decisionResults)
 
     ev.copy(code =
       code"""
          UTF8String ${ev.value} = null;
          boolean ${ev.isNull} = false;
          final java.util.List<org.kie.dmn.api.core.DMNDecisionResult> $decisionResults = $kogitoResultStr.getDecisionResults();
+         ${dm.code}
          Object $what = ${
           if (debug)
             s"$decisionResults;"
           else
-            decisionMap(decisionResults)
+            s"${dm.value};"
           }
           try {
             ${ev.value} = UTF8String.fromString($mapperName.writeValueAsString(
