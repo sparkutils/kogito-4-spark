@@ -133,6 +133,8 @@ These status' only replicate the Kogito [DecisionEvaluationStatus usage](https:/
 
 [^1]: The NOT_FOUND status is added by the library for the case where a _dmnEvalStatus field is provided in the ddl but this decision name that does not exist in the dmn.
 
+The top level decision result map is proxied for both DDL and JSON processing, should this lead to a performance deficit you may disable it via the config option "fullProxyDS=false".
+
 ### Debug mode
 
 Use debugMode when calling evaluate to force the full DMNResult structure (without results) to be written out into an additional debugMode field, in the case where no issues are present this is likely overkill and should be kept for debug information only.  The debugMode field has the following DDL type (also found in ResultProcessors.debugDDL):
