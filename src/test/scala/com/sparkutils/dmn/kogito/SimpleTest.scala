@@ -180,4 +180,34 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
     res.select("quality").write.mode(SaveMode.Overwrite).parquet(outputDir+"/json_debug")
     // compilation and writing is enough
   } }
+
+  def testNulls(field: DMNInputField) = {
+    import sparkSession.implicits._
+
+    val ds = sparkSession.sql("select null temp").selectExpr("cast(temp as string) payload")
+
+    val exec = DMNExecution(Seq(DMNFile("nulls.dmn",
+      this.getClass.getClassLoader.getResourceAsStream("nulls.dmn").readAllBytes())),
+        DMNModelService("nulls", "nulls", None, "JSON"),
+      Seq(field))
+
+    val res = ds.select(com.sparkutils.dmn.DMN.dmnEval(exec)).as[String].collect()
+    res
+  }
+
+  // The result should be constant folded to null, but keeps the contextPath so it's present in the dmn
+  test("empty with default context null value") {
+    val res = testNulls(DMNInputField("payload", "JSON", "inputData"))
+
+    res.size shouldBe 1
+    res.head shouldBe """{"evaluate":"wasNull"}"""
+  }
+
+  // The entire expression is constant folded to null, nothing to evaluate
+  test("empty with null result") {
+    val res = testNulls(DMNInputField("payload", "JSON", "inputData", false))
+
+    res.size shouldBe 1
+    res.head shouldBe """{"evaluate":null}"""
+  }
 }

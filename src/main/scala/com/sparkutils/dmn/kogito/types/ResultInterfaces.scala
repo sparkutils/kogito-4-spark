@@ -212,7 +212,7 @@ object ResultInterfaces {
         val arrValueRes = ctx.freshVariable("arrValue", classOf[Array[Object]])
 
         val itr = ctx.freshName("itr")
-
+        // NB most maps iterators aren't bounds checking, AbstractCollection.toArray uses iterator anyway
         expr.copy(
           code =
             code"""

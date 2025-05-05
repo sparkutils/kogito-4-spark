@@ -36,7 +36,7 @@ case class KogitoJSONContextProvider(contextPath: DMNContextPath, stillSetWhenNu
           )
           .disable(${classOf[SerializationFeature].getName}.FAIL_ON_EMPTY_BEANS);
          """)
-// TODO what about top level arrays in json?
+
     s"$mapperName.readValue($inputStreamReaderVal, java.util.Map.class)"
   }
 
