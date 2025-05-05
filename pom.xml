@@ -155,7 +155,7 @@
     </profiles>
 
     <properties>
-        <revision>0.0.1-RC6</revision>
+        <revision>0.0.1-RC8</revision>
 
         <mavenFlattenPluginVersion>1.2.7</mavenFlattenPluginVersion>
         <mavenProjectInfoReportsPluginVersion>3.4.5</mavenProjectInfoReportsPluginVersion>
@@ -194,14 +194,15 @@
         <shimCompilationVersion>0.2.0-RC1</shimCompilationVersion>
         <shimRuntimeVersion>0.2.0-RC1</shimRuntimeVersion>
 
-        <dmn4SparkVersion>0.0.1-RC4</dmn4SparkVersion>
+        <dmn4SparkVersion>0.0.1-RC6</dmn4SparkVersion>
         <shadedKogitoVersion>0.0.12</shadedKogitoVersion>
 
         <framelessVersion>0.17.0</framelessVersion>
         <framelessRuntime>sparkutils_0.17.0-${sparkCompatVersion}</framelessRuntime>
         <framelessOrg>com.sparkutils</framelessOrg>
+
     </properties>
-    <!--
+    <!-- -->
     <repositories>
         <repository>
             <id>ossrh</id>
@@ -212,7 +213,7 @@
             <url>https://repository.apache.org/content/repositories/snapshots/</url>
         </repository>
     </repositories>
--->
+
     <distributionManagement>
         <repository>
             <id>ossrh</id>
@@ -227,6 +228,19 @@
     </distributionManagement>
 
     <dependencies>
+        <dependency>
+            <groupId>com.globalmentor</groupId>
+            <artifactId>hadoop-bare-naked-local-fs</artifactId>
+            <version>${naked-local-fs-version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-commons</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
         <dependency>
             <groupId>com.sparkutils</groupId>
             <artifactId>shim_compilation_${shimCompilationRuntime}_${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
@@ -245,6 +259,7 @@
             <artifactId>shim_runtime_${shimRuntime}_${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
             <version>${shimRuntimeVersion}</version>
         </dependency>
+
         <dependency>
             <groupId>${framelessOrg}</groupId>
             <!-- framelessCoreCompatVersion is used as sparkutils.frameless always publishes the spark major.minor -->

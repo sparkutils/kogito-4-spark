@@ -89,6 +89,8 @@ The following JSON and DDL types are supported and provided to the org.kie.dmn.a
 * map<string, *> - only supports util.Map[String, Object], the values may have any type
 
 Non DDL Unary DMNContextProviders may be provided via a fully qualified class name and must provide a two arg constructor of DMNContextPath, Expression. 
+
+The data map used in the compilation of Context Providers can be configured via "useTreeMap=true" (default is false), this isn't terribly important for processing within Kogito but will affect JSON output ordering. (Interpreted mode is always ordered).
  
 ## Supported DMNResultProviders
 
@@ -130,6 +132,8 @@ will store the Kogito DMNDecisionResult.getEvaluationStatus as a Byte with the f
 These status' only replicate the Kogito [DecisionEvaluationStatus usage](https://github.com/kiegroup/drools/blob/7373d109e9020535f5f1c727852946405ea21912/kie-dmn/kie-dmn-core/src/main/java/org/kie/dmn/core/impl/DMNRuntimeImpl.java#L669) and do not represent any business logic from the underlying DMN, that must of course be encoded in the result DLL directly. 
 
 [^1]: The NOT_FOUND status is added by the library for the case where a _dmnEvalStatus field is provided in the ddl but this decision name that does not exist in the dmn.
+
+The top level decision result map is proxied for both DDL and JSON processing, should this lead to a performance deficit you may disable it via the config option "fullProxyDS=false".
 
 ### Debug mode
 
