@@ -171,9 +171,9 @@ object ResultInterfaces {
 
         val i = ctx.freshVariable("i", classOf[Int])
 
-        val typCode = forTypeCodeGen(typ).forPath(ctx, s"$iar.get($i)", expr.isNull)
-
         val arrRes = ctx.freshVariable("arr", classOf[Array[Object]])
+
+        val typCode = forTypeCodeGen(typ).forPath(ctx, s"$arrRes[$i]", expr.isNull)
 
         expr.copy(
           code =
@@ -184,8 +184,9 @@ object ResultInterfaces {
             if ($pathNameIsNull) {
               ${expr.isNull} = true;
             } else {
-              Object[] $arrRes = new Object[$iar.size()];
-              for (int $i = 0; $i < $iar.size(); $i++) {
+              Object[] $arrRes = $iar.toArray();
+
+              for (int $i = 0; $i < $arrRes.length; $i++) {
                 ${typCode.code}
                 $arrRes[$i] = ${typCode.value};
               }
