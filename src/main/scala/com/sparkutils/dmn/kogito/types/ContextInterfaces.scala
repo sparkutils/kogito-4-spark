@@ -2,7 +2,7 @@ package com.sparkutils.dmn.kogito.types
 
 import com.sparkutils.dmn.kogito.types.Arrays.exprCode
 import com.sparkutils.dmn.kogito.types.ContextInterfaces.Accessor
-import com.sparkutils.dmn.{DMNContextPath, DMNContextProvider, DMNException}
+import com.sparkutils.dmn.{DMNContextPath, DMNContextProvider, DMNException, UnaryDMNContextProvider}
 import org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeGenerator, CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Expression, SpecializedGetters, UnaryExpression}
@@ -274,14 +274,14 @@ object ContextInterfaces {
 
   // NOTE -1 must be provided for top level as we don't know the index the data is taken from
 
-  def mapProvider(mapType: MapType, path: DMNContextPath, expr: Expression, dmnConfiguration: Map[String,String]): DMNContextProvider[util.Map[String, Object]] = {
+  def mapProvider(mapType: MapType, path: DMNContextPath, expr: Expression, stillSetWhenNull: Boolean, dmnConfiguration: Map[String,String]): DMNContextProvider[util.Map[String, Object]] = {
     val ma = forType(mapType, dmnConfiguration)
-    ComplexContextProvider[util.Map[String, Object]](mapType, dmnConfiguration, ma, path, expr)
+    ComplexContextProvider[util.Map[String, Object]](mapType, dmnConfiguration, ma, path, stillSetWhenNull, expr)
   }
 
-  def arrayProvider(arrayType: ArrayType, path: DMNContextPath, expr: Expression, dmnConfiguration: Map[String,String]): DMNContextProvider[util.List[Object]] = {
+  def arrayProvider(arrayType: ArrayType, path: DMNContextPath, expr: Expression, stillSetWhenNull: Boolean, dmnConfiguration: Map[String,String]): DMNContextProvider[util.List[Object]] = {
     val aa = forType(arrayType, dmnConfiguration)
-    ComplexContextProvider[util.List[Object]](arrayType, dmnConfiguration, aa, path, expr)
+    ComplexContextProvider[util.List[Object]](arrayType, dmnConfiguration, aa, path, stillSetWhenNull, expr)
   }
 
   /**
@@ -289,18 +289,17 @@ object ContextInterfaces {
    * @param structType
    * @return
    */
-  def structProvider(structType: StructType, path: DMNContextPath, expr: Expression, dmnConfiguration: Map[String,String]): DMNContextProvider[util.Map[String, Object]] = {
+  def structProvider(structType: StructType, path: DMNContextPath, expr: Expression, stillSetWhenNull: Boolean, dmnConfiguration: Map[String,String]): DMNContextProvider[util.Map[String, Object]] = {
     val sa = forType(structType, dmnConfiguration)
-    ComplexContextProvider[util.Map[String, Object]](structType, dmnConfiguration, sa, path, expr)
+    ComplexContextProvider[util.Map[String, Object]](structType, dmnConfiguration, sa, path, stillSetWhenNull, expr)
   }
 
-  case class ComplexContextProvider[T: ClassTag](actualDataType: DataType, dmnConfiguration: Map[String,String], accessor: Accessor[_], contextPath: DMNContextPath, child: Expression) extends UnaryExpression with DMNContextProvider[T] {
+  case class ComplexContextProvider[T: ClassTag](actualDataType: DataType, dmnConfiguration: Map[String,String], accessor: Accessor[_], contextPath: DMNContextPath, stillSetWhenNull: Boolean, child: Expression) extends UnaryDMNContextProvider[T] {
 
     def withNewChildInternal(newChild: Expression): Expression = copy(child = newChild)
 
-    override def nullSafeEval(input: Any): Any = {
-      (contextPath, accessor.forPath(input, -1).asInstanceOf[T])
-    }
+    override def nullSafeContextEval(input: Any): Any =
+      accessor.forPath(input, -1).asInstanceOf[T]
 
     /**
      * Result class type
@@ -311,7 +310,7 @@ object ContextInterfaces {
       val rClassName = resultType.getName
       val boxed = CodeGenerator.boxedType(rClassName)
 
-      nullSafeCodeGen(child, ctx, ev, f = input => {
+      nullSafeContextCodeGen(child, ctx, ev, contextPath, f = input => {
         val typeCode = forTypeCodeGen(actualDataType, inCollection = false, dmnConfiguration, topLevel = true).forPath(ctx, input, "")
         s"""
         // kogito-4-spark context provider - start

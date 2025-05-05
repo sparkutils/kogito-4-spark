@@ -1,7 +1,7 @@
 package com.sparkutils.dmn.kogito
 
 import com.sparkutils.dmn.DMNContextPath
-import com.sparkutils.dmn.impl.UTF8StringInputStreamContextProvider
+import com.sparkutils.dmn.impl.StringWithIOProcessorContextProvider
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.kie.dmn.feel.lang.types.impl.ComparablePeriod
@@ -9,11 +9,9 @@ import org.kie.kogito.dmn.rest.DMNFEELComparablePeriodSerializer
 import sparkutilsKogito.com.fasterxml.jackson.databind.module.SimpleModule
 import sparkutilsKogito.com.fasterxml.jackson.databind.{ObjectMapper, SerializationFeature}
 
-import java.io.InputStreamReader
 import java.util
 
-
-case class KogitoJSONContextProvider(contextPath: DMNContextPath, child: Expression) extends UTF8StringInputStreamContextProvider[java.util.Map[String, Object]] {
+case class KogitoJSONContextProvider(contextPath: DMNContextPath, stillSetWhenNull: Boolean, child: Expression) extends StringWithIOProcessorContextProvider[java.util.Map[String, Object]] {
 
   @transient
   lazy val mapper =
@@ -38,7 +36,7 @@ case class KogitoJSONContextProvider(contextPath: DMNContextPath, child: Express
           )
           .disable(${classOf[SerializationFeature].getName}.FAIL_ON_EMPTY_BEANS);
          """)
-
+// TODO what about top level arrays in json?
     s"$mapperName.readValue($inputStreamReaderVal, java.util.Map.class)"
   }
 
