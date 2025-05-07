@@ -5,9 +5,16 @@ import org.apache.spark.sql.SparkSession
 import org.junit.Before
 
 trait TestUtils {
+  val hostMode = {
+    val tmp = System.getenv("DMN_SPARK_HOSTS")
+    if (tmp eq null)
+      "*"
+    else
+      tmp
+  }
 
   lazy val sparkSession = {
-    val s = registerFS(SparkSession.builder()).config("spark.master", "local[*]").config("spark.ui.enabled", false).getOrCreate()
+    val s = registerFS(SparkSession.builder()).config("spark.master",  s"local[$hostMode]").config("spark.ui.enabled", false).getOrCreate()
     s.sparkContext.setLogLevel("DEBUG") // set to debug to get actual code lines etc.
     s
   }

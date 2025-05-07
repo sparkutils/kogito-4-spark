@@ -78,3 +78,81 @@ jobs:
       mvnCliOpts: "--batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true"
       mvnOpts: "-ea -XX:+IgnoreUnrecognizedVMOptions -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3 -Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.lang.invoke=ALL-UNNAMED --add-opens java.base/java.lang.reflect=ALL-UNNAMED --add-opens java.base/java.io=ALL-UNNAMED --add-opens java.base/java.net=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.util.concurrent=ALL-UNNAMED --add-opens java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens java.base/sun.nio.ch=ALL-UNNAMED --add-opens java.base/sun.nio.cs=ALL-UNNAMED --add-opens java.base/sun.security.action=ALL-UNNAMED --add-opens java.base/sun.util.calendar=ALL-UNNAMED"
     secrets: inherit
+
+  # prove tests run with single thread, ensures compilation issues aren't hidden by being run on multiple threads instead of re-used in the same thread (e.g. state resetting etc.)
+  # build scoverage tests on 3.3.0 first with aggregate, the copy the data out, not doing a clean build fails on site.  Also needs single threading to work, have noticed multiple failures and inconsistent coverage.
+  mvn_site:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4.1.2
+      - uses: s-weigand/setup-conda@v1
+        with:
+          python-version: '3.10'
+      - uses: ./.github/workflows/spark_maven
+        with:
+          title: Building site against Spark340
+          script: |
+            conda install libgomp=11.2.0 # force the right libs
+            conda install graphviz=2.50.0 # conda is from fatty
+
+            echo '#!/bin/bash' > dott
+            echo 'dot "$@" 2> >(grep -v "pango" | grep -v "Warning" >&2 )' >> dott
+
+            chmod u+x dott
+
+            export QUALITY_SPARK_HOSTS=1
+            export QUALITY_LAMBDA_SUBS=true
+            mvn $MAVEN_CLI_OPTS clean scoverage:test -P Spark332
+
+            mkdir tmpSCoverage
+            rm ./target/scoverage-data/scoverage.coverage
+            cp ./target/scoverage-data/* tmpSCoverage
+
+            mvn $MAVEN_CLI_OPTS clean scoverage:test -P Spark341
+            
+            cp tmpSCoverage/* ./target/scoverage-data
+            
+            mvn $MAVEN_CLI_OPTS site -P Spark341
+
+            echo $(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -P Spark341) > target/version.txt
+
+            grep -A 3 'Statement coverage:' target/site/scoverage/overview.html | tail -1 | sed 's/[[:space:]]\+//g' > target/coverage.txt
+            grep -A 3 'Branch coverage:' target/site/scoverage/overview.html | tail -1 | sed 's/[[:space:]]\+//g' >> target/coverage.txt
+          gpgKey: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+        env:
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+      - id: version
+        run: echo version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -P Spark341) >> "$GITHUB_OUTPUT"
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+      - name: target
+        uses: actions/upload-artifact@v4
+        with:
+          name: target-mvn_site
+          path: |
+            target/site
+            target/coverage.txt
+            target/version.txt
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+  site:
+    needs: [mvn_site]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4.1.2
+      - uses: actions/download-artifact@v4
+        with:
+          name: target-mvn_site
+          path: target
+      - uses: ./.github/workflows/mkdocs
+        with:
+          prepScript: |
+            cp -rf target/site docs/
+            cp target/coverage.txt docs/
+            cp target/version.txt .
+            cp target/coverage.txt .

@@ -173,11 +173,11 @@
         <mavenCompilerPluginVersion>3.8.1</mavenCompilerPluginVersion>
         <mavenJarPluginVersion>3.2.0</mavenJarPluginVersion>
         <mavenShadePluginVersion>3.2.1</mavenShadePluginVersion>
-        <mavenSitePluginVersion>3.7.1</mavenSitePluginVersion>
-        <mavenProjectInfoReportsVersion>3.0.0</mavenProjectInfoReportsVersion>
+        <mavenSitePluginVersion>3.21.0</mavenSitePluginVersion>
+        <mavenProjectInfoReportsVersion>3.9.0</mavenProjectInfoReportsVersion>
         <surefirePluginVersion>2.22.2</surefirePluginVersion>
         <surefireReportPluginVersion>2.22.2</surefireReportPluginVersion>
-        <scoverage.plugin.version>1.4.11</scoverage.plugin.version>
+        <scoverage.plugin.version>2.1.0</scoverage.plugin.version>
         <mavenAssemblyPluginVersion>2.5.3</mavenAssemblyPluginVersion>
         <deequ.version>1.0.2</deequ.version>
         <circeVersion>0.11.2</circeVersion>
@@ -261,35 +261,6 @@
         </dependency>
 
         <dependency>
-            <groupId>${framelessOrg}</groupId>
-            <!-- framelessCoreCompatVersion is used as sparkutils.frameless always publishes the spark major.minor -->
-            <artifactId>frameless-core_${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
-            <version>${framelessVersion}</version>
-            <exclusions>
-                <!-- exclude the shim -->
-                <exclusion>
-                    <groupId>com.sparkutils</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>${framelessOrg}</groupId>
-            <!-- framelessCoreCompatVersion is used as sparkutils.frameless always publishes the spark major.minor -->
-            <artifactId>frameless-dataset_${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
-            <version>${framelessVersion}</version>
-            <exclusions>
-                <!-- exclude the shim -->
-                <exclusion>
-                    <groupId>com.sparkutils</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
             <version>${scalaVersion}</version>
@@ -341,16 +312,6 @@
             <version>${sparkVersion}</version>
             <scope>provided</scope>
             <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.module</groupId>
-            <artifactId>jackson-module-scala_${scalaCompatVersion}</artifactId>
-            <version>${jacksonVersion}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jacksonVersion}</version>
         </dependency>
     </dependencies>
 
@@ -521,7 +482,7 @@
                 <configuration>
                     <forkCount>1</forkCount>
                     <reuseForks>false</reuseForks>
-                    <argLine>-Xmx4g</argLine>
+                    <argLine>-Xmx4g -ea -XX:+IgnoreUnrecognizedVMOptions --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/sun.nio.cs=ALL-UNNAMED --add-opens=java.base/sun.security.action=ALL-UNNAMED --add-opens=java.base/sun.util.calendar=ALL-UNNAMED</argLine>
                     <systemPropertyVariables>
                         <org.xerial.snappy.tempdir>${java.io.tmpdir}/teamcity/megdp/extrajars</org.xerial.snappy.tempdir>
                         <buildDirectory>${project.build.directory}</buildDirectory>

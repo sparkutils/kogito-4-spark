@@ -3,12 +3,15 @@ package com.sparkutils.dmn.kogito
 import com.sparkutils.dmn.kogito.types.ResultInterfaces.{SUCCEEDED, evalStatusEnding}
 import com.sparkutils.dmn.{DMNExecution, DMNFile, DMNInputField, DMNModelService}
 import org.apache.spark.sql.{DataFrame, SaveMode}
+import org.junit.runner.RunWith
 import org.scalatest.{FunSuite, Matchers}
+import org.scalatestplus.junit.JUnitRunner
 
 import scala.collection.immutable.Seq
 
 case class TestData(location: String, idPrefix: String, id: Int, page: Long, department: String)
 
+@RunWith(classOf[JUnitRunner])
 class SimpleTest extends FunSuite with Matchers with TestUtils {
 
   val ns = "decisions"

@@ -1,11 +1,13 @@
 package com.sparkutils.dmn.kogito
 
 import com.sparkutils.dmn.{DMNConfiguration, DMNExecution, DMNFile, DMNInputField, DMNModelService}
-import org.apache.spark.sql.{Encoder, SaveMode, SparkSession}
+import org.apache.spark.sql.Encoder
+import org.junit.runner.RunWith
 import org.scalatest.{FunSuite, Matchers}
+import org.scalatestplus.junit.JUnitRunner
 
 //import scala.collection.immutable.Seq
-import frameless._
+//import frameless._
 
 case class Pair(a: Boolean, b: Boolean) extends Serializable
 case class Deep[A,B](a: String, b: java.math.BigDecimal, d: Pair, c: Map[A,B]) extends Serializable
@@ -21,6 +23,7 @@ case class DebugResult[A,B](eval: Top[A,B], debugMode: Seq[KogitoResult]) extend
 
 case class DebugQuality[A,B](quality: DebugResult[A,B]) extends Serializable
 
+@RunWith(classOf[JUnitRunner])
 class DeepTest extends FunSuite with Matchers with TestUtils {
 
   val oneDotZero = "1.000000000000000000"
