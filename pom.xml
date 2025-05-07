@@ -506,6 +506,7 @@
                          only pre-resolution plans are anywhere near test worthy -->
                     <excludedPackages>org.apache.spark.sql</excludedPackages>
                     <aggregate>true</aggregate>
+                    <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
             <plugin>
