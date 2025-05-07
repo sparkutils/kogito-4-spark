@@ -15,7 +15,7 @@ trait TestUtils {
 
   lazy val sparkSession = {
     val s = registerFS(SparkSession.builder()).config("spark.master",  s"local[$hostMode]").config("spark.ui.enabled", false).getOrCreate()
-    s.sparkContext.setLogLevel("DEBUG") // set to debug to get actual code lines etc.
+    s.sparkContext.setLogLevel("ERROR") // set to debug to get actual code lines etc.
     s
   }
 
