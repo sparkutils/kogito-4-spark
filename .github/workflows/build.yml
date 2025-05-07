@@ -89,9 +89,15 @@ jobs:
       - uses: s-weigand/setup-conda@v1
         with:
           python-version: '3.10'
-      - uses: ./.github/workflows/spark_maven
+      - uses: sparkutils/spark-maven-action@main
         with:
-          title: Building site against Spark340
+          title: Building site against Spark350,scala_2.12.18
+          sparkVersion: 3.5.5
+          hadoopVersion: 3
+          jdk: 21
+          mvnCliOpts: "--batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true"
+          mvnOpts: "-ea -XX:+IgnoreUnrecognizedVMOptions -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3 -Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.lang.invoke=ALL-UNNAMED --add-opens java.base/java.lang.reflect=ALL-UNNAMED --add-opens java.base/java.io=ALL-UNNAMED --add-opens java.base/java.net=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.util.concurrent=ALL-UNNAMED --add-opens java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens java.base/sun.nio.ch=ALL-UNNAMED --add-opens java.base/sun.nio.cs=ALL-UNNAMED --add-opens java.base/sun.security.action=ALL-UNNAMED --add-opens java.base/sun.util.calendar=ALL-UNNAMED"
+
           script: |
             conda install libgomp=11.2.0 # force the right libs
             conda install graphviz=2.50.0 # conda is from fatty
@@ -101,21 +107,12 @@ jobs:
 
             chmod u+x dott
 
-            export QUALITY_SPARK_HOSTS=1
-            export QUALITY_LAMBDA_SUBS=true
-            mvn $MAVEN_CLI_OPTS clean scoverage:test -P Spark332
+            export DMN_SPARK_HOSTS=1
+            mvn $MAVEN_CLI_OPTS clean scoverage:test -P Spark350,scala_2.12.18
 
-            mkdir tmpSCoverage
-            rm ./target/scoverage-data/scoverage.coverage
-            cp ./target/scoverage-data/* tmpSCoverage
+            mvn $MAVEN_CLI_OPTS site -P Spark350,scala_2.12.18
 
-            mvn $MAVEN_CLI_OPTS clean scoverage:test -P Spark341
-            
-            cp tmpSCoverage/* ./target/scoverage-data
-            
-            mvn $MAVEN_CLI_OPTS site -P Spark341
-
-            echo $(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -P Spark341) > target/version.txt
+            echo $(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -P Spark350,scala_2.12.18) > target/version.txt
 
             grep -A 3 'Statement coverage:' target/site/scoverage/overview.html | tail -1 | sed 's/[[:space:]]\+//g' > target/coverage.txt
             grep -A 3 'Branch coverage:' target/site/scoverage/overview.html | tail -1 | sed 's/[[:space:]]\+//g' >> target/coverage.txt
