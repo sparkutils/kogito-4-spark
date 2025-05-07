@@ -32,6 +32,8 @@ extra:
 
 nav:
   - Home: index.md
+  - Maven Site: site/index.html
+  - Scala Docs: site/scaladocs/com/sparkutils/quality/index.html
 
 plugins:
   - search:
