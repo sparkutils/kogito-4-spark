@@ -649,6 +649,8 @@
                 <configuration>
                     <!-- <aggregate>true</aggregate> -->
                     <aggregateOnly>true</aggregateOnly>
+
+                    <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
             <plugin>
