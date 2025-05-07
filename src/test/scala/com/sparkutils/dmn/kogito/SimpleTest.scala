@@ -103,6 +103,18 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
     testResults(ds, exec)
   }
 
+  def testStarResults(service: DMNModelService): Unit = {
+    import sparkSession.implicits._
+
+    val ds = Seq(dataBasis).toDS.toDF.selectExpr("explode(value) f").select("f.*")
+
+    val exec = DMNExecution(dmnFiles, service,
+      Seq(DMNInputField("struct(*)",
+        "struct<location: String, idPrefix: String, id: Int, page: Long, department: String>", "testData")
+      )) //location: String, idPrefix: String, id: Int, page: Long, department: String)
+    testResults(ds, exec)
+  }
+
   test("Loading of Kogito and sample test should work - decision service json") {
     testJSONResults(dmnModel)
   }
@@ -125,6 +137,10 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
 
   test("Loading of Kogito and sample test should work - evaluate all top level struct") {
     testTopLevelStructResults(dmnModel.copy(service = None))
+  }
+
+  test("Loading of Kogito and sample test should work - evaluate *") {
+    testStarResults(dmnModel.copy(service = None))
   }
 
   def evalStatus(dmnModel: DMNModelService): DMNModelService =

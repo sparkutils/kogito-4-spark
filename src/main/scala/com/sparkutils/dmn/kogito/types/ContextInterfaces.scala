@@ -1,11 +1,11 @@
 package com.sparkutils.dmn.kogito.types
 
 import com.sparkutils.dmn.kogito.types.Arrays.exprCode
-import com.sparkutils.dmn.kogito.types.ContextInterfaces.Accessor
+
 import com.sparkutils.dmn.{DMNContextPath, DMNContextProvider, DMNException, UnaryDMNContextProvider}
 import org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeGenerator, CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{Expression, SpecializedGetters, UnaryExpression}
+import org.apache.spark.sql.catalyst.expressions.{Expression, SpecializedGetters}
 import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
 import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DataType, DateType, DecimalType, DoubleType, FloatType, IntegerType, LongType, MapType, ShortType, StringType, StructType, TimestampType}
 
