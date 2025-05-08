@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://sparkutils.github.io/kogito-4-spark/0.0.1-RC14/</loc>
+         <lastmod>2025-05-08</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://sparkutils.github.io/kogito-4-spark/0.0.1-RC14/getting_started/running_on_databricks/</loc>
+         <lastmod>2025-05-08</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+</urlset>
