@@ -7,6 +7,9 @@ import com.sparkutils.dmn.kogito.DeepTest;
 import com.sparkutils.dmn.kogito.EvalAllResultsTest;
 import com.sparkutils.dmn.kogito.SimpleTest;
 
+/**
+ * The test suite
+ */
 public class TestSuite {
     public static void runTests() {
 
