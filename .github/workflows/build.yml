@@ -155,7 +155,7 @@ jobs:
             cp target/coverage.txt .
 
   publishTestShades_13_12:
-    needs: [ testBuilds_2_12_18_and_13_12 ]
+    needs: [ publish_2_12_18_and_13_12 ]
     uses: sparkutils/building/.github/workflows/publish_build.yml@main
     with:
       theMatrix: |
@@ -171,7 +171,7 @@ jobs:
     secrets: inherit
 
   publishTestShades_2_12_18:
-    needs: [noTestBuilds_2_12_18, testBuilds_2_12_18_and_13_12]
+    needs: [publish_2_12_18, publish_2_12_18_and_13_12]
     uses: sparkutils/building/.github/workflows/publish_build.yml@main
     with:
       theMatrix: |

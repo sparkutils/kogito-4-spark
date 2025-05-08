@@ -5,7 +5,7 @@
     <groupId>com.sparkutils</groupId>
     <artifactId>kogito-4-spark_testshade_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
 
-    <version>0.0.1-RC12</version>
+    <version>0.0.1-RC13-snapshot</version>
     <name>kogito-4-spark Test Pack</name>
     <description>Packaged tests and shaded jar for deploying in Databricks, or similar to verify builds still run</description>
     <url>https://sparkutils.github.io/kogito-4-spark/</url>
@@ -186,7 +186,7 @@
         <scalaCrossPluginVersion>0.3.0</scalaCrossPluginVersion>
         <mavenShadePluginVersion>3.2.1</mavenShadePluginVersion>
 
-        <jarjarVersion>1.14.0</jarjarVersion>
+        <jarjarVersion>1.14.1</jarjarVersion>
         <jarjarCompatVersion>2.12</jarjarCompatVersion>
         <scriptingPluginVersion>3.0.0</scriptingPluginVersion>
     </properties>
@@ -394,9 +394,9 @@
                 <dependencies>
                     <!-- ScriptEngines -->
                     <dependency>
-                        <groupId>org.codehaus.groovy</groupId>
+                        <groupId>org.apache.groovy</groupId>
                         <artifactId>groovy-jsr223</artifactId>
-                        <version>3.0.7</version> <!-- look for latest -->
+                        <version>4.0.26</version> <!-- look for latest -->
                     </dependency>
                     <dependency>
                         <groupId>com.eed3si9n.jarjarabrams</groupId>

@@ -32,6 +32,8 @@ extra:
 
 nav:
   - Home: index.md
+  - Getting Started:
+      - Running Quality on Databricks: getting_started/running_on_databricks.md
   - Maven Site: site/index.html
   - Scala Docs: site/scaladocs/com/sparkutils/quality/index.html
 
