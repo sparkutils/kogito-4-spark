@@ -39,7 +39,7 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
 
     //res.select("quality.evaluate").write.mode(SaveMode.Overwrite).parquet(outputDir+"/simples")
     //val asSeqs = sparkSession.read.parquet(outputDir+"/simples").as[Seq[Boolean]].collect()
-    val asSeqs =  res.select("quality.evaluate").as[scala.collection.Seq[Boolean]](TypedExpressionEncoder[scala.collection.Seq[Boolean]]).collect()
+    val asSeqs =  res.select("quality.evaluate").as[Seq[Boolean]](TypedExpressionEncoder[Seq[Boolean]]).collect()
 
     asSeqs.forall(_.size == 15) shouldBe true
     asSeqs(0).head shouldBe true
