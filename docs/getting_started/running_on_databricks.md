@@ -7,13 +7,13 @@ tags:
 
 The aim is to have explicit support for LTS', other interim versions may be supported as needed.
 
-## Running on Databricks Runtime 16.3
+## Running on Databricks Runtime 16.4
 
-
+Databricks supports both 2.12 and 2.13 scala versions for 16.4, ensure the correct runtime is used.
 
 ## Testing out kogito-4-spark via Notebooks
 
-You can use the appropriate runtime kogito-4-spark_testshade artefact jar (e.g. [DBR 11.3](https://s01.oss.sonatype.org/content/repositories/releases/com/sparkutils/quality_testshade_11.3.dbr_3.3_2.12/)) from maven to upload into your workspace / notebook env (or add via maven).  When using Databricks make sure to use the appropriate _Version.dbr builds.
+You can use the appropriate runtime kogito-4-spark_testshade artefact jar (e.g. [DBR 16.4](https://s01.oss.sonatype.org/content/repositories/releases/com/sparkutils/kogito-4-spark_testshade_16.3.dbr_3.5_2.12/0.0.1-RC14/kogito-4-spark_testshade_16.3.dbr_3.5_2.12-0.0.1-RC14.jar)) from maven to upload into your workspace / notebook env (or add via maven).  When using Databricks make sure to use the appropriate _Version.dbr builds.
 
 Then using:
 
@@ -34,7 +34,7 @@ val fileLoc = "./kogito-4-spark-testdir"''
 TestUtils.setPath(fileLoc)
 ```
 
-Ideally at the end of your runs you'll see - after 10 minutes or so and some stdout - for example a run on DBR 14.3 provides:
+Ideally at the end of your runs you'll see - after 10 minutes or so and some stdout - for example a run on DBR 16.4 provides:
 
 ```
 Time: 63.686
