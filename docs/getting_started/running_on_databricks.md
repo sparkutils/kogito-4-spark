@@ -22,7 +22,7 @@ import com.sparkutils.dmn.kogito.tests.TestSuite
 import com.sparkutils.dmn.kogito.TestUtils
 
 TestUtils.setPath("path_where_test_files_should_be_generated")
-TestSuite.runTests
+TestSuite.runTests()
 ```
 
 in your cell will run through all of the test suite used when building kogito-4-spark.
@@ -30,7 +30,7 @@ in your cell will run through all of the test suite used when building kogito-4-
 In Databricks notebooks you can set the path up via:
 
 ```scala
-val fileLoc = "/dbfs/databricks/kogito_test"
+val fileLoc = "./kogito-4-spark-testdir"''
 TestUtils.setPath(fileLoc)
 ```
 
@@ -42,7 +42,7 @@ Time: 63.686
 OK (34 tests)
 
 Finished. Result: Failures: 0. Ignored: 0. Tests run: 34. Time: 633686ms.
-import com.sparkutils.quality.tests.TestSuite
-import com.sparkutils.qualityTests.SparkTestUtils
-fileLoc: String = /dbfs/databricks/quality_test
+import com.sparkutils.dmn.kogito.tests.TestSuite
+import com.sparkutils.dmn.kogito.TestUtils
+fileLoc: String = ./kogito-4-spark-testdir
 ```
