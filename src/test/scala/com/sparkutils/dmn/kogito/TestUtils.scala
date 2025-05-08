@@ -4,6 +4,8 @@ import com.globalmentor.apache.hadoop.fs.BareLocalFileSystem
 import org.apache.spark.sql.SparkSession
 import org.junit.Before
 
+import java.util.concurrent.atomic.AtomicReference
+
 trait TestUtils {
   val hostMode = {
     val tmp = System.getenv("DMN_SPARK_HOSTS")
@@ -29,7 +31,7 @@ trait TestUtils {
     outdir.deleteRecursively()
   }
 
-  val outputDir = "./target/testData"
+  val outputDir = TestUtils.outputDir
 
   def cleanupOutput(): Unit =
     cleanUp(outputDir)
@@ -100,4 +102,18 @@ trait TestUtils {
       }
     }
   }
+}
+
+object TestUtils {
+
+  protected var tpath = new AtomicReference[String]("./target/testData")
+
+  def outputDir = tpath.get
+
+  def setPath(newPath: String) = {
+    tpath.set(newPath)
+  }
+
+  def path(suffix: String) = s"${tpath.get}/$suffix"
+
 }
