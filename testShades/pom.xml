@@ -5,7 +5,7 @@
     <groupId>com.sparkutils</groupId>
     <artifactId>kogito-4-spark_testshade_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
 
-    <version>0.0.1-RC10</version>
+    <version>0.0.1-RC11</version>
     <name>kogito-4-spark Test Pack</name>
     <description>Packaged tests and shaded jar for deploying in Databricks, or similar to verify builds still run</description>
     <url>https://sparkutils.github.io/kogito-4-spark/</url>
@@ -190,14 +190,18 @@
         <jarjarCompatVersion>2.12</jarjarCompatVersion>
         <scriptingPluginVersion>3.0.0</scriptingPluginVersion>
     </properties>
-<!--
+<!-- -->
     <repositories>
         <repository>
-            <id>mvn_snapshots</id>
+            <id>smvn_snapshots</id>
             <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
         </repository>
+        <repository>
+            <id>smvn_releases</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/releases</url>
+        </repository>
     </repositories>
--->
+
     <distributionManagement>
         <repository>
             <id>ossrh</id>

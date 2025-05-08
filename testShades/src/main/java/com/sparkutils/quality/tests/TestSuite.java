@@ -3,7 +3,7 @@ package com.sparkutils.dmn.kogito.tests;
 import org.junit.*;
 import org.junit.runner.*;
 import org.junit.internal.TextListener;
-import com.sparkutils.dmn.kogito.tests.*;
+import com.sparkutils.dmn.kogito.*;
 
 public class TestSuite {
     public static void runTests() {
