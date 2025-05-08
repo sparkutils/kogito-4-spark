@@ -191,8 +191,8 @@
         <!-- for oss builds -->
         <snakeVersion>1.33</snakeVersion>
 
-        <shimCompilationVersion>0.2.0-RC1</shimCompilationVersion>
-        <shimRuntimeVersion>0.2.0-RC1</shimRuntimeVersion>
+        <shimCompilationVersion>0.2.0-RC2</shimCompilationVersion>
+        <shimRuntimeVersion>0.2.0-RC2</shimRuntimeVersion>
 
         <dmn4SparkVersion>0.0.1-RC7-SNAPSHOT</dmn4SparkVersion>
         <shadedKogitoVersion>0.0.12</shadedKogitoVersion>
