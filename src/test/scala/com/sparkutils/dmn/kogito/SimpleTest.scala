@@ -8,7 +8,7 @@ import org.junit.runner.RunWith
 import org.scalatest.{FunSuite, Matchers}
 import org.scalatestplus.junit.JUnitRunner
 
-import scala.collection.immutable.Seq
+//import scala.collection.immutable.Seq
 
 case class TestData(location: String, idPrefix: String, id: Int, page: Long, department: String)
 
@@ -17,7 +17,7 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
 
   val ns = "decisions"
 
-  val dmnFiles = Seq(
+  val dmnFiles = scala.collection.immutable.Seq(
     DMNFile("common.dmn",
       this.getClass.getClassLoader.getResourceAsStream("common.dmn").readAllBytes()
     ),
@@ -73,7 +73,7 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
     val ds = Seq(dataBasis).toDS.selectExpr("explode(value) as f").selectExpr("to_json(f) payload")
 
     val exec = DMNExecution(dmnFiles, service,
-      Seq(DMNInputField("payload", "JSON", "testData")))
+      scala.collection.immutable.Seq(DMNInputField("payload", "JSON", "testData")))
     testResults(ds, exec)
   }
 
@@ -83,7 +83,7 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
     val ds = Seq(dataBasis).toDS.selectExpr("explode(value) as f").selectExpr("f.*")
 
     val exec = DMNExecution(dmnFiles, service,
-      Seq(DMNInputField("location", "String", "testData.location"),
+      scala.collection.immutable.Seq(DMNInputField("location", "String", "testData.location"),
         DMNInputField("idPrefix", "String", "testData.idPrefix"),
         DMNInputField("id", "Int", "testData.id"),
         DMNInputField("page", "Long", "testData.page"),
@@ -98,7 +98,7 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
     val ds = Seq(dataBasis).toDS.selectExpr("explode(value) as f")
 
     val exec = DMNExecution(dmnFiles, service,
-      Seq(DMNInputField("f",
+      scala.collection.immutable.Seq(DMNInputField("f",
         "struct<location: String, idPrefix: String, id: Int, page: Long, department: String>", "testData")
       )) //location: String, idPrefix: String, id: Int, page: Long, department: String)
     testResults(ds, exec)
@@ -110,7 +110,7 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
     val ds = Seq(dataBasis).toDS.toDF.selectExpr("explode(value) f").select("f.*")
 
     val exec = DMNExecution(dmnFiles, service,
-      Seq(DMNInputField("struct(*)",
+      scala.collection.immutable.Seq(DMNInputField("struct(*)",
         "struct<location: String, idPrefix: String, id: Int, page: Long, department: String>", "testData")
       )) //location: String, idPrefix: String, id: Int, page: Long, department: String)
     testResults(ds, exec)
@@ -177,7 +177,7 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
     val ds = Seq(dataBasis).toDS.selectExpr("explode(value) as f").selectExpr("to_json(f) payload")
 
     val exec = DMNExecution(dmnFiles, dmnModel.copy(resultProvider = "JSON"),
-      Seq(DMNInputField("payload", "JSON", "testData")))
+      scala.collection.immutable.Seq(DMNInputField("payload", "JSON", "testData")))
 
     val res = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec, debug = true))
     val strs = res.select("quality").as[String](TypedExpressionEncoder[String]).collect()
@@ -194,7 +194,7 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
     val ds = Seq(dataBasis).toDS.selectExpr("explode(value) as f").selectExpr("to_json(f) payload")
 
     val exec = DMNExecution(dmnFiles, dmnModel.copy(resultProvider = "JSON"),
-      Seq(DMNInputField("payload", "JSON", "testData")))
+      scala.collection.immutable.Seq(DMNInputField("payload", "JSON", "testData")))
 
     val res = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec, debug = true)).repartition(4)
     res.select("quality").write.mode(SaveMode.Overwrite).parquet(outputDir+"/json_debug")
@@ -206,10 +206,10 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
 
     val ds = sparkSession.sql("select null temp").selectExpr("cast(temp as string) payload")
 
-    val exec = DMNExecution(Seq(DMNFile("nulls.dmn",
+    val exec = DMNExecution(scala.collection.immutable.Seq(DMNFile("nulls.dmn",
       this.getClass.getClassLoader.getResourceAsStream("nulls.dmn").readAllBytes())),
         DMNModelService("nulls", "nulls", None, "JSON"),
-      Seq(field))
+      scala.collection.immutable.Seq(field))
 
     val res = ds.select(com.sparkutils.dmn.DMN.dmnEval(exec)).as[String](TypedExpressionEncoder[String]).collect()
     res
