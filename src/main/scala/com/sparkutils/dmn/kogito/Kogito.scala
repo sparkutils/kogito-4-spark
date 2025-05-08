@@ -15,7 +15,6 @@ import java.time.{LocalDate, LocalDateTime}
 import java.util
 import scala.collection.JavaConverters._
 import scala.util.Try
-import scala.collection.immutable.Seq
 
 case class KogitoDMNResult(result: org.kie.dmn.api.core.DMNResult) extends DMNResult
 
@@ -43,7 +42,7 @@ class KogitoDMNRepository() extends DMNRepository {
    * @param dmnFiles
    * @return
    */
-  def dmnRuntimeFor(dmnFiles: Seq[DMNFile], dmnConfiguration: DMNConfiguration): DMNRuntime = {
+  def dmnRuntimeFor(dmnFiles: scala.collection.immutable.Seq[DMNFile], dmnConfiguration: DMNConfiguration): DMNRuntime = {
 
     val resources = dmnFiles.map{ f =>
       val r = ResourceFactory.newByteArrayResource(f.bytes)
@@ -185,9 +184,9 @@ case class KogitoDMNRuntime(runtime: org.kie.dmn.api.core.DMNRuntime) extends DM
   def context(): DMNContext = KogitoDMNContext(runtime.newContext())
 }
 
-case class KogitoFeelEvent(severity: String, message: String, line: Int, column: Int, sourceException: String, offendingSymbol: String)
+case class KogitoFeelEvent(severity: String, message: String, line: Int, column: Int, sourceException: String, offendingSymbol: String) extends Serializable
 
-case class KogitoMessage(sourceId: String, sourceReference: String, exception: String, feelEvent: KogitoFeelEvent)
+case class KogitoMessage(sourceId: String, sourceReference: String, exception: String, feelEvent: KogitoFeelEvent) extends Serializable
 
 /**
  * Represents the DDL provider output type for debugMode
@@ -196,4 +195,4 @@ case class KogitoMessage(sourceId: String, sourceReference: String, exception: S
  * @param hasErrors
  * @param messages
  */
-case class KogitoResult(decisionId: String, decisionName: String, hasErrors: Boolean, messages: Seq[KogitoMessage], evaluationStatus: String)
+case class KogitoResult(decisionId: String, decisionName: String, hasErrors: Boolean, messages: Seq[KogitoMessage], evaluationStatus: String) extends Serializable

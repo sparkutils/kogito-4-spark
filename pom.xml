@@ -261,6 +261,35 @@
         </dependency>
 
         <dependency>
+            <groupId>${framelessOrg}</groupId>
+            <!-- framelessCoreCompatVersion is used as sparkutils.frameless always publishes the spark major.minor -->
+            <artifactId>frameless-core_${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
+            <version>${framelessVersion}</version>
+            <exclusions>
+                <!-- exclude the shim -->
+                <exclusion>
+                    <groupId>com.sparkutils</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>${framelessOrg}</groupId>
+            <!-- framelessCoreCompatVersion is used as sparkutils.frameless always publishes the spark major.minor -->
+            <artifactId>frameless-dataset_${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
+            <version>${framelessVersion}</version>
+            <exclusions>
+                <!-- exclude the shim -->
+                <exclusion>
+                    <groupId>com.sparkutils</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
             <version>${scalaVersion}</version>

@@ -2,6 +2,7 @@ package com.sparkutils.dmn.kogito
 
 import com.sparkutils.dmn.kogito.types.ResultInterfaces.{SUCCEEDED, evalStatusEnding}
 import com.sparkutils.dmn.{DMNExecution, DMNFile, DMNInputField, DMNModelService}
+import frameless.TypedExpressionEncoder
 import org.apache.spark.sql.{DataFrame, SaveMode}
 import org.junit.runner.RunWith
 import org.scalatest.{FunSuite, Matchers}
@@ -38,7 +39,7 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
 
     //res.select("quality.evaluate").write.mode(SaveMode.Overwrite).parquet(outputDir+"/simples")
     //val asSeqs = sparkSession.read.parquet(outputDir+"/simples").as[Seq[Boolean]].collect()
-    val asSeqs =  res.select("quality.evaluate").as[Seq[Boolean]].collect()
+    val asSeqs =  res.select("quality.evaluate").as[scala.collection.Seq[Boolean]](TypedExpressionEncoder[scala.collection.Seq[Boolean]]).collect()
 
     asSeqs.forall(_.size == 15) shouldBe true
     asSeqs(0).head shouldBe true
@@ -61,7 +62,7 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
     val debugs = dres.select("quality.debugMode").as[Seq[KogitoResult]].collect
     debugs.forall( _ == Seq(testDebug)) shouldBe true
     if (exec.model.resultProvider.contains(evalStatusEnding)) {
-      val statuses = dres.select(s"quality.evaluate$evalStatusEnding").as[Byte].collect()
+      val statuses = dres.select(s"quality.evaluate$evalStatusEnding").as[Byte](TypedExpressionEncoder[Byte]).collect()
       statuses.forall( _ == SUCCEEDED ) shouldBe true
     }
   }
@@ -179,7 +180,7 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
       Seq(DMNInputField("payload", "JSON", "testData")))
 
     val res = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec, debug = true))
-    val strs = res.select("quality").as[String].collect()
+    val strs = res.select("quality").as[String](TypedExpressionEncoder[String]).collect()
     strs shouldBe Array( """[{"decisionId":"_1B2DFBAA-DD62-4F1D-A375-38FB6A868A8C","decisionName":"evaluate","result":[true,false,false,false,false,false,false,false,false,false,true,false,true,false,false],"messages":[],"evaluationStatus":"SUCCEEDED"}]""",
       """[{"decisionId":"_1B2DFBAA-DD62-4F1D-A375-38FB6A868A8C","decisionName":"evaluate","result":[false,true,false,false,false,false,false,false,false,false,false,false,false,false,false],"messages":[],"evaluationStatus":"SUCCEEDED"}]""",
       """[{"decisionId":"_1B2DFBAA-DD62-4F1D-A375-38FB6A868A8C","decisionName":"evaluate","result":[false,false,false,false,false,false,false,false,false,false,false,false,false,true,false],"messages":[],"evaluationStatus":"SUCCEEDED"}]""",
@@ -210,7 +211,7 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
         DMNModelService("nulls", "nulls", None, "JSON"),
       Seq(field))
 
-    val res = ds.select(com.sparkutils.dmn.DMN.dmnEval(exec)).as[String].collect()
+    val res = ds.select(com.sparkutils.dmn.DMN.dmnEval(exec)).as[String](TypedExpressionEncoder[String]).collect()
     res
   }
 

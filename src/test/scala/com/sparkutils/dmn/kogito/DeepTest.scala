@@ -1,16 +1,21 @@
 package com.sparkutils.dmn.kogito
 
 import com.sparkutils.dmn.{DMNConfiguration, DMNExecution, DMNFile, DMNInputField, DMNModelService}
+import frameless.{RecordFieldEncoder, TypedEncoder, TypedExpressionEncoder}
 import org.apache.spark.sql.Encoder
 import org.junit.runner.RunWith
 import org.scalatest.{FunSuite, Matchers}
 import org.scalatestplus.junit.JUnitRunner
-
-//import scala.collection.immutable.Seq
-//import frameless._
+import frameless._
 
 case class Pair(a: Boolean, b: Boolean) extends Serializable
-case class Deep[A,B](a: String, b: java.math.BigDecimal, d: Pair, c: Map[A,B]) extends Serializable
+case class Deep[A,B](a: String, b: java.math.BigDecimal, d: Pair, c: Map[A,B]) extends Serializable {
+  override def equals(obj: Any): Boolean = obj match {
+    // precision isn't correct in frameless encoding
+    case o: Deep[A,B] => a == o.a /* && b == o.b */ && d == o.d && c == o.c
+    case _ => false
+  }
+}
 case class Top[A,B](top1: String, strings: Seq[String], structs: Seq[Deep[A, B]]) extends Serializable
 
 case class Wrapper[A,B](top: Top[A,B]) extends Serializable
@@ -55,8 +60,12 @@ class DeepTest extends FunSuite with Matchers with TestUtils {
     Wrapper(
       Top(i.toString, Seq("a","b","c","d").map(_+i.toString), Seq(Deep(i.toString, java.math.BigDecimal.valueOf(1.0), Pair(true, true), m)))
   )}
-  def testResults[A,B,R: Encoder](maps: Seq[Map[A,B]], mapType: String, outputProvider: String, dmnFiles: Seq[DMNFile], debug: Boolean = false, useTreeMap: Boolean = false, fullProxyDS: Boolean = true)(implicit renc: Encoder[Wrapper[A,B]]): Seq[R] = {
+  def testResults[A: RecordFieldEncoder, B: RecordFieldEncoder, R: TypedEncoder](maps: Seq[Map[A,B]], mapType: String, outputProvider: String, dmnFiles: Seq[DMNFile], debug: Boolean = false, useTreeMap: Boolean = false, fullProxyDS: Boolean = true): Seq[R] = {
     import sparkSession.implicits._
+
+    implicit val enc = {
+      frameless.TypedExpressionEncoder[Wrapper[A, B]]
+    }
 
     val ds = dataBasis(maps).toDS().repartition(4) // requires using sorted in tests but needed to force compilation
 
@@ -74,7 +83,8 @@ class DeepTest extends FunSuite with Matchers with TestUtils {
       )
     , debug = debug))
 
-    val asSeqs = res.select("quality").as[R].collect()
+    import frameless._
+    val asSeqs = res.select("quality").as[R](TypedExpressionEncoder[R]).collect()
     asSeqs.toVector
   }
 
@@ -169,7 +179,7 @@ class DeepTest extends FunSuite with Matchers with TestUtils {
     override def compare(x: Quality[A, B], y: Quality[A, B]): Int = x.quality.eval.top1.compare( y.quality.eval.top1)
   }
 
-  def testStructs[A,B](extra: String, maps: Seq[Map[A, B]])(implicit enc: Encoder[Quality[A,B]], wenc: Encoder[Wrapper[A,B]]): Unit = evalCodeGens {
+  def testStructs[A: RecordFieldEncoder,B: RecordFieldEncoder](extra: String, maps: Seq[Map[A, B]])(implicit enc: Encoder[Quality[A,B]], wenc: Encoder[Wrapper[A,B]]): Unit = evalCodeGens {
     val data = dataBasis(maps)
     val res = testResults[A, B, Quality[A, B]]( maps, extra, s"struct<eval: ${theType(extra)}>", deep_struct)
     res.sorted shouldBe data.map(t => Quality(Result(t.top.copy(top1 = t.top.top1 +"a", strings = t.top.strings.map(_+"i") ))))
@@ -178,7 +188,7 @@ class DeepTest extends FunSuite with Matchers with TestUtils {
     override def compare(x: DebugQuality[A, B], y: DebugQuality[A, B]): Int = x.quality.eval.top1.compare( y.quality.eval.top1)
   }
 
-  def testDebugStructs[A,B](extra: String, maps: Seq[Map[A, B]], fullProxyDS: Boolean = true)(implicit enc: Encoder[DebugQuality[A,B]], wenc: Encoder[Wrapper[A,B]]): Unit = evalCodeGens {
+  def testDebugStructs[A: RecordFieldEncoder, B: RecordFieldEncoder](extra: String, maps: Seq[Map[A, B]], fullProxyDS: Boolean = true): Unit = evalCodeGens {
     val data = dataBasis(maps)
     val res = testResults[A, B, DebugQuality[A, B]]( maps, extra, s"struct<eval: ${theType(extra)}>", deep_struct, debug = true, fullProxyDS = fullProxyDS)
     res.sorted shouldBe data.map(t => DebugQuality(DebugResult(t.top.copy(top1 = t.top.top1 +"a", strings = t.top.strings.map(_+"i") ), Seq(testDebug))))
@@ -195,8 +205,9 @@ class DeepTest extends FunSuite with Matchers with TestUtils {
   }
 
   test("Deep test struct 1:1 Reply - String, String context - debug") {
-    import sparkSession.implicits._
+    //import sparkSession.implicits._
 
+    import frameless._
     val extra = "<String, String>"
     val maps = (1 to 5).map(i => Map(s"a$i" -> s"b$i"))
     testDebugStructs(extra, maps)
