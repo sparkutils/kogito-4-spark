@@ -266,9 +266,6 @@ case class KogitoJSONResultProvider(debug: Boolean, config: Map[String, String])
     ))
   }
 
-  override def genCode(ctx: CodegenContext): ExprCode =
-    super.genCode(ctx)
-
   override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     val mapperName = ctx.addMutableState(classOf[ObjectMapper].getName, "mapper", v =>
       s"""
