@@ -1,0 +1,2577 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          com/sparkutils/dmn/kogito/types/Utils.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package com.sparkutils.dmn.kogito.types
+</span>2 <span style=''>
+</span>3 <span style=''>import com.sparkutils.dmn.kogito.types.ContextInterfaces.Accessor
+</span>4 <span style=''>import org.apache.spark.sql.catalyst.expressions.UnsafeArrayData
+</span>5 <span style=''>import org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper
+</span>6 <span style=''>import org.apache.spark.sql.catalyst.expressions.codegen.{Block, CodegenContext, ExprCode, JavaCode}
+</span>7 <span style=''>import org.apache.spark.sql.catalyst.util.ArrayData
+</span>8 <span style=''>import org.apache.spark.sql.types.DataType
+</span>9 <span style=''>import org.kie.dmn.api.core.DMNDecisionResult
+</span>10 <span style=''>
+</span>11 <span style=''>import java.util
+</span>12 <span style=''>import java.util.Map
+</span>13 <span style=''>import scala.collection.JavaConverters.{asJavaIteratorConverter, setAsJavaSetConverter}
+</span>14 <span style=''>import scala.reflect.ClassTag
+</span>15 <span style=''>
+</span>16 <span style=''>object Arrays {
+</span>17 <span style=''>  def exprCode(clazz: Class[_], ctx: CodegenContext): ExprCode = {
+</span>18 <span style=''>    val isNull = </span><span style='background: #AEF1AE'>ctx.freshName(&quot;isNull&quot;)</span><span style=''>
+</span>19 <span style=''>    val value = </span><span style='background: #AEF1AE'>ctx.freshName(&quot;value&quot;)</span><span style=''>
+</span>20 <span style=''>
+</span>21 <span style=''>    val expr = </span><span style='background: #AEF1AE'>ExprCode(
+</span>22 <span style=''></span><span style='background: #AEF1AE'>      JavaCode.isNullVariable(isNull),
+</span>23 <span style=''></span><span style='background: #AEF1AE'>      JavaCode.variable(value, clazz)
+</span>24 <span style=''></span><span style='background: #AEF1AE'>    )</span><span style=''>
+</span>25 <span style=''>    expr
+</span>26 <span style=''>  }
+</span>27 <span style=''>
+</span>28 <span style=''>  def exprCode(boxed: Class[_], ctx: CodegenContext, code: Block, cast: Boolean = true): ExprCode = {
+</span>29 <span style=''>    val isNull = </span><span style='background: #AEF1AE'>ctx.freshName(&quot;isNull&quot;)</span><span style=''>
+</span>30 <span style=''>    val value = </span><span style='background: #AEF1AE'>ctx.freshName(&quot;value&quot;)</span><span style=''>
+</span>31 <span style=''>
+</span>32 <span style=''>    val expr = </span><span style='background: #AEF1AE'>ExprCode(
+</span>33 <span style=''></span><span style='background: #AEF1AE'>      JavaCode.isNullVariable(isNull),
+</span>34 <span style=''></span><span style='background: #AEF1AE'>      JavaCode.variable(value, classOf[Object])
+</span>35 <span style=''></span><span style='background: #AEF1AE'>    )</span><span style=''>
+</span>36 <span style=''>    </span><span style='background: #AEF1AE'>expr.copy(code =
+</span>37 <span style=''></span><span style='background: #AEF1AE'>      code&quot;&quot;&quot;
+</span>38 <span style=''></span><span style='background: #AEF1AE'>        Object ${expr.value} = ${if (cast) s&quot;(${boxed.getName})&quot; else &quot;&quot;} $code
+</span>39 <span style=''></span><span style='background: #AEF1AE'>        boolean ${expr.isNull} = (${expr.value} == null);
+</span>40 <span style=''></span><span style='background: #AEF1AE'>          &quot;&quot;&quot;)</span><span style=''>
+</span>41 <span style=''>  }
+</span>42 <span style=''>
+</span>43 <span style=''>}
+</span>44 <span style=''>
+</span>45 <span style=''>
+</span>46 <span style=''>
+</span>47 <span style=''>class BaseKogitoMap(path: Any, pairs: scala.collection.Map[String, (Int, Accessor[_])]) extends SimpleMap {
+</span>48 <span style=''>  override def get(key: Any): AnyRef = {
+</span>49 <span style=''>    val (i, a) = pairs(key.toString)
+</span>50 <span style=''>    val t = </span><span style='background: #AEF1AE'>a.forPath(path, i)</span><span style=''>
+</span>51 <span style=''>    if (</span><span style='background: #AEF1AE'>t == null</span><span style=''>) </span><span style='background: #F0ADAD'>null</span><span style=''> else </span><span style='background: #AEF1AE'>t.asInstanceOf[AnyRef]</span><span style=''>
+</span>52 <span style=''>  }
+</span>53 <span style=''>
+</span>54 <span style=''>  // called by Jackson serializing
+</span>55 <span style=''>  override def entrySet(): util.Set[util.Map.Entry[String, Object]] = </span><span style='background: #AEF1AE'>pairs.map{case (key, (i, accessor)) =&gt; new util.Map.Entry[String, Object]{
+</span>56 <span style=''></span><span style='background: #AEF1AE'>    override def getKey: String = key
+</span>57 <span style=''></span><span style='background: #AEF1AE'>
+</span>58 <span style=''></span><span style='background: #AEF1AE'>    override def getValue: Object = {
+</span>59 <span style=''></span><span style='background: #AEF1AE'>      val t = accessor.forPath(path, i)
+</span>60 <span style=''></span><span style='background: #AEF1AE'>      if (t == null) </span><span style='background: #F0ADAD'>null</span><span style='background: #AEF1AE'> else t.asInstanceOf[AnyRef]
+</span>61 <span style=''></span><span style='background: #AEF1AE'>    }
+</span>62 <span style=''></span><span style='background: #AEF1AE'>    // $COVERAGE-OFF$
+</span>63 <span style=''></span><span style='background: #AEF1AE'>    override def setValue(value: Object): AnyRef = ???
+</span>64 <span style=''></span><span style='background: #AEF1AE'>    // $COVERAGE-ON$
+</span>65 <span style=''></span><span style='background: #AEF1AE'>  }}.toSet.asJava</span><span style=''>
+</span>66 <span style=''>
+</span>67 <span style=''>  // $COVERAGE-OFF$
+</span>68 <span style=''>  override def size(): Int = pairs.size
+</span>69 <span style=''>  // $COVERAGE-ON$
+</span>70 <span style=''>}
+</span>71 <span style=''>
+</span>72 <span style=''>trait ProxyEntry[T] {
+</span>73 <span style=''>  def get(i: Int, t: T): java.util.Map.Entry[String, Object]
+</span>74 <span style=''>}
+</span>75 <span style=''>
+</span>76 <span style=''>class DecisionResultFullProxyEntry() extends ProxyEntry[java.util.List[org.kie.dmn.api.core.DMNDecisionResult]] {
+</span>77 <span style=''>
+</span>78 <span style=''>  private var key = </span><span style='background: #AEF1AE'>&quot;&quot;</span><span style=''>
+</span>79 <span style=''>  private var res: Object = _
+</span>80 <span style=''>  private var entry = </span><span style='background: #AEF1AE'>new</span><span style=''> Map.Entry[String, Object] {
+</span>81 <span style=''>    override def getKey: String = </span><span style='background: #AEF1AE'>key</span><span style=''>
+</span>82 <span style=''>
+</span>83 <span style=''>    override def getValue: AnyRef = </span><span style='background: #AEF1AE'>res</span><span style=''>
+</span>84 <span style=''>
+</span>85 <span style=''>    // $COVERAGE-OFF$
+</span>86 <span style=''>    override def setValue(value: Object): AnyRef = ???
+</span>87 <span style=''>    // $COVERAGE-ON$
+</span>88 <span style=''>  }
+</span>89 <span style=''>
+</span>90 <span style=''>  override def get(i: Int, t: util.List[DMNDecisionResult]): Map.Entry[String, Object] = {
+</span>91 <span style=''>    val r = </span><span style='background: #AEF1AE'>t.get(i)</span><span style=''>
+</span>92 <span style=''>    </span><span style='background: #AEF1AE'>key = r.getDecisionName</span><span style=''>
+</span>93 <span style=''>    </span><span style='background: #AEF1AE'>res = r.getResult</span><span style=''>
+</span>94 <span style=''>    </span><span style='background: #AEF1AE'>entry</span><span style=''>
+</span>95 <span style=''>  }
+</span>96 <span style=''>}
+</span>97 <span style=''>
+</span>98 <span style=''>class ProxyMap[T](var _size: Int, var t: T, val proxyEntry: ProxyEntry[T]) extends SimpleMap {
+</span>99 <span style=''>
+</span>100 <span style=''>  // resets the underlying data - e.g. new dmn result
+</span>101 <span style=''>  def reset(size: Int, _t: T): Unit = {
+</span>102 <span style=''>    </span><span style='background: #AEF1AE'>_size = size</span><span style=''>
+</span>103 <span style=''>    </span><span style='background: #AEF1AE'>t = _t</span><span style=''>
+</span>104 <span style=''>    </span><span style='background: #AEF1AE'>proxySet.itr.reset()</span><span style=''>
+</span>105 <span style=''>  }
+</span>106 <span style=''>
+</span>107 <span style=''>  override def get(key: Any): AnyRef = {
+</span>108 <span style=''>    </span><span style='background: #AEF1AE'>for(i &lt;- 0 until _size) {
+</span>109 <span style=''></span><span style='background: #AEF1AE'>      val e = proxyEntry.get(i, t)
+</span>110 <span style=''></span><span style='background: #AEF1AE'>      if (e.getKey == key.toString) {
+</span>111 <span style=''></span><span style='background: #AEF1AE'>        return e.getValue
+</span>112 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>113 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>114 <span style=''>    </span><span style='background: #F0ADAD'>null</span><span style=''>
+</span>115 <span style=''>  }
+</span>116 <span style=''>
+</span>117 <span style=''>  val proxySet = </span><span style='background: #AEF1AE'>new ProxySet[T](this)</span><span style=''>
+</span>118 <span style=''>  override def entrySet(): util.Set[util.Map.Entry[String, Object]] = </span><span style='background: #AEF1AE'>proxySet</span><span style=''>
+</span>119 <span style=''>
+</span>120 <span style=''>  override def size(): Int = </span><span style='background: #AEF1AE'>_size</span><span style=''>
+</span>121 <span style=''>}
+</span>122 <span style=''>
+</span>123 <span style=''>class ProxyIterator[E](map: ProxyMap[E]) extends util.Iterator[util.Map.Entry[String, Object]] {
+</span>124 <span style=''>  var i = </span><span style='background: #AEF1AE'>0</span><span style=''>
+</span>125 <span style=''>  def reset(): Unit = {
+</span>126 <span style=''>    </span><span style='background: #AEF1AE'>i = 0</span><span style=''>
+</span>127 <span style=''>  }
+</span>128 <span style=''>
+</span>129 <span style=''>  override def hasNext: Boolean =
+</span>130 <span style=''>    </span><span style='background: #AEF1AE'>i &lt; map.size</span><span style=''>
+</span>131 <span style=''>
+</span>132 <span style=''>  override def next(): util.Map.Entry[String, Object] = {
+</span>133 <span style=''>    val r = </span><span style='background: #AEF1AE'>map.proxyEntry.get(i, map.t)</span><span style=''>
+</span>134 <span style=''>    </span><span style='background: #AEF1AE'>i += 1</span><span style=''>
+</span>135 <span style=''>    r
+</span>136 <span style=''>  }
+</span>137 <span style=''>}
+</span>138 <span style=''>
+</span>139 <span style=''>// only provides iterator
+</span>140 <span style=''>class ProxySet[E](map: ProxyMap[E]) extends java.util.Set[util.Map.Entry[String, Object]] {
+</span>141 <span style=''>  // $COVERAGE-OFF$
+</span>142 <span style=''>  override def size(): Int = ???
+</span>143 <span style=''>
+</span>144 <span style=''>  override def isEmpty: Boolean = ???
+</span>145 <span style=''>
+</span>146 <span style=''>  override def contains(o: Any): Boolean = ???
+</span>147 <span style=''>  // $COVERAGE-ON$
+</span>148 <span style=''>
+</span>149 <span style=''>  val itr = </span><span style='background: #AEF1AE'>new ProxyIterator(map)</span><span style=''>
+</span>150 <span style=''>
+</span>151 <span style=''>  override def iterator(): util.Iterator[util.Map.Entry[String, Object]] = </span><span style='background: #AEF1AE'>itr</span><span style=''>
+</span>152 <span style=''>
+</span>153 <span style=''>  // $COVERAGE-OFF$
+</span>154 <span style=''>  override def retainAll(c: util.Collection[_]): Boolean = ???
+</span>155 <span style=''>
+</span>156 <span style=''>  override def removeAll(c: util.Collection[_]): Boolean = ???
+</span>157 <span style=''>
+</span>158 <span style=''>  override def clear(): Unit = ???
+</span>159 <span style=''>
+</span>160 <span style=''>  override def toArray: Array[AnyRef] = ???
+</span>161 <span style=''>
+</span>162 <span style=''>  // ERROR in intellij is not present in actual compiler
+</span>163 <span style=''>  override def toArray[T](a: Array[T with Object]): Array[T with Object] = ???
+</span>164 <span style=''>
+</span>165 <span style=''>  override def add(e: Map.Entry[String, Object]): Boolean = ???
+</span>166 <span style=''>
+</span>167 <span style=''>  override def remove(o: Any): Boolean = ???
+</span>168 <span style=''>
+</span>169 <span style=''>  override def containsAll(c: util.Collection[_]): Boolean = ???
+</span>170 <span style=''>
+</span>171 <span style=''>  override def addAll(c: util.Collection[_ &lt;: Map.Entry[String, Object]]): Boolean = ???
+</span>172 <span style=''>  // $COVERAGE-ON$
+</span>173 <span style=''>}
+</span>174 <span style=''>
+</span>175 <span style=''>abstract class SimpleMap extends util.Map[String, Object] {
+</span>176 <span style=''>  // called by kogito
+</span>177 <span style=''>  //override def get(key: Any): AnyRef = ???
+</span>178 <span style=''>
+</span>179 <span style=''>  // called by Jackson serializing, strictly it's just the iterator
+</span>180 <span style=''>  //override def entrySet(): util.Set[util.Map.Entry[String, Object]] = ???
+</span>181 <span style=''>
+</span>182 <span style=''>  override def isEmpty: Boolean = </span><span style='background: #AEF1AE'>size() == 0</span><span style=''>
+</span>183 <span style=''>
+</span>184 <span style=''>  // Never called by kogito
+</span>185 <span style=''>
+</span>186 <span style=''>  // $COVERAGE-OFF$
+</span>187 <span style=''>  override def keySet(): util.Set[String] = ??? //pairs.keySet.asJava
+</span>188 <span style=''>
+</span>189 <span style=''>  //override def size(): Int = ??? //pairs.size
+</span>190 <span style=''>
+</span>191 <span style=''>
+</span>192 <span style=''>  override def containsKey(key: Any): Boolean = ??? // pairs.contains(key.toString)
+</span>193 <span style=''>
+</span>194 <span style=''>  // Never being implemented
+</span>195 <span style=''>
+</span>196 <span style=''>  override def containsValue(value: Any): Boolean = ???
+</span>197 <span style=''>
+</span>198 <span style=''>  override def values(): util.Collection[Object] = ???
+</span>199 <span style=''>
+</span>200 <span style=''>  override def put(key: String, value: Object): AnyRef = ???
+</span>201 <span style=''>
+</span>202 <span style=''>  override def remove(key: Any): AnyRef = ???
+</span>203 <span style=''>
+</span>204 <span style=''>  override def putAll(m: util.Map[_ &lt;: String, _ &lt;: Object]): Unit = ???
+</span>205 <span style=''>
+</span>206 <span style=''>  override def clear(): Unit = ???
+</span>207 <span style=''>  // $COVERAGE-ON$
+</span>208 <span style=''>}
+</span>209 <span style=''>
+</span>210 <span style=''>class ArrayEntry[K, V](keys: Array[K], values: Array[V], i: Int) extends java.util.Map.Entry[K, V] {
+</span>211 <span style=''>
+</span>212 <span style=''>  override def getKey: K = </span><span style='background: #AEF1AE'>keys(i)</span><span style=''>
+</span>213 <span style=''>
+</span>214 <span style=''>  override def getValue: V = </span><span style='background: #AEF1AE'>values(i)</span><span style=''>
+</span>215 <span style=''>
+</span>216 <span style=''>  // $COVERAGE-OFF$
+</span>217 <span style=''>  override def setValue(value: V): V = ???
+</span>218 <span style=''>  // $COVERAGE-ON$
+</span>219 <span style=''>}
+</span>220 <span style=''>
+</span>221 <span style=''>class ArraySet[E](backed: Array[E]) extends java.util.Set[E] {
+</span>222 <span style=''>  // $COVERAGE-OFF$
+</span>223 <span style=''>  override def size(): Int = backed.length
+</span>224 <span style=''>
+</span>225 <span style=''>  override def isEmpty: Boolean = backed.isEmpty
+</span>226 <span style=''>
+</span>227 <span style=''>  override def contains(o: Any): Boolean =
+</span>228 <span style=''>    o match {
+</span>229 <span style=''>      case o: E =&gt;  backed.contains(o)
+</span>230 <span style=''>      case _ =&gt; false
+</span>231 <span style=''>    }
+</span>232 <span style=''>  // $COVERAGE-ON$
+</span>233 <span style=''>  override def iterator(): util.Iterator[E] =
+</span>234 <span style=''>    </span><span style='background: #AEF1AE'>backed.iterator.asJava</span><span style=''>
+</span>235 <span style=''>
+</span>236 <span style=''>  // $COVERAGE-OFF$
+</span>237 <span style=''>  override def toArray: Array[AnyRef] = backed.asInstanceOf[Array[AnyRef]]
+</span>238 <span style=''>
+</span>239 <span style=''>  // ERROR in intellij is not present in actual compiler
+</span>240 <span style=''>  override def toArray[T](a: Array[T with Object]): Array[T with Object] = {
+</span>241 <span style=''>    System.arraycopy(backed, 0, a, 0, backed.length)
+</span>242 <span style=''>    a
+</span>243 <span style=''>  }
+</span>244 <span style=''>
+</span>245 <span style=''>  override def add(e: E): Boolean = ???
+</span>246 <span style=''>
+</span>247 <span style=''>  override def remove(o: Any): Boolean = ???
+</span>248 <span style=''>
+</span>249 <span style=''>  override def containsAll(c: util.Collection[_]): Boolean = ???
+</span>250 <span style=''>
+</span>251 <span style=''>  override def addAll(c: util.Collection[_ &lt;: E]): Boolean = ???
+</span>252 <span style=''>
+</span>253 <span style=''>  override def retainAll(c: util.Collection[_]): Boolean = ???
+</span>254 <span style=''>
+</span>255 <span style=''>  override def removeAll(c: util.Collection[_]): Boolean = ???
+</span>256 <span style=''>
+</span>257 <span style=''>  override def clear(): Unit = ???
+</span>258 <span style=''>
+</span>259 <span style=''>  // $COVERAGE-ON$
+</span>260 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          1170
+        </td>
+        <td>
+          747
+          -
+          770
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext.freshName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ctx.freshName(&quot;isNull&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          1171
+        </td>
+        <td>
+          787
+          -
+          809
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext.freshName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ctx.freshName(&quot;value&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          1174
+        </td>
+        <td>
+          826
+          -
+          918
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.apply(org.apache.spark.sql.catalyst.expressions.codegen.JavaCode.isNullVariable(isNull), org.apache.spark.sql.catalyst.expressions.codegen.JavaCode.variable(value, clazz))
+        </td>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          1172
+        </td>
+        <td>
+          842
+          -
+          873
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.JavaCode.isNullVariable
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.expressions.codegen.JavaCode.isNullVariable(isNull)
+        </td>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          1173
+        </td>
+        <td>
+          881
+          -
+          912
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.JavaCode.variable
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.expressions.codegen.JavaCode.variable(value, clazz)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          1175
+        </td>
+        <td>
+          1052
+          -
+          1075
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext.freshName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ctx.freshName(&quot;isNull&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          1176
+        </td>
+        <td>
+          1092
+          -
+          1114
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext.freshName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ctx.freshName(&quot;value&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          1179
+        </td>
+        <td>
+          1131
+          -
+          1233
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.apply(org.apache.spark.sql.catalyst.expressions.codegen.JavaCode.isNullVariable(isNull), org.apache.spark.sql.catalyst.expressions.codegen.JavaCode.variable(value, classOf[java.lang.Object]))
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          1177
+        </td>
+        <td>
+          1147
+          -
+          1178
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.JavaCode.isNullVariable
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.expressions.codegen.JavaCode.isNullVariable(isNull)
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          1178
+        </td>
+        <td>
+          1186
+          -
+          1227
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.JavaCode.variable
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.expressions.codegen.JavaCode.variable(value, classOf[java.lang.Object])
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          1192
+        </td>
+        <td>
+          1238
+          -
+          1421
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          expr.copy(org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;\n        Object &quot;, &quot; = &quot;, &quot; &quot;, &quot;\n        boolean &quot;, &quot; = (&quot;, &quot; == null);\n          &quot;)).code(expr.value, if (cast)
+  scala.StringContext.apply(&quot;(&quot;, &quot;)&quot;).s(boxed.getName())
+else
+  &quot;&quot;, code, expr.isNull, expr.value), expr.copy$default$2, expr.copy$default$3)
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          1180
+        </td>
+        <td>
+          1261
+          -
+          1420
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;\n        Object &quot;, &quot; = &quot;, &quot; &quot;, &quot;\n        boolean &quot;, &quot; = (&quot;, &quot; == null);\n          &quot;)
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          1191
+        </td>
+        <td>
+          1261
+          -
+          1420
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper.code
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;\n        Object &quot;, &quot; = &quot;, &quot; &quot;, &quot;\n        boolean &quot;, &quot; = (&quot;, &quot; == null);\n          &quot;)).code(expr.value, if (cast)
+  scala.StringContext.apply(&quot;(&quot;, &quot;)&quot;).s(boxed.getName())
+else
+  &quot;&quot;, code, expr.isNull, expr.value)
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          1181
+        </td>
+        <td>
+          1286
+          -
+          1296
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          expr.value
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          1182
+        </td>
+        <td>
+          1314
+          -
+          1316
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;(&quot;
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          1183
+        </td>
+        <td>
+          1331
+          -
+          1333
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;)&quot;
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          1184
+        </td>
+        <td>
+          1317
+          -
+          1330
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Class.getName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          boxed.getName()
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          1185
+        </td>
+        <td>
+          1312
+          -
+          1333
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.s
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;(&quot;, &quot;)&quot;).s(boxed.getName())
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          1186
+        </td>
+        <td>
+          1312
+          -
+          1333
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.StringContext.s
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;(&quot;, &quot;)&quot;).s(boxed.getName())
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          1187
+        </td>
+        <td>
+          1339
+          -
+          1341
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;&quot;
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          1188
+        </td>
+        <td>
+          1339
+          -
+          1341
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;&quot;
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          1189
+        </td>
+        <td>
+          1367
+          -
+          1378
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.isNull
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          expr.isNull
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          1190
+        </td>
+        <td>
+          1385
+          -
+          1395
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          expr.value
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          1193
+        </td>
+        <td>
+          1590
+          -
+          1590
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$1._1
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          1194
+        </td>
+        <td>
+          1593
+          -
+          1593
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$1._2
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          1195
+        </td>
+        <td>
+          1640
+          -
+          1644
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.BaseKogitoMap.path
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          BaseKogitoMap.this.path
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          1196
+        </td>
+        <td>
+          1630
+          -
+          1648
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ContextInterfaces.Accessor.forPath
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          a.forPath(BaseKogitoMap.this.path, i)
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          1197
+        </td>
+        <td>
+          1657
+          -
+          1666
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Any.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          t.==(null)
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          1198
+        </td>
+        <td>
+          1668
+          -
+          1672
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          1199
+        </td>
+        <td>
+          1668
+          -
+          1672
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          1200
+        </td>
+        <td>
+          1678
+          -
+          1700
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          t.asInstanceOf[AnyRef]
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          1201
+        </td>
+        <td>
+          1678
+          -
+          1700
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          t.asInstanceOf[AnyRef]
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          1210
+        </td>
+        <td>
+          1850
+          -
+          1853
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.BaseKogitoMap.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          1211
+        </td>
+        <td>
+          1850
+          -
+          2164
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  final class $anon extends Object with java.util.Map.Entry[String,Object] {
+    def &lt;init&gt;(): &lt;$anon: java.util.Map.Entry[String,Object]&gt; = {
+      $anon.super.&lt;init&gt;();
+      ()
+    };
+    override def getKey: String = key;
+    override def getValue: Object = {
+      val t: Any = accessor.forPath(BaseKogitoMap.this.path, i);
+      if (t.==(null))
+        null
+      else
+        t.asInstanceOf[AnyRef]
+    };
+    override def setValue(value: Object): AnyRef = scala.Predef.???
+  };
+  new $anon()
+}
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          1212
+        </td>
+        <td>
+          1820
+          -
+          1820
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Iterable.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Iterable.canBuildFrom[java.util.Map.Entry[String,Object]]
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          1202
+        </td>
+        <td>
+          1994
+          -
+          1998
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.BaseKogitoMap.path
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          BaseKogitoMap.this.path
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          1203
+        </td>
+        <td>
+          1977
+          -
+          2002
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ContextInterfaces.Accessor.forPath
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          accessor.forPath(BaseKogitoMap.this.path, i)
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          1204
+        </td>
+        <td>
+          2013
+          -
+          2022
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Any.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          t.==(null)
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          1205
+        </td>
+        <td>
+          2024
+          -
+          2028
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          1206
+        </td>
+        <td>
+          2024
+          -
+          2028
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          1207
+        </td>
+        <td>
+          2034
+          -
+          2056
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          t.asInstanceOf[AnyRef]
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          1208
+        </td>
+        <td>
+          2034
+          -
+          2056
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          t.asInstanceOf[AnyRef]
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          1213
+        </td>
+        <td>
+          1811
+          -
+          2171
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.TraversableOnce.toSet
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          BaseKogitoMap.this.pairs.map[java.util.Map.Entry[String,Object], Iterable[java.util.Map.Entry[String,Object]]](((x0$1: (String, (Int, com.sparkutils.dmn.kogito.types.ContextInterfaces.Accessor[_]))) =&gt; x0$1 match {
+  case (_1: String, _2: (Int, com.sparkutils.dmn.kogito.types.ContextInterfaces.Accessor[_]))(String, (Int, com.sparkutils.dmn.kogito.types.ContextInterfaces.Accessor[_]))((key @ _), (_1: Int, _2: com.sparkutils.dmn.kogito.types.ContextInterfaces.Accessor[_])(Int, com.sparkutils.dmn.kogito.types.ContextInterfaces.Accessor[_])((i @ _), (accessor @ _))) =&gt; {
+    final class $anon extends Object with java.util.Map.Entry[String,Object] {
+      def &lt;init&gt;(): &lt;$anon: java.util.Map.Entry[String,Object]&gt; = {
+        $anon.super.&lt;init&gt;();
+        ()
+      };
+      override def getKey: String = key;
+      override def getValue: Object = {
+        val t: Any = accessor.forPath(BaseKogitoMap.this.path, i);
+        if (t.==(null))
+          null
+        else
+          t.asInstanceOf[AnyRef]
+      };
+      override def setValue(value: Object): AnyRef = scala.Predef.???
+    };
+    new $anon()
+  }
+}))(collection.this.Iterable.canBuildFrom[java.util.Map.Entry[String,Object]]).toSet[java.util.Map.Entry[String,Object]]
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          1214
+        </td>
+        <td>
+          1811
+          -
+          2178
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.convert.Decorators.AsJava.asJava
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.collection.JavaConverters.setAsJavaSetConverter[java.util.Map.Entry[String,Object]](BaseKogitoMap.this.pairs.map[java.util.Map.Entry[String,Object], Iterable[java.util.Map.Entry[String,Object]]](((x0$1: (String, (Int, com.sparkutils.dmn.kogito.types.ContextInterfaces.Accessor[_]))) =&gt; x0$1 match {
+  case (_1: String, _2: (Int, com.sparkutils.dmn.kogito.types.ContextInterfaces.Accessor[_]))(String, (Int, com.sparkutils.dmn.kogito.types.ContextInterfaces.Accessor[_]))((key @ _), (_1: Int, _2: com.sparkutils.dmn.kogito.types.ContextInterfaces.Accessor[_])(Int, com.sparkutils.dmn.kogito.types.ContextInterfaces.Accessor[_])((i @ _), (accessor @ _))) =&gt; {
+    final class $anon extends Object with java.util.Map.Entry[String,Object] {
+      def &lt;init&gt;(): &lt;$anon: java.util.Map.Entry[String,Object]&gt; = {
+        $anon.super.&lt;init&gt;();
+        ()
+      };
+      override def getKey: String = key;
+      override def getValue: Object = {
+        val t: Any = accessor.forPath(BaseKogitoMap.this.path, i);
+        if (t.==(null))
+          null
+        else
+          t.asInstanceOf[AnyRef]
+      };
+      override def setValue(value: Object): AnyRef = scala.Predef.???
+    };
+    new $anon()
+  }
+}))(collection.this.Iterable.canBuildFrom[java.util.Map.Entry[String,Object]]).toSet[java.util.Map.Entry[String,Object]]).asJava
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          1216
+        </td>
+        <td>
+          2483
+          -
+          2485
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;&quot;
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          1220
+        </td>
+        <td>
+          2538
+          -
+          2541
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.DecisionResultFullProxyEntry.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          1217
+        </td>
+        <td>
+          2604
+          -
+          2607
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.DecisionResultFullProxyEntry.key
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          DecisionResultFullProxyEntry.this.key
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          1218
+        </td>
+        <td>
+          2645
+          -
+          2648
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.DecisionResultFullProxyEntry.res
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          DecisionResultFullProxyEntry.this.res
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          1221
+        </td>
+        <td>
+          2856
+          -
+          2864
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.List.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          t.get(i)
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          1222
+        </td>
+        <td>
+          2875
+          -
+          2892
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.kie.dmn.api.core.DMNDecisionResult.getDecisionName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          r.getDecisionName()
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          1223
+        </td>
+        <td>
+          2869
+          -
+          2892
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.DecisionResultFullProxyEntry.key_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          DecisionResultFullProxyEntry.this.key_=(r.getDecisionName())
+        </td>
+      </tr><tr>
+        <td>
+          93
+        </td>
+        <td>
+          1224
+        </td>
+        <td>
+          2903
+          -
+          2914
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.kie.dmn.api.core.DMNDecisionResult.getResult
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          r.getResult()
+        </td>
+      </tr><tr>
+        <td>
+          93
+        </td>
+        <td>
+          1225
+        </td>
+        <td>
+          2897
+          -
+          2914
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.DecisionResultFullProxyEntry.res_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          DecisionResultFullProxyEntry.this.res_=(r.getResult())
+        </td>
+      </tr><tr>
+        <td>
+          94
+        </td>
+        <td>
+          1226
+        </td>
+        <td>
+          2919
+          -
+          2924
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.DecisionResultFullProxyEntry.entry
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          DecisionResultFullProxyEntry.this.entry
+        </td>
+      </tr><tr>
+        <td>
+          102
+        </td>
+        <td>
+          1227
+        </td>
+        <td>
+          3126
+          -
+          3138
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ProxyMap._size_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ProxyMap.this._size_=(size)
+        </td>
+      </tr><tr>
+        <td>
+          103
+        </td>
+        <td>
+          1228
+        </td>
+        <td>
+          3143
+          -
+          3149
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ProxyMap.t_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ProxyMap.this.t_=(_t)
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          1229
+        </td>
+        <td>
+          3154
+          -
+          3174
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ProxyIterator.reset
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ProxyMap.this.proxySet.itr.reset()
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          1230
+        </td>
+        <td>
+          3234
+          -
+          3235
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          1231
+        </td>
+        <td>
+          3242
+          -
+          3247
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ProxyMap._size
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ProxyMap.this._size
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          1240
+        </td>
+        <td>
+          3225
+          -
+          3363
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.Range.foreach
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.intWrapper(0).until(ProxyMap.this._size).foreach[Unit](((i: Int) =&gt; {
+  val e: java.util.Map.Entry[String,Object] = ProxyMap.this.proxyEntry.get(i, ProxyMap.this.t);
+  if (e.getKey().==(key.toString()))
+    return e.getValue()
+  else
+    ()
+}))
+        </td>
+      </tr><tr>
+        <td>
+          109
+        </td>
+        <td>
+          1232
+        </td>
+        <td>
+          3283
+          -
+          3284
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ProxyMap.t
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ProxyMap.this.t
+        </td>
+      </tr><tr>
+        <td>
+          109
+        </td>
+        <td>
+          1233
+        </td>
+        <td>
+          3265
+          -
+          3285
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ProxyEntry.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ProxyMap.this.proxyEntry.get(i, ProxyMap.this.t)
+        </td>
+      </tr><tr>
+        <td>
+          110
+        </td>
+        <td>
+          1234
+        </td>
+        <td>
+          3308
+          -
+          3320
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Any.toString
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          key.toString()
+        </td>
+      </tr><tr>
+        <td>
+          110
+        </td>
+        <td>
+          1235
+        </td>
+        <td>
+          3296
+          -
+          3320
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          e.getKey().==(key.toString())
+        </td>
+      </tr><tr>
+        <td>
+          110
+        </td>
+        <td>
+          1238
+        </td>
+        <td>
+          3292
+          -
+          3292
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          110
+        </td>
+        <td>
+          1239
+        </td>
+        <td>
+          3292
+          -
+          3292
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          1236
+        </td>
+        <td>
+          3339
+          -
+          3349
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.Map.Entry.getValue
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          e.getValue()
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          1237
+        </td>
+        <td>
+          3332
+          -
+          3349
+        </td>
+        <td>
+          Return
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ProxyMap.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          return e.getValue()
+        </td>
+      </tr><tr>
+        <td>
+          114
+        </td>
+        <td>
+          1241
+        </td>
+        <td>
+          3368
+          -
+          3372
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          117
+        </td>
+        <td>
+          1242
+        </td>
+        <td>
+          3395
+          -
+          3416
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ProxySet.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new com.sparkutils.dmn.kogito.types.ProxySet[T](this)
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          1243
+        </td>
+        <td>
+          3487
+          -
+          3495
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ProxyMap.proxySet
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ProxyMap.this.proxySet
+        </td>
+      </tr><tr>
+        <td>
+          120
+        </td>
+        <td>
+          1244
+        </td>
+        <td>
+          3526
+          -
+          3531
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ProxyMap._size
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ProxyMap.this._size
+        </td>
+      </tr><tr>
+        <td>
+          124
+        </td>
+        <td>
+          1245
+        </td>
+        <td>
+          3642
+          -
+          3643
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          126
+        </td>
+        <td>
+          1246
+        </td>
+        <td>
+          3672
+          -
+          3677
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ProxyIterator.i_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ProxyIterator.this.i_=(0)
+        </td>
+      </tr><tr>
+        <td>
+          130
+        </td>
+        <td>
+          1247
+        </td>
+        <td>
+          3725
+          -
+          3733
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ProxyMap.size
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ProxyIterator.this.map.size()
+        </td>
+      </tr><tr>
+        <td>
+          130
+        </td>
+        <td>
+          1248
+        </td>
+        <td>
+          3721
+          -
+          3733
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&lt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ProxyIterator.this.i.&lt;(ProxyIterator.this.map.size())
+        </td>
+      </tr><tr>
+        <td>
+          133
+        </td>
+        <td>
+          1249
+        </td>
+        <td>
+          3824
+          -
+          3825
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ProxyIterator.i
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ProxyIterator.this.i
+        </td>
+      </tr><tr>
+        <td>
+          133
+        </td>
+        <td>
+          1250
+        </td>
+        <td>
+          3827
+          -
+          3832
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ProxyMap.t
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ProxyIterator.this.map.t
+        </td>
+      </tr><tr>
+        <td>
+          133
+        </td>
+        <td>
+          1251
+        </td>
+        <td>
+          3805
+          -
+          3833
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ProxyEntry.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ProxyIterator.this.map.proxyEntry.get(ProxyIterator.this.i, ProxyIterator.this.map.t)
+        </td>
+      </tr><tr>
+        <td>
+          134
+        </td>
+        <td>
+          1252
+        </td>
+        <td>
+          3838
+          -
+          3844
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ProxyIterator.this.i.+(1)
+        </td>
+      </tr><tr>
+        <td>
+          134
+        </td>
+        <td>
+          1253
+        </td>
+        <td>
+          3838
+          -
+          3844
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ProxyIterator.i_=
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ProxyIterator.this.i_=(ProxyIterator.this.i.+(1))
+        </td>
+      </tr><tr>
+        <td>
+          149
+        </td>
+        <td>
+          1257
+        </td>
+        <td>
+          4166
+          -
+          4169
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ProxySet.map
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ProxySet.this.map
+        </td>
+      </tr><tr>
+        <td>
+          149
+        </td>
+        <td>
+          1258
+        </td>
+        <td>
+          4148
+          -
+          4170
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ProxyIterator.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new com.sparkutils.dmn.kogito.types.ProxyIterator[E](ProxySet.this.map)
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          1259
+        </td>
+        <td>
+          4247
+          -
+          4250
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ProxySet.itr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ProxySet.this.itr
+        </td>
+      </tr><tr>
+        <td>
+          182
+        </td>
+        <td>
+          1269
+        </td>
+        <td>
+          5213
+          -
+          5224
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          SimpleMap.this.size().==(0)
+        </td>
+      </tr><tr>
+        <td>
+          212
+        </td>
+        <td>
+          1278
+        </td>
+        <td>
+          5998
+          -
+          5999
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ArrayEntry.i
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ArrayEntry.this.i
+        </td>
+      </tr><tr>
+        <td>
+          212
+        </td>
+        <td>
+          1279
+        </td>
+        <td>
+          5993
+          -
+          6000
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Array.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ArrayEntry.this.keys.apply(ArrayEntry.this.i)
+        </td>
+      </tr><tr>
+        <td>
+          214
+        </td>
+        <td>
+          1280
+        </td>
+        <td>
+          6038
+          -
+          6039
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ArrayEntry.i
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ArrayEntry.this.i
+        </td>
+      </tr><tr>
+        <td>
+          214
+        </td>
+        <td>
+          1281
+        </td>
+        <td>
+          6031
+          -
+          6040
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Array.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ArrayEntry.this.values.apply(ArrayEntry.this.i)
+        </td>
+      </tr><tr>
+        <td>
+          234
+        </td>
+        <td>
+          1290
+        </td>
+        <td>
+          6497
+          -
+          6503
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ArraySet.backed
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ArraySet.this.backed
+        </td>
+      </tr><tr>
+        <td>
+          234
+        </td>
+        <td>
+          1291
+        </td>
+        <td>
+          6497
+          -
+          6512
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IndexedSeqLike.iterator
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.genericArrayOps[E](ArraySet.this.backed).iterator
+        </td>
+      </tr><tr>
+        <td>
+          234
+        </td>
+        <td>
+          1292
+        </td>
+        <td>
+          6497
+          -
+          6519
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.convert.Decorators.AsJava.asJava
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.collection.JavaConverters.asJavaIteratorConverter[E](scala.Predef.genericArrayOps[E](ArraySet.this.backed).iterator).asJava
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>
