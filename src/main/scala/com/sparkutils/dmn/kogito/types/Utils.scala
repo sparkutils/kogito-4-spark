@@ -14,37 +14,6 @@ import scala.collection.JavaConverters.{asJavaIteratorConverter, setAsJavaSetCon
 import scala.reflect.ClassTag
 
 object Arrays {
-  /**
-   * UnsafeArrayData doesn't allow calling .array, foreach when needed and for others use array
-   *
-   * @param array
-   * @param dataType
-   * @param f
-   * @return
-   */
-  def mapArray[T: ClassTag](array: ArrayData, dataType: DataType, f: Any => T): Array[T] =
-    array match {
-      case _: UnsafeArrayData =>
-        val res = Array.ofDim[T](array.numElements())
-        array.foreach(dataType, (i, v) => res.update(i, f(v)))
-        res
-      case _ => array.array.map(f)
-    }
-/*
-  /**
-   * gets an array out of UnsafeArrayData or others
-   * @param array
-   * @param dataType
-   * @return
-   */
-  def toArray(array: ArrayData, dataType: DataType): Array[Any] =
-    array match {
-      case _: UnsafeArrayData =>
-        mapArray(array, dataType, identity)
-      case _ => array.array
-    }
-*/
-
   def exprCode(clazz: Class[_], ctx: CodegenContext): ExprCode = {
     val isNull = ctx.freshName("isNull")
     val value = ctx.freshName("value")
@@ -90,11 +59,14 @@ class BaseKogitoMap(path: Any, pairs: scala.collection.Map[String, (Int, Accesso
       val t = accessor.forPath(path, i)
       if (t == null) null else t.asInstanceOf[AnyRef]
     }
-
+    // $COVERAGE-OFF$
     override def setValue(value: Object): AnyRef = ???
+    // $COVERAGE-ON$
   }}.toSet.asJava
 
+  // $COVERAGE-OFF$
   override def size(): Int = pairs.size
+  // $COVERAGE-ON$
 }
 
 trait ProxyEntry[T] {
@@ -110,7 +82,9 @@ class DecisionResultFullProxyEntry() extends ProxyEntry[java.util.List[org.kie.d
 
     override def getValue: AnyRef = res
 
+    // $COVERAGE-OFF$
     override def setValue(value: Object): AnyRef = ???
+    // $COVERAGE-ON$
   }
 
   override def get(i: Int, t: util.List[DMNDecisionResult]): Map.Entry[String, Object] = {
@@ -164,16 +138,19 @@ class ProxyIterator[E](map: ProxyMap[E]) extends util.Iterator[util.Map.Entry[St
 
 // only provides iterator
 class ProxySet[E](map: ProxyMap[E]) extends java.util.Set[util.Map.Entry[String, Object]] {
+  // $COVERAGE-OFF$
   override def size(): Int = ???
 
   override def isEmpty: Boolean = ???
 
   override def contains(o: Any): Boolean = ???
+  // $COVERAGE-ON$
 
   val itr = new ProxyIterator(map)
 
   override def iterator(): util.Iterator[util.Map.Entry[String, Object]] = itr
 
+  // $COVERAGE-OFF$
   override def retainAll(c: util.Collection[_]): Boolean = ???
 
   override def removeAll(c: util.Collection[_]): Boolean = ???
@@ -192,6 +169,7 @@ class ProxySet[E](map: ProxyMap[E]) extends java.util.Set[util.Map.Entry[String,
   override def containsAll(c: util.Collection[_]): Boolean = ???
 
   override def addAll(c: util.Collection[_ <: Map.Entry[String, Object]]): Boolean = ???
+  // $COVERAGE-ON$
 }
 
 abstract class SimpleMap extends util.Map[String, Object] {
@@ -201,13 +179,15 @@ abstract class SimpleMap extends util.Map[String, Object] {
   // called by Jackson serializing, strictly it's just the iterator
   //override def entrySet(): util.Set[util.Map.Entry[String, Object]] = ???
 
+  override def isEmpty: Boolean = size() == 0
+
   // Never called by kogito
 
+  // $COVERAGE-OFF$
   override def keySet(): util.Set[String] = ??? //pairs.keySet.asJava
 
   //override def size(): Int = ??? //pairs.size
 
-  override def isEmpty: Boolean = false
 
   override def containsKey(key: Any): Boolean = ??? // pairs.contains(key.toString)
 
@@ -224,6 +204,7 @@ abstract class SimpleMap extends util.Map[String, Object] {
   override def putAll(m: util.Map[_ <: String, _ <: Object]): Unit = ???
 
   override def clear(): Unit = ???
+  // $COVERAGE-ON$
 }
 
 class ArrayEntry[K, V](keys: Array[K], values: Array[V], i: Int) extends java.util.Map.Entry[K, V] {
@@ -232,11 +213,13 @@ class ArrayEntry[K, V](keys: Array[K], values: Array[V], i: Int) extends java.ut
 
   override def getValue: V = values(i)
 
+  // $COVERAGE-OFF$
   override def setValue(value: V): V = ???
+  // $COVERAGE-ON$
 }
 
 class ArraySet[E](backed: Array[E]) extends java.util.Set[E] {
-
+  // $COVERAGE-OFF$
   override def size(): Int = backed.length
 
   override def isEmpty: Boolean = backed.isEmpty
@@ -246,10 +229,11 @@ class ArraySet[E](backed: Array[E]) extends java.util.Set[E] {
       case o: E =>  backed.contains(o)
       case _ => false
     }
-
+  // $COVERAGE-ON$
   override def iterator(): util.Iterator[E] =
     backed.iterator.asJava
 
+  // $COVERAGE-OFF$
   override def toArray: Array[AnyRef] = backed.asInstanceOf[Array[AnyRef]]
 
   // ERROR in intellij is not present in actual compiler
@@ -271,4 +255,6 @@ class ArraySet[E](backed: Array[E]) extends java.util.Set[E] {
   override def removeAll(c: util.Collection[_]): Boolean = ???
 
   override def clear(): Unit = ???
+
+  // $COVERAGE-ON$
 }

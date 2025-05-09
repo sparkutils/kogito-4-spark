@@ -2,18 +2,22 @@ package com.sparkutils.dmn.kogito
 
 import com.sparkutils.dmn.kogito.types.ResultInterfaces.{SUCCEEDED, evalStatusEnding}
 import com.sparkutils.dmn.{DMNExecution, DMNFile, DMNInputField, DMNModelService}
+import frameless.TypedExpressionEncoder
 import org.apache.spark.sql.{DataFrame, SaveMode}
+import org.junit.runner.RunWith
 import org.scalatest.{FunSuite, Matchers}
+import org.scalatestplus.junit.JUnitRunner
 
-import scala.collection.immutable.Seq
+//import scala.collection.immutable.Seq
 
 case class TestData(location: String, idPrefix: String, id: Int, page: Long, department: String)
 
+@RunWith(classOf[JUnitRunner])
 class SimpleTest extends FunSuite with Matchers with TestUtils {
 
   val ns = "decisions"
 
-  val dmnFiles = Seq(
+  val dmnFiles = scala.collection.immutable.Seq(
     DMNFile("common.dmn",
       this.getClass.getClassLoader.getResourceAsStream("common.dmn").readAllBytes()
     ),
@@ -35,7 +39,7 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
 
     //res.select("quality.evaluate").write.mode(SaveMode.Overwrite).parquet(outputDir+"/simples")
     //val asSeqs = sparkSession.read.parquet(outputDir+"/simples").as[Seq[Boolean]].collect()
-    val asSeqs =  res.select("quality.evaluate").as[Seq[Boolean]].collect()
+    val asSeqs =  res.select("quality.evaluate").as[Seq[Boolean]](TypedExpressionEncoder[Seq[Boolean]]).collect()
 
     asSeqs.forall(_.size == 15) shouldBe true
     asSeqs(0).head shouldBe true
@@ -58,7 +62,7 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
     val debugs = dres.select("quality.debugMode").as[Seq[KogitoResult]].collect
     debugs.forall( _ == Seq(testDebug)) shouldBe true
     if (exec.model.resultProvider.contains(evalStatusEnding)) {
-      val statuses = dres.select(s"quality.evaluate$evalStatusEnding").as[Byte].collect()
+      val statuses = dres.select(s"quality.evaluate$evalStatusEnding").as[Byte](TypedExpressionEncoder[Byte]).collect()
       statuses.forall( _ == SUCCEEDED ) shouldBe true
     }
   }
@@ -69,32 +73,45 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
     val ds = Seq(dataBasis).toDS.selectExpr("explode(value) as f").selectExpr("to_json(f) payload")
 
     val exec = DMNExecution(dmnFiles, service,
-      Seq(DMNInputField("payload", "JSON", "testData")))
+      scala.collection.immutable.Seq(DMNInputField("payload", "JSON", "testData")))
     testResults(ds, exec)
   }
 
-  def testTopLevelFieldsResults(service: DMNModelService): Unit = {
+  def testTopLevelFieldsResults(service: DMNModelService, deriveContextTypes: Boolean): Unit = {
     import sparkSession.implicits._
 
     val ds = Seq(dataBasis).toDS.selectExpr("explode(value) as f").selectExpr("f.*")
 
     val exec = DMNExecution(dmnFiles, service,
-      Seq(DMNInputField("location", "String", "testData.location"),
-        DMNInputField("idPrefix", "String", "testData.idPrefix"),
-        DMNInputField("id", "Int", "testData.id"),
-        DMNInputField("page", "Long", "testData.page"),
-        DMNInputField("department", "String", "testData.department")
+      scala.collection.immutable.Seq(
+        DMNInputField("location", if (deriveContextTypes) "" else "String", "testData.location"),
+        DMNInputField("idPrefix", if (deriveContextTypes) "" else "String", "testData.idPrefix"),
+        DMNInputField("id", if (deriveContextTypes) "" else "Int", "testData.id"),
+        DMNInputField("page", if (deriveContextTypes) "" else "Long", "testData.page"),
+        DMNInputField("department", if (deriveContextTypes) "" else "String", "testData.department")
       )) //location: String, idPrefix: String, id: Int, page: Long, department: String)
     testResults(ds, exec)
   }
 
-  def testTopLevelStructResults(service: DMNModelService): Unit = {
+  def testTopLevelStructResults(service: DMNModelService, deriveContextTypes: Boolean): Unit = {
     import sparkSession.implicits._
 
     val ds = Seq(dataBasis).toDS.selectExpr("explode(value) as f")
 
     val exec = DMNExecution(dmnFiles, service,
-      Seq(DMNInputField("f",
+      scala.collection.immutable.Seq(DMNInputField("f", if (deriveContextTypes) "" else
+        "struct<location: String, idPrefix: String, id: Int, page: Long, department: String>", "testData")
+      )) //location: String, idPrefix: String, id: Int, page: Long, department: String)
+    testResults(ds, exec)
+  }
+
+  def testStarResults(service: DMNModelService, deriveContextTypes: Boolean): Unit = {
+    import sparkSession.implicits._
+
+    val ds = Seq(dataBasis).toDS.toDF.selectExpr("explode(value) f").select("f.*")
+
+    val exec = DMNExecution(dmnFiles, service,
+      scala.collection.immutable.Seq(DMNInputField("struct(*)", if (deriveContextTypes) "" else
         "struct<location: String, idPrefix: String, id: Int, page: Long, department: String>", "testData")
       )) //location: String, idPrefix: String, id: Int, page: Long, department: String)
     testResults(ds, exec)
@@ -109,19 +126,43 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
   }
 
   test("Loading of Kogito and sample test should work - decision service top level fields") {
-    testTopLevelFieldsResults(dmnModel)
+    testTopLevelFieldsResults(dmnModel, deriveContextTypes = false)
   }
 
   test("Loading of Kogito and sample test should work - evaluate all top level fields") {
-    testTopLevelFieldsResults(dmnModel.copy(service = None))
+    testTopLevelFieldsResults(dmnModel.copy(service = None), deriveContextTypes = false)
   }
 
   test("Loading of Kogito and sample test should work - decision service top level struct") {
-    testTopLevelStructResults(dmnModel)
+    testTopLevelStructResults(dmnModel, deriveContextTypes = false)
   }
 
   test("Loading of Kogito and sample test should work - evaluate all top level struct") {
-    testTopLevelStructResults(dmnModel.copy(service = None))
+    testTopLevelStructResults(dmnModel.copy(service = None), deriveContextTypes = false)
+  }
+
+  test("Loading of Kogito and sample test should work - evaluate *") {
+    testStarResults(dmnModel.copy(service = None), deriveContextTypes = false)
+  }
+
+  test("Loading of Kogito and sample test should work - decision service top level fields - derive context types") {
+    testTopLevelFieldsResults(dmnModel, deriveContextTypes = true)
+  }
+
+  test("Loading of Kogito and sample test should work - evaluate all top level fields - derive context types") {
+    testTopLevelFieldsResults(dmnModel.copy(service = None), deriveContextTypes = true)
+  }
+
+  test("Loading of Kogito and sample test should work - decision service top level struct - derive context types") {
+    testTopLevelStructResults(dmnModel, deriveContextTypes = true)
+  }
+
+  test("Loading of Kogito and sample test should work - evaluate all top level struct - derive context types") {
+    testTopLevelStructResults(dmnModel.copy(service = None), deriveContextTypes = true)
+  }
+
+  test("Loading of Kogito and sample test should work - evaluate * - derive context types") {
+    testStarResults(dmnModel.copy(service = None), deriveContextTypes = true)
   }
 
   def evalStatus(dmnModel: DMNModelService): DMNModelService =
@@ -136,19 +177,35 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
   }
 
   test("Loading of Kogito and sample test should work - decision service top level fields - evalStatus") {
-    testTopLevelFieldsResults(evalStatus(dmnModel))
+    testTopLevelFieldsResults(evalStatus(dmnModel), deriveContextTypes = false)
   }
 
   test("Loading of Kogito and sample test should work - evaluate all top level fields - evalStatus") {
-    testTopLevelFieldsResults(evalStatus(dmnModel.copy(service = None)))
+    testTopLevelFieldsResults(evalStatus(dmnModel.copy(service = None)), deriveContextTypes = false)
   }
 
   test("Loading of Kogito and sample test should work - decision service top level struct - evalStatus") {
-    testTopLevelStructResults(evalStatus(dmnModel))
+    testTopLevelStructResults(evalStatus(dmnModel), deriveContextTypes = false)
   }
 
   test("Loading of Kogito and sample test should work - evaluate all top level struct - evalStatus") {
-    testTopLevelStructResults(evalStatus(dmnModel.copy(service = None)))
+    testTopLevelStructResults(evalStatus(dmnModel.copy(service = None)), deriveContextTypes = false)
+  }
+
+  test("Loading of Kogito and sample test should work - decision service top level fields - evalStatus - derive context types") {
+    testTopLevelFieldsResults(evalStatus(dmnModel), deriveContextTypes = true)
+  }
+
+  test("Loading of Kogito and sample test should work - evaluate all top level fields - evalStatus - derive context types") {
+    testTopLevelFieldsResults(evalStatus(dmnModel.copy(service = None)), deriveContextTypes = true)
+  }
+
+  test("Loading of Kogito and sample test should work - decision service top level struct - evalStatus - derive context types") {
+    testTopLevelStructResults(evalStatus(dmnModel), deriveContextTypes = true)
+  }
+
+  test("Loading of Kogito and sample test should work - evaluate all top level struct - evalStatus - derive context types") {
+    testTopLevelStructResults(evalStatus(dmnModel.copy(service = None)), deriveContextTypes = true)
   }
 
   test("Write as json - debug") { evalCodeGens {
@@ -157,10 +214,10 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
     val ds = Seq(dataBasis).toDS.selectExpr("explode(value) as f").selectExpr("to_json(f) payload")
 
     val exec = DMNExecution(dmnFiles, dmnModel.copy(resultProvider = "JSON"),
-      Seq(DMNInputField("payload", "JSON", "testData")))
+      scala.collection.immutable.Seq(DMNInputField("payload", "JSON", "testData")))
 
     val res = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec, debug = true))
-    val strs = res.select("quality").as[String].collect()
+    val strs = res.select("quality").as[String](TypedExpressionEncoder[String]).collect()
     strs shouldBe Array( """[{"decisionId":"_1B2DFBAA-DD62-4F1D-A375-38FB6A868A8C","decisionName":"evaluate","result":[true,false,false,false,false,false,false,false,false,false,true,false,true,false,false],"messages":[],"evaluationStatus":"SUCCEEDED"}]""",
       """[{"decisionId":"_1B2DFBAA-DD62-4F1D-A375-38FB6A868A8C","decisionName":"evaluate","result":[false,true,false,false,false,false,false,false,false,false,false,false,false,false,false],"messages":[],"evaluationStatus":"SUCCEEDED"}]""",
       """[{"decisionId":"_1B2DFBAA-DD62-4F1D-A375-38FB6A868A8C","decisionName":"evaluate","result":[false,false,false,false,false,false,false,false,false,false,false,false,false,true,false],"messages":[],"evaluationStatus":"SUCCEEDED"}]""",
@@ -174,7 +231,7 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
     val ds = Seq(dataBasis).toDS.selectExpr("explode(value) as f").selectExpr("to_json(f) payload")
 
     val exec = DMNExecution(dmnFiles, dmnModel.copy(resultProvider = "JSON"),
-      Seq(DMNInputField("payload", "JSON", "testData")))
+      scala.collection.immutable.Seq(DMNInputField("payload", "JSON", "testData")))
 
     val res = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec, debug = true)).repartition(4)
     res.select("quality").write.mode(SaveMode.Overwrite).parquet(outputDir+"/json_debug")
@@ -186,12 +243,12 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
 
     val ds = sparkSession.sql("select null temp").selectExpr("cast(temp as string) payload")
 
-    val exec = DMNExecution(Seq(DMNFile("nulls.dmn",
+    val exec = DMNExecution(scala.collection.immutable.Seq(DMNFile("nulls.dmn",
       this.getClass.getClassLoader.getResourceAsStream("nulls.dmn").readAllBytes())),
         DMNModelService("nulls", "nulls", None, "JSON"),
-      Seq(field))
+      scala.collection.immutable.Seq(field))
 
-    val res = ds.select(com.sparkutils.dmn.DMN.dmnEval(exec)).as[String].collect()
+    val res = ds.select(com.sparkutils.dmn.DMN.dmnEval(exec)).as[String](TypedExpressionEncoder[String]).collect()
     res
   }
 

@@ -3,7 +3,9 @@ package com.sparkutils.dmn.kogito
 import com.sparkutils.dmn.kogito.types.ResultInterfaces.{FAILED, NOT_FOUND, SKIPPED_ERROR, SKIPPED_WARN, SUCCEEDED, evalStatusEnding}
 import com.sparkutils.dmn.{DMN, DMNExecution, DMNFile, DMNInputField, DMNModelService}
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
+import org.junit.runner.RunWith
 import org.scalatest.{FunSuite, Matchers}
+import org.scalatestplus.junit.JUnitRunner
 
 import scala.collection.immutable.Seq
 
@@ -24,6 +26,7 @@ case class MissingInStruct(outstring: String, outstring_dmnEvalStatus: Byte,
                    wrongOutputType: String, wrongOutputType_dmnEvalStatus: Byte,
                    badExpr: String, badExpr_dmnEvalStatus: Byte
                   )
+@RunWith(classOf[JUnitRunner])
 class EvalAllResultsTest extends FunSuite with Matchers with TestUtils {
 
   val ns = "https://kie.org/dmn/_1C1F4E1D-5F6F-4EA0-8C06-32F8A67C4D98"

@@ -188,7 +188,9 @@ case class KogitoDDLResult(debug: Boolean, underlyingType: StructType, config: M
         row
     }
 
+  // $COVERAGE-OFF$
   override def eval(input: InternalRow): Any = ???
+  // $COVERAGE-ON$
 
   override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     ctx.references += this
@@ -231,7 +233,9 @@ case class KogitoDDLResult(debug: Boolean, underlyingType: StructType, config: M
  */
 case class KogitoJSONResultProvider(debug: Boolean, config: Map[String, String]) extends LeafExpression with DMNResultProvider with KogitoProcess {
 
+  // $COVERAGE-OFF$
   override def underlyingType: StructType = ???
+  // $COVERAGE-ON$
 
   @transient
   lazy val mapper =
@@ -244,7 +248,9 @@ case class KogitoJSONResultProvider(debug: Boolean, config: Map[String, String])
 
   override def nullable: Boolean = true
 
+  // $COVERAGE-OFF$
   override def eval(input: InternalRow): Any = ???
+  // $COVERAGE-ON$
 
   override def dataType: DataType = StringType
 
@@ -259,9 +265,6 @@ case class KogitoJSONResultProvider(debug: Boolean, config: Map[String, String])
       what
     ))
   }
-
-  override def genCode(ctx: CodegenContext): ExprCode =
-    super.genCode(ctx)
 
   override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     val mapperName = ctx.addMutableState(classOf[ObjectMapper].getName, "mapper", v =>

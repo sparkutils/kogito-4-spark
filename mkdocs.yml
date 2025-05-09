@@ -1,0 +1,93 @@
+site_name: kogito-4-spark
+site_url: https://sparkutils.github.io/kogito-4-spark/
+
+repo_url: https://github.com/sparkutils/kogito-4-spark/
+repo_name: kogito-4-spark
+
+extra_javascript:
+  - js/jquery-3.6.3.min.js
+  - js/tagflipper.js
+
+extra_css:
+  - stylesheets/site.css
+
+edit_uri: !ENV [MKDOCS_EDIT_URL, ''] # empty disables shows with value enabled -/edit/master/docs/
+
+theme:
+  name: material
+  #logo: img/kogito-4-spark.png
+  #favicon: img/kogito-4-spark.png
+  include_search_page: false
+  search_index_only: true
+  features:
+    - navigation.tabs
+    - navigation.top
+    - navigation.expand
+    - content.code.copy
+
+extra:
+  version:
+    default: latest
+    provider: mike
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Running kogito-4-spark on Databricks: getting_started/running_on_databricks.md
+  - About:
+      - Changelog: about/changelog.md
+  - Maven Site: site/index.html
+  - Scala Docs: site/scaladocs/com/sparkutils/quality/index.html
+
+plugins:
+  - search:
+      prebuild_index: true
+      lang: en
+  - macros
+  - git-revision-date-localized:
+      type: datetime
+      fallback_to_build_date: true
+      enable_creation_date: true
+  - with-pdf:
+      enabled_if_env: ENABLE_PDF_EXPORT
+      cover_subtitle: Kogito run over rows, scaled by Spark
+      copyright: Copyright @ 2025
+      author: Chris Twiner
+
+markdown_extensions:
+  - markdown.extensions.toc:
+      permalink: true
+  - markdown.extensions.admonition:
+  - markdown.extensions.smarty:
+      smart_quotes: false
+  - pymdownx.betterem:
+  - markdown.extensions.attr_list:
+  - markdown.extensions.def_list:
+  - markdown.extensions.tables:
+  - markdown.extensions.abbr:
+  - markdown.extensions.footnotes:
+  - markdown.extensions.md_in_html:
+  - pymdownx.highlight:
+  - pymdownx.superfences:
+      preserve_tabs: true
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.details:
+  - pymdownx.tabbed:
+  - pymdownx.inlinehilite:
+  - meta
+  - plantuml_markdown:
+      priority: 50
+  - pymdownx.magiclink:
+      repo_url_shortener: true
+      repo_url_shorthand: true
+      social_url_shorthand: true
+      social_url_shortener: true
+      user: sparkutils
+      repo: kogito-4-spark
+  - pymdownx.saneheaders:

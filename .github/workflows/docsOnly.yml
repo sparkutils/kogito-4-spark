@@ -15,4 +15,4 @@ jobs:
   site:
     uses: sparkutils/building/.github/workflows/docsOnly.yml@main
     with:
-      profile: Spark350
+      profile: Spark350,scala_2.12.18

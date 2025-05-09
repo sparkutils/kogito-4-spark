@@ -136,14 +136,14 @@
             </properties>
         </profile>
         <profile>
-            <id>16.3.dbr</id>
+            <id>16.4.dbr</id>
             <properties>
-                <shimRuntime>16.3.dbr</shimRuntime>
-                <shimCompilationRuntime>16.3.dbr</shimCompilationRuntime>
-                <dbrCompatVersion>16.3.dbr_</dbrCompatVersion>
+                <shimRuntime>16.4.dbr</shimRuntime>
+                <shimCompilationRuntime>16.4.dbr</shimCompilationRuntime>
+                <dbrCompatVersion>16.4.dbr_</dbrCompatVersion>
                 <sparkVersion>3.5.0</sparkVersion>
                 <sparkCompatVersion>3.5</sparkCompatVersion>
-                <profileDir>16.3.dbr</profileDir>
+                <profileDir>16.4.dbr</profileDir>
                 <jacksonVersion>2.14.2</jacksonVersion> <!-- scalameter dependency is 2.9.10 so perf tests runs need to change it -->
                 <guavaVersion>15.0</guavaVersion> <!-- databricks runtime version -->
                 <parserCombinatorVersion>1.1.2</parserCombinatorVersion> <!-- databricks runtime version -->
@@ -155,7 +155,7 @@
     </profiles>
 
     <properties>
-        <revision>0.0.1-RC8</revision>
+        <revision>0.0.1-RC18</revision>
 
         <mavenFlattenPluginVersion>1.2.7</mavenFlattenPluginVersion>
         <mavenProjectInfoReportsPluginVersion>3.4.5</mavenProjectInfoReportsPluginVersion>
@@ -173,11 +173,11 @@
         <mavenCompilerPluginVersion>3.8.1</mavenCompilerPluginVersion>
         <mavenJarPluginVersion>3.2.0</mavenJarPluginVersion>
         <mavenShadePluginVersion>3.2.1</mavenShadePluginVersion>
-        <mavenSitePluginVersion>3.7.1</mavenSitePluginVersion>
-        <mavenProjectInfoReportsVersion>3.0.0</mavenProjectInfoReportsVersion>
+        <mavenSitePluginVersion>3.21.0</mavenSitePluginVersion>
+        <mavenProjectInfoReportsVersion>3.9.0</mavenProjectInfoReportsVersion>
         <surefirePluginVersion>2.22.2</surefirePluginVersion>
         <surefireReportPluginVersion>2.22.2</surefireReportPluginVersion>
-        <scoverage.plugin.version>1.4.11</scoverage.plugin.version>
+        <scoverage.plugin.version>2.1.0</scoverage.plugin.version>
         <mavenAssemblyPluginVersion>2.5.3</mavenAssemblyPluginVersion>
         <deequ.version>1.0.2</deequ.version>
         <circeVersion>0.11.2</circeVersion>
@@ -191,10 +191,10 @@
         <!-- for oss builds -->
         <snakeVersion>1.33</snakeVersion>
 
-        <shimCompilationVersion>0.2.0-RC1</shimCompilationVersion>
-        <shimRuntimeVersion>0.2.0-RC1</shimRuntimeVersion>
+        <shimCompilationVersion>0.2.0-RC2</shimCompilationVersion>
+        <shimRuntimeVersion>0.2.0-RC2</shimRuntimeVersion>
 
-        <dmn4SparkVersion>0.0.1-RC6</dmn4SparkVersion>
+        <dmn4SparkVersion>0.0.1-RC7</dmn4SparkVersion>
         <shadedKogitoVersion>0.0.12</shadedKogitoVersion>
 
         <framelessVersion>0.17.0</framelessVersion>
@@ -341,16 +341,6 @@
             <version>${sparkVersion}</version>
             <scope>provided</scope>
             <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.module</groupId>
-            <artifactId>jackson-module-scala_${scalaCompatVersion}</artifactId>
-            <version>${jacksonVersion}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jacksonVersion}</version>
         </dependency>
     </dependencies>
 
@@ -521,7 +511,7 @@
                 <configuration>
                     <forkCount>1</forkCount>
                     <reuseForks>false</reuseForks>
-                    <argLine>-Xmx4g</argLine>
+                    <argLine>-Xmx4g -ea -XX:+IgnoreUnrecognizedVMOptions --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/sun.nio.cs=ALL-UNNAMED --add-opens=java.base/sun.security.action=ALL-UNNAMED --add-opens=java.base/sun.util.calendar=ALL-UNNAMED</argLine>
                     <systemPropertyVariables>
                         <org.xerial.snappy.tempdir>${java.io.tmpdir}/teamcity/megdp/extrajars</org.xerial.snappy.tempdir>
                         <buildDirectory>${project.build.directory}</buildDirectory>
@@ -545,6 +535,7 @@
                          only pre-resolution plans are anywhere near test worthy -->
                     <excludedPackages>org.apache.spark.sql</excludedPackages>
                     <aggregate>true</aggregate>
+                    <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
             <plugin>
@@ -687,6 +678,8 @@
                 <configuration>
                     <!-- <aggregate>true</aggregate> -->
                     <aggregateOnly>true</aggregateOnly>
+
+                    <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
             <plugin>
