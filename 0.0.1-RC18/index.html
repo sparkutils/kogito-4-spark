@@ -125,6 +125,11 @@
       </a>
 </li>
 <li class="md-tabs__item">
+<a class="md-tabs__link" href="about/changelog/">
+        About
+      </a>
+</li>
+<li class="md-tabs__item">
 <a class="md-tabs__link" href="site/">
       Maven Site
     </a>
@@ -227,6 +232,26 @@
 <li class="md-nav__item">
 <a class="md-nav__link" href="getting_started/running_on_databricks/">
         Running kogito-4-spark on Databricks
+      </a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle md-toggle--indeterminate" id="__nav_3" type="checkbox"/>
+<label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          About
+          <span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_3_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_3">
+<span class="md-nav__icon md-icon"></span>
+          About
+        </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="about/changelog/">
+        Changelog
       </a>
 </li>
 </ul>
@@ -337,7 +362,7 @@
 <span class="w">  </span><span class="nc">DMNInputField</span><span class="p">(</span><span class="s">"department"</span><span class="p">,</span><span class="w"> </span><span class="s">"String"</span><span class="p">,</span><span class="w"> </span><span class="s">"testData.department"</span><span class="p">)</span>
 <span class="p">)</span>
 </code></pre></div>
-<p>this use the fields location, idPrefix, id, page and department to set entries in the "testData" DMNContext map.  Input fields can also be loaded via the serialization.readVersionedProvidersFromDF function.</p>
+<p>this use the fields location, idPrefix, id, page and department to set entries in the "testData" DMNContext map.  Input fields can also be loaded via the serialization.readVersionedProvidersFromDF function.  The input type can be left as an empty string and the ddl type of the output expression will be used, JSON must however be explicitly provided.</p>
 <p>Then combine the variables into the DMNExecution you wish to run with any additional configuration (currently ignored by kogito-4-spark):</p>
 <div class="highlight"><pre><span></span><code><span class="kd">val</span><span class="w"> </span><span class="n">exec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">DMNExecution</span><span class="p">(</span><span class="n">dmnFiles</span><span class="p">,</span><span class="w"> </span><span class="n">service</span><span class="p">,</span><span class="w"> </span><span class="n">inputFields</span><span class="p">,</span><span class="w"> </span><span class="nc">DMNConfiguration</span><span class="p">.</span><span class="n">empty</span><span class="w"> </span><span class="cm">/* default value */</span><span class="p">)</span>
 </code></pre></div>
@@ -467,10 +492,10 @@
 <small>
     
       Last update:
-      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime">May 9, 2025 12:59:21</span>
+      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime">May 9, 2025 13:19:29</span>
 <br/>
         Created:
-        <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime">May 9, 2025 12:59:21</span>
+        <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime">May 9, 2025 13:19:29</span>
 </small>
 </div>
 </article>
