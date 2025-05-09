@@ -1,5 +1,5 @@
-rule org.scalatest.** quality.org.scalatest.@1
-rule org.scalatestplus.** quality.org.scalatestplus.@1
-rule org.scalactic.** quality.org.scalactic.@1
-rule org.scalacheck.** quality.org.scalacheck.@1
-rule cats.** quality.cats.@1
+rule org.scalatest.** kogito_4_spark.org.scalatest.@1
+rule org.scalatestplus.** kogito_4_spark.org.scalatestplus.@1
+rule org.scalactic.** kogito_4_spark.org.scalactic.@1
+rule org.scalacheck.** kogito_4_spark.org.scalacheck.@1
+rule cats.** kogito_4_spark.cats.@1
