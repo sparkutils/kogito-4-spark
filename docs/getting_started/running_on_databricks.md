@@ -30,7 +30,7 @@ in your cell will run through all of the test suite used when building kogito-4-
 In Databricks notebooks you can set the path up via:
 
 ```scala
-val fileLoc = "./kogito-4-spark-testdir"''
+val fileLoc = "/Workspace/Users/me@me.com/kogito-4-spark-testdir"''
 TestUtils.setPath(fileLoc)
 ```
 
@@ -39,10 +39,10 @@ Ideally at the end of your runs you'll see - after 10 minutes or so and some std
 ```
 Time: 63.686
 
-OK (34 tests)
+OK (55 tests)
 
-Finished. Result: Failures: 0. Ignored: 0. Tests run: 34. Time: 633686ms.
+Finished. Result: Failures: 0. Ignored: 0. Tests run: 55. Time: 633686ms.
 import com.sparkutils.dmn.kogito.tests.TestSuite
 import com.sparkutils.dmn.kogito.TestUtils
-fileLoc: String = ./kogito-4-spark-testdir
+fileLoc: String = /Workspace/Users/me@me.com/kogito-4-spark-testdir
 ```

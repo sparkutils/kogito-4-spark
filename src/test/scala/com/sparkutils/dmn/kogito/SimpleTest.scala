@@ -77,40 +77,41 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
     testResults(ds, exec)
   }
 
-  def testTopLevelFieldsResults(service: DMNModelService): Unit = {
+  def testTopLevelFieldsResults(service: DMNModelService, deriveContextTypes: Boolean): Unit = {
     import sparkSession.implicits._
 
     val ds = Seq(dataBasis).toDS.selectExpr("explode(value) as f").selectExpr("f.*")
 
     val exec = DMNExecution(dmnFiles, service,
-      scala.collection.immutable.Seq(DMNInputField("location", "String", "testData.location"),
-        DMNInputField("idPrefix", "String", "testData.idPrefix"),
-        DMNInputField("id", "Int", "testData.id"),
-        DMNInputField("page", "Long", "testData.page"),
-        DMNInputField("department", "String", "testData.department")
+      scala.collection.immutable.Seq(
+        DMNInputField("location", if (deriveContextTypes) "" else "String", "testData.location"),
+        DMNInputField("idPrefix", if (deriveContextTypes) "" else "String", "testData.idPrefix"),
+        DMNInputField("id", if (deriveContextTypes) "" else "Int", "testData.id"),
+        DMNInputField("page", if (deriveContextTypes) "" else "Long", "testData.page"),
+        DMNInputField("department", if (deriveContextTypes) "" else "String", "testData.department")
       )) //location: String, idPrefix: String, id: Int, page: Long, department: String)
     testResults(ds, exec)
   }
 
-  def testTopLevelStructResults(service: DMNModelService): Unit = {
+  def testTopLevelStructResults(service: DMNModelService, deriveContextTypes: Boolean): Unit = {
     import sparkSession.implicits._
 
     val ds = Seq(dataBasis).toDS.selectExpr("explode(value) as f")
 
     val exec = DMNExecution(dmnFiles, service,
-      scala.collection.immutable.Seq(DMNInputField("f",
+      scala.collection.immutable.Seq(DMNInputField("f", if (deriveContextTypes) "" else
         "struct<location: String, idPrefix: String, id: Int, page: Long, department: String>", "testData")
       )) //location: String, idPrefix: String, id: Int, page: Long, department: String)
     testResults(ds, exec)
   }
 
-  def testStarResults(service: DMNModelService): Unit = {
+  def testStarResults(service: DMNModelService, deriveContextTypes: Boolean): Unit = {
     import sparkSession.implicits._
 
     val ds = Seq(dataBasis).toDS.toDF.selectExpr("explode(value) f").select("f.*")
 
     val exec = DMNExecution(dmnFiles, service,
-      scala.collection.immutable.Seq(DMNInputField("struct(*)",
+      scala.collection.immutable.Seq(DMNInputField("struct(*)", if (deriveContextTypes) "" else
         "struct<location: String, idPrefix: String, id: Int, page: Long, department: String>", "testData")
       )) //location: String, idPrefix: String, id: Int, page: Long, department: String)
     testResults(ds, exec)
@@ -125,23 +126,43 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
   }
 
   test("Loading of Kogito and sample test should work - decision service top level fields") {
-    testTopLevelFieldsResults(dmnModel)
+    testTopLevelFieldsResults(dmnModel, deriveContextTypes = false)
   }
 
   test("Loading of Kogito and sample test should work - evaluate all top level fields") {
-    testTopLevelFieldsResults(dmnModel.copy(service = None))
+    testTopLevelFieldsResults(dmnModel.copy(service = None), deriveContextTypes = false)
   }
 
   test("Loading of Kogito and sample test should work - decision service top level struct") {
-    testTopLevelStructResults(dmnModel)
+    testTopLevelStructResults(dmnModel, deriveContextTypes = false)
   }
 
   test("Loading of Kogito and sample test should work - evaluate all top level struct") {
-    testTopLevelStructResults(dmnModel.copy(service = None))
+    testTopLevelStructResults(dmnModel.copy(service = None), deriveContextTypes = false)
   }
 
   test("Loading of Kogito and sample test should work - evaluate *") {
-    testStarResults(dmnModel.copy(service = None))
+    testStarResults(dmnModel.copy(service = None), deriveContextTypes = false)
+  }
+
+  test("Loading of Kogito and sample test should work - decision service top level fields - derive context types") {
+    testTopLevelFieldsResults(dmnModel, deriveContextTypes = true)
+  }
+
+  test("Loading of Kogito and sample test should work - evaluate all top level fields - derive context types") {
+    testTopLevelFieldsResults(dmnModel.copy(service = None), deriveContextTypes = true)
+  }
+
+  test("Loading of Kogito and sample test should work - decision service top level struct - derive context types") {
+    testTopLevelStructResults(dmnModel, deriveContextTypes = true)
+  }
+
+  test("Loading of Kogito and sample test should work - evaluate all top level struct - derive context types") {
+    testTopLevelStructResults(dmnModel.copy(service = None), deriveContextTypes = true)
+  }
+
+  test("Loading of Kogito and sample test should work - evaluate * - derive context types") {
+    testStarResults(dmnModel.copy(service = None), deriveContextTypes = true)
   }
 
   def evalStatus(dmnModel: DMNModelService): DMNModelService =
@@ -156,19 +177,35 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
   }
 
   test("Loading of Kogito and sample test should work - decision service top level fields - evalStatus") {
-    testTopLevelFieldsResults(evalStatus(dmnModel))
+    testTopLevelFieldsResults(evalStatus(dmnModel), deriveContextTypes = false)
   }
 
   test("Loading of Kogito and sample test should work - evaluate all top level fields - evalStatus") {
-    testTopLevelFieldsResults(evalStatus(dmnModel.copy(service = None)))
+    testTopLevelFieldsResults(evalStatus(dmnModel.copy(service = None)), deriveContextTypes = false)
   }
 
   test("Loading of Kogito and sample test should work - decision service top level struct - evalStatus") {
-    testTopLevelStructResults(evalStatus(dmnModel))
+    testTopLevelStructResults(evalStatus(dmnModel), deriveContextTypes = false)
   }
 
   test("Loading of Kogito and sample test should work - evaluate all top level struct - evalStatus") {
-    testTopLevelStructResults(evalStatus(dmnModel.copy(service = None)))
+    testTopLevelStructResults(evalStatus(dmnModel.copy(service = None)), deriveContextTypes = false)
+  }
+
+  test("Loading of Kogito and sample test should work - decision service top level fields - evalStatus - derive context types") {
+    testTopLevelFieldsResults(evalStatus(dmnModel), deriveContextTypes = true)
+  }
+
+  test("Loading of Kogito and sample test should work - evaluate all top level fields - evalStatus - derive context types") {
+    testTopLevelFieldsResults(evalStatus(dmnModel.copy(service = None)), deriveContextTypes = true)
+  }
+
+  test("Loading of Kogito and sample test should work - decision service top level struct - evalStatus - derive context types") {
+    testTopLevelStructResults(evalStatus(dmnModel), deriveContextTypes = true)
+  }
+
+  test("Loading of Kogito and sample test should work - evaluate all top level struct - evalStatus - derive context types") {
+    testTopLevelStructResults(evalStatus(dmnModel.copy(service = None)), deriveContextTypes = true)
   }
 
   test("Write as json - debug") { evalCodeGens {

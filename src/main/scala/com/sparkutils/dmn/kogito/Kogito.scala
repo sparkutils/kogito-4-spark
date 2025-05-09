@@ -3,15 +3,12 @@ package com.sparkutils.dmn.kogito
 import com.sparkutils.dmn._
 import com.sparkutils.dmn.impl._
 import com.sparkutils.dmn.impl.utils.configMap
+import com.sparkutils.dmn.kogito.ContextProviders.contextProviderFromDDL
 import com.sparkutils.dmn.kogito.Types.MAP
-import com.sparkutils.dmn.kogito.types.ContextInterfaces
-import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DataType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, MapType, ShortType, StringType, StructType, TimestampType}
-import org.apache.spark.sql.catalyst.util.DateTimeUtils
-import org.apache.spark.sql.internal.SQLConf
+import org.apache.spark.sql.types.{DataType, StructType}
 import org.kie.dmn.core.internal.utils.DMNRuntimeBuilder
 import org.kie.internal.io.ResourceFactory
 
-import java.time.{LocalDate, LocalDateTime}
 import java.util
 import scala.collection.JavaConverters._
 import scala.util.Try
@@ -66,37 +63,11 @@ class KogitoDMNRepository() extends DMNRepository {
     val config = configMap(dmnConfiguration)
 
     inputField.providerType match {
+      case "" => ContextProviderProxy(path, inputField.stillSetWhenNull, expr, config)
       case "JSON" => KogitoJSONContextProvider(path, inputField.stillSetWhenNull, expr)
       case t if Try(DataType.fromDDL(t)).isSuccess =>
         val dataType = DataType.fromDDL(t)
-        dataType match {
-          case StringType => StringContextProvider(path, inputField.stillSetWhenNull, expr)
-          case IntegerType => SimpleContextProvider[Integer](path, inputField.stillSetWhenNull, expr)
-          case LongType => SimpleContextProvider[Long](path, inputField.stillSetWhenNull, expr)
-          case BooleanType => SimpleContextProvider[Boolean](path, inputField.stillSetWhenNull, expr)
-          case DoubleType => SimpleContextProvider[Double](path, inputField.stillSetWhenNull, expr)
-          case FloatType => SimpleContextProvider[Float](path, inputField.stillSetWhenNull, expr)
-          case BinaryType => SimpleContextProvider[Array[Byte]](path, inputField.stillSetWhenNull, expr)
-          case ByteType => SimpleContextProvider[Byte](path, inputField.stillSetWhenNull, expr)
-          case ShortType => SimpleContextProvider[Short](path, inputField.stillSetWhenNull, expr)
-          case DateType => SimpleContextProvider[LocalDate](path, inputField.stillSetWhenNull, expr,
-            Some(((t: Any) => DateTimeUtils.daysToLocalDate(t.asInstanceOf[Int]),
-              (codegen, input) => s"org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate((int)$input)"))
-          ) // an int
-          case TimestampType => SimpleContextProvider[LocalDateTime](path, inputField.stillSetWhenNull, expr,
-            Some(((t: Any) => DateTimeUtils.microsToLocalDateTime(t.asInstanceOf[Long]),
-              (codegen, input) => s"org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime((long)$input)"))
-          ) // a long
-          case _: DecimalType => SimpleContextProvider[java.math.BigDecimal](path, inputField.stillSetWhenNull, expr,
-            Some(((t: Any) => t.asInstanceOf[Decimal].toJavaBigDecimal,
-              (codegen, input) => s"((${classOf[Decimal].getName})$input).toJavaBigDecimal()"))
-          )
-          case structType: StructType => ContextInterfaces.structProvider(structType, path, expr, inputField.stillSetWhenNull, config)
-          case mapType: MapType => ContextInterfaces.mapProvider(mapType, path, expr, inputField.stillSetWhenNull, config)
-          case arrayType: ArrayType => ContextInterfaces.arrayProvider(arrayType, path, expr, inputField.stillSetWhenNull, config)
-          // calendar interval?
-          case t => throw new DMNException(s"Provider type $t is not supported")
-        }
+        contextProviderFromDDL(inputField.stillSetWhenNull, path, expr, config, dataType)
       case _ =>
         utils.loadUnaryContextProvider(inputField.providerType, path, expr)
     }
