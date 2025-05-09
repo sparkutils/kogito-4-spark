@@ -59,7 +59,7 @@ val inputFields = Seq(
 )
 ```
 
-this use the fields location, idPrefix, id, page and department to set entries in the "testData" DMNContext map.  Input fields can also be loaded via the serialization.readVersionedProvidersFromDF function.
+this use the fields location, idPrefix, id, page and department to set entries in the "testData" DMNContext map.  Input fields can also be loaded via the serialization.readVersionedProvidersFromDF function.  The input type can be left as an empty string and the ddl type of the output expression will be used, JSON must however be explicitly provided.
 
 Then combine the variables into the DMNExecution you wish to run with any additional configuration (currently ignored by kogito-4-spark):
 
