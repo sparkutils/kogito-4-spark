@@ -31,7 +31,7 @@
 </span>7 <span style=''>import org.apache.spark.sql.catalyst.expressions.Expression
 </span>8 <span style=''>import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 </span>9 <span style=''>import org.apache.spark.sql.catalyst.util.DateTimeUtils
-</span>10 <span style=''>import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DataType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, MapType, ObjectType, ShortType, StringType, StructType, TimestampType}
+</span>10 <span style=''>import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DataType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, MapType, ObjectType, ShortType, StringType, StructType, TimestampNTZType, TimestampType}
 </span>11 <span style=''>import org.kie.dmn.feel.lang.types.impl.ComparablePeriod
 </span>12 <span style=''>import org.kie.kogito.dmn.rest.DMNFEELComparablePeriodSerializer
 </span>13 <span style=''>import sparkutilsKogito.com.fasterxml.jackson.databind.module.SimpleModule
@@ -121,7 +121,7 @@
 </span>97 <span style=''></span><span style='background: #F0ADAD'>        Some(((t: Any) =&gt; DateTimeUtils.daysToLocalDate(t.asInstanceOf[Int]),
 </span>98 <span style=''></span><span style='background: #F0ADAD'>          (codegen, input) =&gt; s&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate((int)$input)&quot;))
 </span>99 <span style=''></span><span style='background: #F0ADAD'>      )</span><span style=''> // an int
-</span>100 <span style=''>      case TimestampType =&gt; </span><span style='background: #F0ADAD'>SimpleContextProvider[LocalDateTime](path, stillSetWhenNull, expr,
+</span>100 <span style=''>      case TimestampType | TimestampNTZType =&gt; </span><span style='background: #F0ADAD'>SimpleContextProvider[LocalDateTime](path, stillSetWhenNull, expr,
 </span>101 <span style=''></span><span style='background: #F0ADAD'>        Some(((t: Any) =&gt; DateTimeUtils.microsToLocalDateTime(t.asInstanceOf[Long]),
 </span>102 <span style=''></span><span style='background: #F0ADAD'>          (codegen, input) =&gt; s&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime((long)$input)&quot;))
 </span>103 <span style=''></span><span style='background: #F0ADAD'>      )</span><span style=''> // a long
@@ -157,9 +157,9 @@
           1
         </td>
         <td>
-          1665
+          1683
           -
-          1687
+          1705
         </td>
         <td>
           Apply
@@ -181,9 +181,9 @@
           2
         </td>
         <td>
-          1906
+          1924
           -
-          1967
+          1985
         </td>
         <td>
           Apply
@@ -205,9 +205,9 @@
           3
         </td>
         <td>
-          2096
+          2114
           -
-          2125
+          2143
         </td>
         <td>
           Apply
@@ -229,9 +229,9 @@
           4
         </td>
         <td>
-          2127
+          2145
           -
-          2135
+          2153
         </td>
         <td>
           Literal
@@ -253,9 +253,9 @@
           18
         </td>
         <td>
-          2076
+          2094
           -
-          2514
+          2532
         </td>
         <td>
           Apply
@@ -277,9 +277,9 @@
           5
         </td>
         <td>
-          2152
+          2170
           -
-          2163
+          2181
         </td>
         <td>
           Literal
@@ -301,9 +301,9 @@
           17
         </td>
         <td>
-          2148
+          2166
           -
-          2513
+          2531
         </td>
         <td>
           Apply
@@ -325,9 +325,9 @@
           6
         </td>
         <td>
-          2164
+          2182
           -
-          2172
+          2190
         </td>
         <td>
           Literal
@@ -349,9 +349,9 @@
           7
         </td>
         <td>
-          2203
+          2221
           -
-          2239
+          2257
         </td>
         <td>
           Literal
@@ -373,9 +373,9 @@
           12
         </td>
         <td>
-          2173
+          2191
           -
-          2202
+          2220
         </td>
         <td>
           Apply
@@ -397,9 +397,9 @@
           8
         </td>
         <td>
-          2270
+          2288
           -
-          2303
+          2321
         </td>
         <td>
           Literal
@@ -421,9 +421,9 @@
           13
         </td>
         <td>
-          2240
+          2258
           -
-          2269
+          2287
         </td>
         <td>
           Apply
@@ -445,9 +445,9 @@
           9
         </td>
         <td>
-          2338
+          2356
           -
-          2351
+          2369
         </td>
         <td>
           Literal
@@ -469,9 +469,9 @@
           10
         </td>
         <td>
-          2403
+          2421
           -
-          2439
+          2457
         </td>
         <td>
           Literal
@@ -493,9 +493,9 @@
           14
         </td>
         <td>
-          2304
+          2322
           -
-          2337
+          2355
         </td>
         <td>
           Apply
@@ -517,9 +517,9 @@
           15
         </td>
         <td>
-          2352
+          2370
           -
-          2402
+          2420
         </td>
         <td>
           Apply
@@ -541,9 +541,9 @@
           11
         </td>
         <td>
-          2478
+          2496
           -
-          2513
+          2531
         </td>
         <td>
           Literal
@@ -565,9 +565,9 @@
           16
         </td>
         <td>
-          2440
+          2458
           -
-          2477
+          2495
         </td>
         <td>
           Apply
@@ -589,9 +589,9 @@
           19
         </td>
         <td>
-          2520
+          2538
           -
-          2588
+          2606
         </td>
         <td>
           Apply
@@ -613,9 +613,9 @@
           20
         </td>
         <td>
-          2646
+          2664
           -
-          2679
+          2697
         </td>
         <td>
           Literal
@@ -637,9 +637,9 @@
           21
         </td>
         <td>
-          3105
+          3123
           -
-          3122
+          3140
         </td>
         <td>
           Apply
@@ -661,9 +661,9 @@
           23
         </td>
         <td>
-          3314
-          -
           3332
+          -
+          3350
         </td>
         <td>
           Apply
@@ -685,9 +685,9 @@
           24
         </td>
         <td>
-          3565
+          3583
           -
-          3608
+          3626
         </td>
         <td>
           Select
@@ -709,9 +709,9 @@
           25
         </td>
         <td>
-          3544
+          3562
           -
-          3608
+          3626
         </td>
         <td>
           Apply
@@ -733,9 +733,9 @@
           26
         </td>
         <td>
-          3658
+          3676
           -
-          3674
+          3692
         </td>
         <td>
           Select
@@ -757,9 +757,9 @@
           27
         </td>
         <td>
-          3676
+          3694
           -
-          3722
+          3740
         </td>
         <td>
           TypeApply
@@ -781,9 +781,9 @@
           28
         </td>
         <td>
-          3734
+          3752
           -
-          3740
+          3758
         </td>
         <td>
           Select
@@ -805,9 +805,9 @@
           29
         </td>
         <td>
-          3742
+          3760
           -
-          3759
+          3777
         </td>
         <td>
           Select
@@ -829,9 +829,9 @@
           30
         </td>
         <td>
-          3618
+          3636
           -
-          3760
+          3778
         </td>
         <td>
           Apply
@@ -853,9 +853,9 @@
           31
         </td>
         <td>
-          3618
+          3636
           -
-          3760
+          3778
         </td>
         <td>
           Block
@@ -877,9 +877,9 @@
           32
         </td>
         <td>
-          3780
+          3798
           -
-          3788
+          3806
         </td>
         <td>
           Ident
@@ -901,9 +901,9 @@
           33
         </td>
         <td>
-          3799
+          3817
           -
-          3819
+          3837
         </td>
         <td>
           Apply
@@ -925,9 +925,9 @@
           34
         </td>
         <td>
-          3865
+          3883
           -
-          3877
+          3895
         </td>
         <td>
           Literal
@@ -949,9 +949,9 @@
           35
         </td>
         <td>
-          4123
+          4141
           -
-          4174
+          4192
         </td>
         <td>
           Apply
@@ -973,9 +973,9 @@
           36
         </td>
         <td>
-          4123
+          4141
           -
-          4174
+          4192
         </td>
         <td>
           Block
@@ -997,9 +997,9 @@
           37
         </td>
         <td>
-          4222
+          4240
           -
-          4222
+          4240
         </td>
         <td>
           TypeApply
@@ -1021,9 +1021,9 @@
           38
         </td>
         <td>
-          4201
+          4219
           -
-          4261
+          4279
         </td>
         <td>
           ApplyToImplicitArgs
@@ -1045,9 +1045,9 @@
           39
         </td>
         <td>
-          4201
+          4219
           -
-          4261
+          4279
         </td>
         <td>
           Block
@@ -1069,9 +1069,9 @@
           40
         </td>
         <td>
-          4306
+          4324
           -
-          4306
+          4324
         </td>
         <td>
           TypeApply
@@ -1093,9 +1093,9 @@
           41
         </td>
         <td>
-          4285
+          4303
           -
-          4342
+          4360
         </td>
         <td>
           ApplyToImplicitArgs
@@ -1117,9 +1117,9 @@
           42
         </td>
         <td>
-          4285
+          4303
           -
-          4342
+          4360
         </td>
         <td>
           Block
@@ -1141,9 +1141,9 @@
           43
         </td>
         <td>
-          4390
+          4408
           -
-          4390
+          4408
         </td>
         <td>
           TypeApply
@@ -1165,9 +1165,9 @@
           44
         </td>
         <td>
-          4369
+          4387
           -
-          4429
+          4447
         </td>
         <td>
           ApplyToImplicitArgs
@@ -1189,9 +1189,9 @@
           45
         </td>
         <td>
-          4369
+          4387
           -
-          4429
+          4447
         </td>
         <td>
           Block
@@ -1213,9 +1213,9 @@
           46
         </td>
         <td>
-          4476
+          4494
           -
-          4476
+          4494
         </td>
         <td>
           TypeApply
@@ -1237,9 +1237,9 @@
           47
         </td>
         <td>
-          4455
+          4473
           -
-          4514
+          4532
         </td>
         <td>
           ApplyToImplicitArgs
@@ -1261,9 +1261,9 @@
           48
         </td>
         <td>
-          4455
+          4473
           -
-          4514
+          4532
         </td>
         <td>
           Block
@@ -1285,9 +1285,9 @@
           49
         </td>
         <td>
-          4560
+          4578
           -
-          4560
+          4578
         </td>
         <td>
           TypeApply
@@ -1309,9 +1309,9 @@
           50
         </td>
         <td>
-          4539
+          4557
           -
-          4597
+          4615
         </td>
         <td>
           ApplyToImplicitArgs
@@ -1333,9 +1333,9 @@
           51
         </td>
         <td>
-          4539
+          4557
           -
-          4597
+          4615
         </td>
         <td>
           Block
@@ -1357,9 +1357,9 @@
           52
         </td>
         <td>
-          4644
+          4662
           -
-          4644
+          4662
         </td>
         <td>
           TypeApply
@@ -1381,9 +1381,9 @@
           53
         </td>
         <td>
-          4623
+          4641
           -
-          4687
+          4705
         </td>
         <td>
           ApplyToImplicitArgs
@@ -1405,9 +1405,9 @@
           54
         </td>
         <td>
-          4623
+          4641
           -
-          4687
+          4705
         </td>
         <td>
           Block
@@ -1429,9 +1429,9 @@
           55
         </td>
         <td>
-          4732
+          4750
           -
-          4732
+          4750
         </td>
         <td>
           TypeApply
@@ -1453,9 +1453,9 @@
           56
         </td>
         <td>
-          4711
+          4729
           -
-          4768
+          4786
         </td>
         <td>
           ApplyToImplicitArgs
@@ -1477,9 +1477,9 @@
           57
         </td>
         <td>
-          4711
+          4729
           -
-          4768
+          4786
         </td>
         <td>
           Block
@@ -1501,9 +1501,9 @@
           58
         </td>
         <td>
-          4814
+          4832
           -
-          4814
+          4832
         </td>
         <td>
           TypeApply
@@ -1525,9 +1525,9 @@
           59
         </td>
         <td>
-          4793
+          4811
           -
-          4851
+          4869
         </td>
         <td>
           ApplyToImplicitArgs
@@ -1549,9 +1549,9 @@
           60
         </td>
         <td>
-          4793
+          4811
           -
-          4851
+          4869
         </td>
         <td>
           Block
@@ -1573,9 +1573,9 @@
           66
         </td>
         <td>
-          4875
+          4893
           -
-          5136
+          5154
         </td>
         <td>
           ApplyToImplicitArgs
@@ -1597,9 +1597,9 @@
           67
         </td>
         <td>
-          4875
+          4893
           -
-          5136
+          5154
         </td>
         <td>
           Block
@@ -1621,9 +1621,9 @@
           61
         </td>
         <td>
-          4994
+          5012
           -
-          5013
+          5031
         </td>
         <td>
           TypeApply
@@ -1645,9 +1645,9 @@
           62
         </td>
         <td>
-          4964
+          4982
           -
-          5014
+          5032
         </td>
         <td>
           Apply
@@ -1669,9 +1669,9 @@
           64
         </td>
         <td>
-          4951
+          4969
           -
-          5127
+          5145
         </td>
         <td>
           Apply
@@ -1693,9 +1693,9 @@
           65
         </td>
         <td>
-          4946
+          4964
           -
-          5128
+          5146
         </td>
         <td>
           Apply
@@ -1717,9 +1717,9 @@
           63
         </td>
         <td>
-          5046
+          5064
           -
-          5126
+          5144
         </td>
         <td>
           Apply
@@ -1741,9 +1741,9 @@
           73
         </td>
         <td>
-          5175
+          5212
           -
-          5454
+          5491
         </td>
         <td>
           ApplyToImplicitArgs
@@ -1765,9 +1765,9 @@
           74
         </td>
         <td>
-          5175
+          5212
           -
-          5454
+          5491
         </td>
         <td>
           Block
@@ -1789,9 +1789,9 @@
           68
         </td>
         <td>
-          5304
+          5341
           -
-          5324
+          5361
         </td>
         <td>
           TypeApply
@@ -1813,9 +1813,9 @@
           69
         </td>
         <td>
-          5268
+          5305
           -
-          5325
+          5362
         </td>
         <td>
           Apply
@@ -1837,9 +1837,9 @@
           71
         </td>
         <td>
-          5255
+          5292
           -
-          5445
+          5482
         </td>
         <td>
           Apply
@@ -1861,9 +1861,9 @@
           72
         </td>
         <td>
-          5250
+          5287
           -
-          5446
+          5483
         </td>
         <td>
           Apply
@@ -1885,9 +1885,9 @@
           70
         </td>
         <td>
-          5357
+          5394
           -
-          5444
+          5481
         </td>
         <td>
           Apply
@@ -1909,9 +1909,9 @@
           83
         </td>
         <td>
-          5494
+          5531
           -
-          5735
+          5772
         </td>
         <td>
           ApplyToImplicitArgs
@@ -1933,9 +1933,9 @@
           84
         </td>
         <td>
-          5494
+          5531
           -
-          5735
+          5772
         </td>
         <td>
           Block
@@ -1957,9 +1957,9 @@
           75
         </td>
         <td>
-          5594
+          5631
           -
-          5634
+          5671
         </td>
         <td>
           Select
@@ -1981,9 +1981,9 @@
           81
         </td>
         <td>
-          5581
+          5618
           -
-          5726
+          5763
         </td>
         <td>
           Apply
@@ -2005,9 +2005,9 @@
           82
         </td>
         <td>
-          5576
+          5613
           -
-          5727
+          5764
         </td>
         <td>
           Apply
@@ -2029,9 +2029,9 @@
           76
         </td>
         <td>
-          5668
+          5705
           -
-          5671
+          5708
         </td>
         <td>
           Literal
@@ -2053,9 +2053,9 @@
           77
         </td>
         <td>
-          5697
+          5734
           -
-          5699
+          5736
         </td>
         <td>
           Literal
@@ -2077,9 +2077,9 @@
           78
         </td>
         <td>
-          5704
+          5741
           -
-          5725
+          5762
         </td>
         <td>
           Literal
@@ -2101,9 +2101,9 @@
           79
         </td>
         <td>
-          5672
+          5709
           -
-          5696
+          5733
         </td>
         <td>
           Apply
@@ -2125,9 +2125,9 @@
           80
         </td>
         <td>
-          5666
+          5703
           -
-          5725
+          5762
         </td>
         <td>
           Apply
@@ -2149,9 +2149,9 @@
           85
         </td>
         <td>
-          5773
+          5810
           -
-          5855
+          5892
         </td>
         <td>
           Apply
@@ -2173,9 +2173,9 @@
           86
         </td>
         <td>
-          5773
+          5810
           -
-          5855
+          5892
         </td>
         <td>
           Block
@@ -2197,9 +2197,9 @@
           87
         </td>
         <td>
-          5887
+          5924
           -
-          5963
+          6000
         </td>
         <td>
           Apply
@@ -2221,9 +2221,9 @@
           88
         </td>
         <td>
-          5887
+          5924
           -
-          5963
+          6000
         </td>
         <td>
           Block
@@ -2245,9 +2245,9 @@
           89
         </td>
         <td>
-          5999
+          6036
           -
-          6079
+          6116
         </td>
         <td>
           Apply
@@ -2269,9 +2269,9 @@
           90
         </td>
         <td>
-          5999
+          6036
           -
-          6079
+          6116
         </td>
         <td>
           Block
@@ -2293,9 +2293,9 @@
           91
         </td>
         <td>
-          6124
+          6161
           -
-          6184
+          6221
         </td>
         <td>
           Throw
@@ -2317,9 +2317,9 @@
           92
         </td>
         <td>
-          6124
+          6161
           -
-          6184
+          6221
         </td>
         <td>
           Block
