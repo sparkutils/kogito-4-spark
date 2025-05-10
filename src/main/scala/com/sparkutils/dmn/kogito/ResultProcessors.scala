@@ -67,6 +67,13 @@ trait KogitoProcess extends DMNResultProvider {
     process(res)
   }
 
+  // helpful for debugging if you uncomment in the processors codegen
+  // $COVERAGE-OFF$
+  def checkResult(res: DMNResult): Unit = {
+    println(res)
+  }
+  // $COVERAGE-ON$
+
   def kogitoResultStr = s"((${classOf[KogitoDMNResult].getName})${DMNExpression.runtimeVar.get()}).result()"
 
   val config: Map[String, String]
@@ -203,11 +210,13 @@ case class KogitoDDLResult(debug: Boolean, underlyingType: StructType, config: M
     val decisionMapN = dm.value
 
 
-    val getExpr = forTypeCodeGen(underlyingType).forPath(ctx, decisionMapN, ev.isNull)
+    val getExpr = forTypeCodeGen(underlyingType).forPath(ctx, decisionMapN)
 
     ev.copy(code =
       code"""
          org.apache.spark.sql.catalyst.expressions.GenericInternalRow ${ev.value} = null;
+         // uncomment to debug the result
+         // (($ddlResultClassName)references[$resultIdx]).checkResult($kogitoResultStr);
          boolean ${ev.isNull} = ($kogitoResultStr == null);
          if (!${ev.isNull}) {
            final java.util.List<org.kie.dmn.api.core.DMNDecisionResult> $decisionResults = $kogitoResultStr.getDecisionResults();

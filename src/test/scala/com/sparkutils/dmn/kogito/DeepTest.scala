@@ -7,9 +7,10 @@ import org.junit.runner.RunWith
 import org.scalatest.{FunSuite, Matchers}
 import org.scalatestplus.junit.JUnitRunner
 import frameless._
+import org.apache.spark.sql.execution.streaming.state.HDFSBackedStateStoreMap.MapType
 
 case class Pair(a: Boolean, b: Boolean) extends Serializable
-case class Deep[A,B](a: String, b: java.math.BigDecimal, d: Pair, c: Map[A,B]) extends Serializable {
+case class Deep[A,B](a: String, b: Option[java.math.BigDecimal], d: Pair, c: Map[A,B]) extends Serializable {
   override def equals(obj: Any): Boolean = obj match {
     // precision isn't correct in frameless encoding
     case o: Deep[A,B] => a == o.a /* && b == o.b */ && d == o.d && c == o.c
@@ -41,14 +42,17 @@ class DeepTest extends FunSuite with Matchers with TestUtils {
     )
   )
 
+  def deepType(mapType: String) =
+    s"""struct<
+         a: string, b: decimal(10,1), d: struct<
+         a: boolean, b: boolean
+        >, c: map$mapType
+       >"""
+
   def theType(mapType: String) =
     s"""
     struct<top1: String, strings: array<string>, structs: array<
-        struct<
-          a: string, b: decimal(10,1), d: struct<
-           a: boolean, b: boolean
-          >, c: map$mapType
-        >
+        ${deepType(mapType)}
       >
     >
     """
@@ -58,8 +62,9 @@ class DeepTest extends FunSuite with Matchers with TestUtils {
 
   def dataBasis[A,B](maps: Seq[Map[A,B]]): Seq[Wrapper[A, B]] = maps.zipWithIndex.map{ case (m, i) =>
     Wrapper(
-      Top(i.toString, Seq("a","b","c","d").map(_+i.toString), Seq(Deep(i.toString, java.math.BigDecimal.valueOf(1.0), Pair(true, true), m)))
+      Top(i.toString, Seq("a","b","c","d").map(_+i.toString), Seq(Deep(i.toString, Some(java.math.BigDecimal.valueOf(1.0)), Pair(true, true), m)))
   )}
+
   def testResults[A: RecordFieldEncoder, B: RecordFieldEncoder, R: TypedEncoder](maps: Seq[Map[A,B]], mapType: String, outputProvider: String, dmnFiles: Seq[DMNFile], deriveContextTypes: Boolean = false, debug: Boolean = false, useTreeMap: Boolean = false, fullProxyDS: Boolean = true): Seq[R] = {
     import sparkSession.implicits._
 
@@ -67,7 +72,11 @@ class DeepTest extends FunSuite with Matchers with TestUtils {
       frameless.TypedExpressionEncoder[Wrapper[A, B]]
     }
 
-    val ds = dataBasis(maps).toDS().repartition(4) // requires using sorted in tests but needed to force compilation
+    val ds =
+      if (inCodegen)
+        dataBasis(maps).toDS().repartition(4) // requires using sorted in tests but needed to force compilation
+      else
+        dataBasis(maps).toDS()
 
     val config = (useTreeMap, fullProxyDS) match {
       case (true, true) => DMNConfiguration(options = "useTreeMap=true")
@@ -102,6 +111,33 @@ class DeepTest extends FunSuite with Matchers with TestUtils {
     )
   } }
 
+  test("Deep test JSON 1:1 Reply - String, String context - null entries") { evalCodeGens {
+    import sparkSession.implicits._
+
+    val res = testResults[String, String, String]( (1 to 5). map( i => Map(s"a$i" -> null) ),
+      "<String, String>", "JSON", deep_struct, useTreeMap = true)
+    res.sorted shouldBe Seq(
+      s"""{"eval":{"top1":"0a","strings":["a0i","b0i","c0i","d0i"],"structs":[{"a":"0","b":$oneDotZero,"d":{"a":true,"b":true},"c":{"a1":null}}]}}""",
+      s"""{"eval":{"top1":"1a","strings":["a1i","b1i","c1i","d1i"],"structs":[{"a":"1","b":$oneDotZero,"d":{"a":true,"b":true},"c":{"a2":null}}]}}""",
+      s"""{"eval":{"top1":"2a","strings":["a2i","b2i","c2i","d2i"],"structs":[{"a":"2","b":$oneDotZero,"d":{"a":true,"b":true},"c":{"a3":null}}]}}""",
+      s"""{"eval":{"top1":"3a","strings":["a3i","b3i","c3i","d3i"],"structs":[{"a":"3","b":$oneDotZero,"d":{"a":true,"b":true},"c":{"a4":null}}]}}""",
+      s"""{"eval":{"top1":"4a","strings":["a4i","b4i","c4i","d4i"],"structs":[{"a":"4","b":$oneDotZero,"d":{"a":true,"b":true},"c":{"a5":null}}]}}"""
+    )
+  } }
+
+  test("Deep test JSON 1:1 Reply - String, String context - null maps") { evalCodeGens {
+    import sparkSession.implicits._
+
+    val res = testResults[String, String, String]( (1 to 5). map( i => null ),
+      "<String, String>", "JSON", deep_struct, useTreeMap = true)
+    res.sorted shouldBe Seq(
+      s"""{"eval":{"top1":"0a","strings":["a0i","b0i","c0i","d0i"],"structs":[{"a":"0","b":$oneDotZero,"d":{"a":true,"b":true},"c":null}]}}""",
+      s"""{"eval":{"top1":"1a","strings":["a1i","b1i","c1i","d1i"],"structs":[{"a":"1","b":$oneDotZero,"d":{"a":true,"b":true},"c":null}]}}""",
+      s"""{"eval":{"top1":"2a","strings":["a2i","b2i","c2i","d2i"],"structs":[{"a":"2","b":$oneDotZero,"d":{"a":true,"b":true},"c":null}]}}""",
+      s"""{"eval":{"top1":"3a","strings":["a3i","b3i","c3i","d3i"],"structs":[{"a":"3","b":$oneDotZero,"d":{"a":true,"b":true},"c":null}]}}""",
+      s"""{"eval":{"top1":"4a","strings":["a4i","b4i","c4i","d4i"],"structs":[{"a":"4","b":$oneDotZero,"d":{"a":true,"b":true},"c":null}]}}"""
+    )
+  } }
 
   test("Deep test JSON 1:1 Reply - String, String context - debug") { forceCodeGen { ////evalCodeGens {
     import sparkSession.implicits._
@@ -366,6 +402,14 @@ class DeepTest extends FunSuite with Matchers with TestUtils {
 
     testDebugStructs("<String, struct<a: boolean, b: boolean>>",  (1 to 5). map( i => Map(
       s"a$i" -> Pair(true, false), s"b$i" -> Pair(false, true), s"c$i" -> Pair(true,false)) ),
+      fullProxyDS = false, deriveContextTypes = true)
+  }
+
+  test("Deep test struct 1:1 Reply - String, Pair context - debug - derive context types - deep deep with nulls") {
+    import sparkSession.implicits._
+
+    testDebugStructs(s"<String, ${deepType("<int, int>")}>",  (1 to 5). map( i => Map(
+      s"a$i" -> Deep(i.toString, null, Pair(true, true), Map(1 -> 2)) )),
       fullProxyDS = false, deriveContextTypes = true)
   }
 

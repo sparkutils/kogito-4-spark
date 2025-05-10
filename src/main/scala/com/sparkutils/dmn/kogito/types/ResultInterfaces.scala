@@ -1,7 +1,7 @@
 package com.sparkutils.dmn.kogito.types
 
 import com.sparkutils.dmn.DMNException
-import com.sparkutils.dmn.kogito.types.Arrays.exprCode
+import com.sparkutils.dmn.kogito.types.Arrays.{exprCode, exprCodeInterim}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.GenericInternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper
@@ -93,32 +93,32 @@ object ResultInterfaces {
      * @param pathName variable to access (typically a SpecializedGetters)
      * @return generated code which returns either the underlying type or util.map/util.list
      */
-    def forPath(ctx: CodegenContext, pathName: String, pathNameIsNull: String): ExprCode
+    def forPath(ctx: CodegenContext, pathName: String): ExprCode
   }
   def nullOr[T: ClassTag](f: String => String = path => s"$path"): GetterCodeGen =
-    (ctx: CodegenContext, pathName: String, pathNameIsNull: String) => {
-      val c = f(pathName)
-      exprCode(classTag[T].runtimeClass, ctx,
-        code"""(($pathNameIsNull) ? null : $c);""", cast = false) // all are object anyway
+    (ctx: CodegenContext, pathName: String) => {
+      exprCodeInterim(classTag[T].runtimeClass, ctx, code"$pathName",
+        i => code"""${f(i)}""", cast = false) // all are object anyway
     }
 
   def forTypeCodeGen(dataType: DataType): GetterCodeGen = dataType match {
-   case structType: StructType =>
-      (ctx: CodegenContext, pathName: String, pathNameIsNull: String) => {
+    case structType: StructType =>
+      val mappedFields = structType.fields.map { f =>
+        (f.name,
+          if (f.name.endsWith(evalStatusEnding))
+            nullOr[Byte](_ => s"com.sparkutils.dmn.kogito.types.ResultInterfaces.EVALUATING()")
+          else
+            forTypeCodeGen(f.dataType)
+        )
+      }
+      (ctx: CodegenContext, pathName: String) => {
         val expr = exprCode(classOf[GenericInternalRow],ctx)
 
         val mapName = ctx.freshVariable("map", classOf[util.Map[String,Object]])
 
-        val s = structType.fields.map { f =>
-          (f.name,
-            if (f.name.endsWith(evalStatusEnding))
-              nullOr[Byte](_ => s"com.sparkutils.dmn.kogito.types.ResultInterfaces.EVALUATING()")
-            else
-              forTypeCodeGen(f.dataType)
-          )
-        }.map{
+        val s = mappedFields.map{
           case (n,f) =>
-            f.forPath(ctx, s"""$mapName.get("$n")""", expr.isNull)
+            f.forPath(ctx, s"""$mapName.get("$n")""")
         }
         val init = s.foldLeft(code""){
           case (c, e) =>
@@ -134,10 +134,8 @@ object ResultInterfaces {
           code"""
             org.apache.spark.sql.catalyst.expressions.GenericInternalRow ${expr.value} = null;
             java.util.Map $mapName = (java.util.Map<String, Object>)$pathName;
-            boolean ${expr.isNull} = false;
-            if ($pathNameIsNull) {
-              ${expr.isNull} = true;
-            } else {
+            boolean ${expr.isNull} = ($mapName == null);
+            if (!${expr.isNull}) {
               $init
               Object[] $resArr = new Object[]{$fields};
 
@@ -164,7 +162,8 @@ object ResultInterfaces {
     case _: DecimalType =>
       nullOr[Decimal]( path => s"org.apache.spark.sql.types.Decimal.apply( (java.math.BigDecimal) $path )")
     case ArrayType(typ, _) =>
-      (ctx: CodegenContext, pathName: String, pathNameIsNull: String) => {
+      val arrCode = forTypeCodeGen(typ)
+      (ctx: CodegenContext, pathName: String) => {
         val expr = exprCode(classOf[GenericArrayData],ctx)
 
         val iar = ctx.freshVariable("ar", classOf[util.List[Object]])
@@ -173,17 +172,15 @@ object ResultInterfaces {
 
         val arrRes = ctx.freshVariable("arr", classOf[Array[Object]])
 
-        val typCode = forTypeCodeGen(typ).forPath(ctx, s"$arrRes[$i]", expr.isNull)
+        val typCode = arrCode.forPath(ctx, s"$arrRes[$i]")
 
         expr.copy(
           code =
             code"""
             org.apache.spark.sql.catalyst.util.GenericArrayData ${expr.value} = null;
             java.util.List $iar = (java.util.List<Object>)$pathName;
-            boolean ${expr.isNull} = false;
-            if ($pathNameIsNull) {
-              ${expr.isNull} = true;
-            } else {
+            boolean ${expr.isNull} = ($iar == null);
+            if (!${expr.isNull}) {
               Object[] $arrRes = $iar.toArray();
 
               for (int $i = 0; $i < $arrRes.length; $i++) {
@@ -196,7 +193,9 @@ object ResultInterfaces {
         )
       }
     case MapType(k, v, _) =>
-      (ctx: CodegenContext, pathName: String, pathNameIsNull: String) => {
+      val kCode = forTypeCodeGen(k)
+      val vCode = forTypeCodeGen(v)
+      (ctx: CodegenContext, pathName: String) => {
         val expr = exprCode(classOf[ArrayBasedMapData], ctx)
 
         val map = ctx.freshVariable("map", classOf[util.Map[String, Object]])
@@ -205,8 +204,8 @@ object ResultInterfaces {
 
         val entry = ctx.freshVariable("entry", classOf[util.Map.Entry[String, Object]])
 
-        val typCodeK = forTypeCodeGen(k).forPath(ctx, s"$entry.getKey()", expr.isNull)
-        val typCodeV = forTypeCodeGen(v).forPath(ctx, s"$entry.getValue()", expr.isNull)
+        val typCodeK = kCode.forPath(ctx, s"$entry.getKey()")
+        val typCodeV = vCode.forPath(ctx, s"$entry.getValue()")
 
         val arrKeyRes = ctx.freshVariable("arrKey", classOf[Array[Object]])
         val arrValueRes = ctx.freshVariable("arrValue", classOf[Array[Object]])
@@ -218,10 +217,8 @@ object ResultInterfaces {
             code"""
             org.apache.spark.sql.catalyst.util.ArrayBasedMapData ${expr.value} = null;
             java.util.Map $map = (java.util.Map<String, Object>)$pathName;
-            boolean ${expr.isNull} = false;
-            if ($pathNameIsNull) {
-              ${expr.isNull} = true;
-            } else {
+            boolean ${expr.isNull} = ($map == null);
+            if (!${expr.isNull}) {
               Object[] $arrKeyRes = new Object[$map.size()];
               Object[] $arrValueRes = new Object[$map.size()];
               java.util.Iterator<java.util.Map.Entry<String, Object>> $itr = $map.entrySet().iterator();

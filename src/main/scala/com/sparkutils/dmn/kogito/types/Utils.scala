@@ -25,6 +25,32 @@ object Arrays {
     expr
   }
 
+  def exprCodeInterim(boxed: Class[_], ctx: CodegenContext, codeToInterim: Block, withInterim: String => Block, cast: Boolean = true): ExprCode = {
+    val ev = exprCode(boxed, ctx)
+    val interim = ctx.freshName("interim")
+    ev.copy(code =
+      code"""
+          Object $interim = $codeToInterim;
+          Object ${ev.value} = null;
+          boolean ${ev.isNull} = ($interim == null);
+          if (!${ev.isNull}) {
+            ${ev.value} = ${if (cast) s"(${boxed.getName})" else ""} ${withInterim(interim)};
+          }
+          """)
+  }
+
+  def exprCodeIsNullAt(boxed: Class[_], ctx: CodegenContext, nullCheck: Block, nonNull: Block, cast: Boolean = true): ExprCode = {
+    val ev = exprCode(boxed, ctx)
+    ev.copy(code =
+      code"""
+          Object ${ev.value} = null;
+          boolean ${ev.isNull} = $nullCheck;
+          if (!${ev.isNull}) {
+            ${ev.value} = ${if (cast) s"(${boxed.getName})" else ""} $nonNull;
+          }
+          """)
+  }
+
   def exprCode(boxed: Class[_], ctx: CodegenContext, code: Block, cast: Boolean = true): ExprCode = {
     val isNull = ctx.freshName("isNull")
     val value = ctx.freshName("value")
@@ -45,6 +71,9 @@ object Arrays {
 
 
 class BaseKogitoMap(path: Any, pairs: scala.collection.Map[String, (Int, Accessor[_])]) extends SimpleMap {
+
+  override def containsKey(key: Any): Boolean = pairs.contains(key.toString)
+
   override def get(key: Any): AnyRef = {
     val (i, a) = pairs(key.toString)
     val t = a.forPath(path, i)
@@ -96,6 +125,16 @@ class DecisionResultFullProxyEntry() extends ProxyEntry[java.util.List[org.kie.d
 }
 
 class ProxyMap[T](var _size: Int, var t: T, val proxyEntry: ProxyEntry[T]) extends SimpleMap {
+
+  override def containsKey(key: Any): Boolean = {
+    for(i <- 0 until _size) {
+      val e = proxyEntry.get(i, t)
+      if (e.getKey == key.toString) {
+        return true
+      }
+    }
+    false
+  }
 
   // resets the underlying data - e.g. new dmn result
   def reset(size: Int, _t: T): Unit = {
@@ -181,15 +220,16 @@ abstract class SimpleMap extends util.Map[String, Object] {
 
   override def isEmpty: Boolean = size() == 0
 
+  // is called by kogito when get returns null
+  // override def containsKey(key: Any): Boolean = ??? // pairs.contains(key.toString)
+
+
   // Never called by kogito
 
   // $COVERAGE-OFF$
   override def keySet(): util.Set[String] = ??? //pairs.keySet.asJava
 
   //override def size(): Int = ??? //pairs.size
-
-
-  override def containsKey(key: Any): Boolean = ??? // pairs.contains(key.toString)
 
   // Never being implemented
 

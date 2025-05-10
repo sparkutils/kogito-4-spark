@@ -1,7 +1,6 @@
 package com.sparkutils.dmn.kogito.types
 
-import com.sparkutils.dmn.kogito.types.Arrays.exprCode
-
+import com.sparkutils.dmn.kogito.types.Arrays.{exprCode, exprCodeInterim, exprCodeIsNullAt}
 import com.sparkutils.dmn.{DMNContextPath, DMNContextProvider, DMNException, UnaryDMNContextProvider}
 import org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeGenerator, CodegenContext, ExprCode}
@@ -38,7 +37,9 @@ object ContextInterfaces {
           }
         }
       }
-    case StringType => (path: Any, i: Int) => if (path == null) null else path.asInstanceOf[SpecializedGetters].getUTF8String(i).toString
+    case StringType => (path: Any, i: Int) => if (path == null) null else {
+      val t = path.asInstanceOf[SpecializedGetters].getUTF8String(i)
+      if (t == null) null else t.toString}
     case IntegerType => (path: Any, i: Int) => if (path == null) null else path.asInstanceOf[SpecializedGetters].getInt(i)
     case LongType => (path: Any, i: Int) => if (path == null) null else path.asInstanceOf[SpecializedGetters].getLong(i)
     case BooleanType => (path: Any, i: Int) => if (path == null) null else path.asInstanceOf[SpecializedGetters].getBoolean(i)
@@ -47,11 +48,24 @@ object ContextInterfaces {
     case BinaryType => (path: Any, i: Int) => if (path == null) null else path.asInstanceOf[SpecializedGetters].getBinary(i)
     case ByteType => (path: Any, i: Int) => if (path == null) null else path.asInstanceOf[SpecializedGetters].getByte(i)
     case ShortType => (path: Any, i: Int) => if (path == null) null else path.asInstanceOf[SpecializedGetters].getShort(i)
-    case DateType => (path: Any, i: Int) => if (path == null) null else DateTimeUtils.daysToLocalDate( path.asInstanceOf[SpecializedGetters].getInt(i) )
-    case TimestampType => (path: Any, i: Int) => if (path == null) null else DateTimeUtils.microsToLocalDateTime( path.asInstanceOf[SpecializedGetters].getLong(i) )
+    case DateType => (path: Any, i: Int) => if (path == null) null else {
+      if (path.asInstanceOf[SpecializedGetters].isNullAt(i))
+        null
+      else
+        DateTimeUtils.daysToLocalDate( path.asInstanceOf[SpecializedGetters].getInt(i) )
+    }
+    case TimestampType => (path: Any, i: Int) => if (path == null) null else {
+      if (path.asInstanceOf[SpecializedGetters].isNullAt(i))
+        null
+      else
+        DateTimeUtils.microsToLocalDateTime( path.asInstanceOf[SpecializedGetters].getLong(i) )
+    }
     case _: DecimalType => (path: Any, i: Int) =>
       // max needed as Spark's past 3.4 move everything to max anyway, 1.0 comes back as 1.0 instead of 2016...
-      if (path == null) null else path.asInstanceOf[SpecializedGetters].getDecimal(i, DecimalType.MAX_PRECISION, DecimalType.DEFAULT_SCALE).toJavaBigDecimal
+      if (path == null) null else {
+        val t = path.asInstanceOf[SpecializedGetters].getDecimal(i, DecimalType.MAX_PRECISION, DecimalType.DEFAULT_SCALE)
+        if (t == null) null else t.toJavaBigDecimal
+      }
     case ArrayType(typ, _) =>
       val entryAccessor = forType(typ, dmnConfiguration)
       (path: Any, i: Int) => {
@@ -62,7 +76,7 @@ object ContextInterfaces {
             else
               path.asInstanceOf[SpecializedGetters].getArray(i)
           }
-          arrayOfType(entryAccessor, ar).asJava
+          if (ar == null) null else arrayOfType(entryAccessor, ar).asJava
         }
       }
     case MapType(k, v, _) => {
@@ -75,9 +89,12 @@ object ContextInterfaces {
               path.asInstanceOf[MapData]
             else
               path.asInstanceOf[SpecializedGetters].getMap(i)
-          val ka = arrayOfType(kAccessor, m.keyArray())
-          val va = arrayOfType(vAccessor, m.valueArray())
-          (ka zip va).toMap.asJava
+
+          if (m == null) null else {
+            val ka = arrayOfType(kAccessor, m.keyArray())
+            val va = arrayOfType(vAccessor, m.valueArray())
+            (ka zip va).toMap.asJava
+          }
         }
       }
     }
@@ -120,7 +137,9 @@ object ContextInterfaces {
           boolean ${expr.isNull} = false;
           """)
     }
-    case StringType => (ctx: CodegenContext, pathName: String, iName: String) => exprCode(classOf[String], ctx, code"$pathName.getUTF8String($iName).toString();")
+    case StringType => (ctx: CodegenContext, pathName: String, iName: String) =>
+      exprCodeInterim(classOf[String], ctx,
+        code"$pathName.getUTF8String($iName)", i => code"((UTF8String)$i).toString()")
     case IntegerType => (ctx: CodegenContext, pathName: String, iName: String) => exprCode(classOf[Integer], ctx, code"$pathName.getInt($iName);")
     case LongType => (ctx: CodegenContext, pathName: String, iName: String) => exprCode(classOf[Long], ctx, code"$pathName.getLong($iName);")
     case BooleanType => (ctx: CodegenContext, pathName: String, iName: String) => exprCode(classOf[Boolean], ctx, code"$pathName.getBoolean($iName);")
@@ -129,11 +148,17 @@ object ContextInterfaces {
     case BinaryType => (ctx: CodegenContext, pathName: String, iName: String) => exprCode(classOf[Array[Byte]], ctx, code"$pathName.getBinary($iName);")
     case ByteType => (ctx: CodegenContext, pathName: String, iName: String) => exprCode(classOf[Byte], ctx, code"$pathName.getByte($iName);")
     case ShortType => (ctx: CodegenContext, pathName: String, iName: String) => exprCode(classOf[Short], ctx, code"$pathName.getShort($iName);")
-    case DateType => (ctx: CodegenContext, pathName: String, iName: String) => exprCode(classOf[LocalDate], ctx, code"org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate($pathName.getInt($iName));")
-    case TimestampType => (ctx: CodegenContext, pathName: String, iName: String) => exprCode(classOf[LocalDateTime], ctx, code"org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime($pathName.getLong($iName));")
+    case DateType => (ctx: CodegenContext, pathName: String, iName: String) =>
+      exprCodeIsNullAt(classOf[LocalDate], ctx, code"$pathName.isNullAt($iName)",
+        code"org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate($pathName.getInt($iName))")
+    case TimestampType => (ctx: CodegenContext, pathName: String, iName: String) =>
+      exprCodeIsNullAt(classOf[LocalDateTime], ctx, code"$pathName.isNullAt($iName)",
+        code"org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime($pathName.getLong($iName));")
     case _: DecimalType => (ctx: CodegenContext, pathName: String, iName: String) =>
       // max needed as Spark's past 3.4 move everything to max anyway, 1.0 comes back as 1.0 instead of 2016...
-      exprCode(classOf[java.math.BigDecimal], ctx, code"$pathName.getDecimal($iName, org.apache.spark.sql.types.DecimalType.MAX_PRECISION(), org.apache.spark.sql.types.DecimalType.DEFAULT_SCALE()).toJavaBigDecimal();")
+      exprCodeInterim(classOf[java.math.BigDecimal], ctx,
+        code"$pathName.getDecimal($iName, org.apache.spark.sql.types.DecimalType.MAX_PRECISION(), org.apache.spark.sql.types.DecimalType.DEFAULT_SCALE())",
+        i => code"((org.apache.spark.sql.types.Decimal)$i).toJavaBigDecimal()")
     case ArrayType(typ, _) =>
       (ctx: CodegenContext, pathName: String, iName: String) => {
         val arr = ctx.freshVariable("arr", dataType)
@@ -147,13 +172,16 @@ object ContextInterfaces {
           code =
             code"""
               ${CodeGenerator.javaType(dataType)} $arr = ${if (topLevel) pathName else s"$pathName.getArray($iName)"};
-              Object[] $arrRes = new Object[$arr.numElements()];
-              for (int $i = 0; $i < $arr.numElements(); $i++) {
-                ${typCode.code}
-                $arrRes[$i] = ${typCode.value};
+              boolean ${expr.isNull} = ($arr == null);
+              java.util.List ${expr.value} = null;
+              if (!${expr.isNull}) {
+                Object[] $arrRes = new Object[$arr.numElements()];
+                for (int $i = 0; $i < $arr.numElements(); $i++) {
+                  ${typCode.code}
+                  $arrRes[$i] = ${typCode.value};
+                }
+                ${expr.value} = java.util.Arrays.asList($arrRes);
               }
-              java.util.List ${expr.value} = java.util.Arrays.asList($arrRes);
-              boolean ${expr.isNull} = false;
               """
         )
       }
@@ -178,21 +206,50 @@ object ContextInterfaces {
           code =
             code"""
               ${CodeGenerator.javaType(dataType)} $map = ${if (topLevel) pathName else s"$pathName.getMap($iName)"};
-              ${keys.javaType.getName} $keys = $map.keyArray();
-              ${values.javaType.getName} $values = $map.valueArray();
-              java.util.Map ${expr.value} = new java.util.$mapImpl();
-              for (int $i = 0; $i < $keys.numElements(); $i++) {
-                ${kCode.code}
-                ${vCode.code}
+              boolean ${expr.isNull} = ($map == null);
+              java.util.Map ${expr.value} = null;
+              if (!${expr.isNull}) {
+                ${keys.javaType.getName} $keys = $map.keyArray();
+                ${values.javaType.getName} $values = $map.valueArray();
+                ${expr.value} = new java.util.$mapImpl();
+                for (int $i = 0; $i < $keys.numElements(); $i++) {
+                  ${kCode.code}
+                  ${vCode.code}
 
-                if (!${kCode.isNull}) {
-                  ${expr.value}.put(${kCode.value}, ${vCode.value});
+                  if (!${kCode.isNull}) {
+                    ${expr.value}.put(${kCode.value}, ${vCode.value});
+                  }
                 }
               }
-              boolean ${expr.isNull} = false;
               """)
       }
     case _ => throw new DMNException(s"Could not load Kogito Context AccessorCodeGen for dataType $dataType")
+  }
+
+  private def genFieldLookup(structType: StructType, funName: String, resultType: String, success: String, failure: String): String = {
+    s"""
+    public $resultType $funName(Object key) {
+      int index = -1;
+      switch (key.toString()) {
+        ${
+          structType.fields.zipWithIndex.foldLeft("") {
+            case (c, (f, i)) =>
+              s"""
+                 $c
+                 case "${f.name}":
+                    index = $i;
+                    break;
+                  """
+          }
+        }
+        default:
+          index = -1;
+      }
+      if (index == -1) {
+        return $failure;
+      }
+      return $success;
+    }"""
   }
 
   // when inCollection is true we cannot have a static map or results
@@ -209,28 +266,10 @@ object ContextInterfaces {
       s"""
           final Object[] $varsFinal = $vars;
           $str = new com.sparkutils.dmn.kogito.types.SimpleMap() {
-              public Object get(Object key) {
-                int index = -1;
-                switch (key.toString()) {
-                    ${
-        structType.fields.zipWithIndex.foldLeft("") {
-          case (c, (f, i)) =>
-            s"""
-                         $c
-                         case "${f.name}":
-                            index = $i;
-                            break;
-                          """
-        }
-      }
-                    default:
-                        index = -1;
-                }
-                if (index == -1) {
-                  return null;
-                }
-                return $varsFinal[index];
-              }
+              ${genFieldLookup(structType, funName = "containsKey",
+                resultType = "boolean", success = "true", failure = "false")}
+              ${genFieldLookup(structType, funName = "get",
+                resultType = "Object", success = s"$varsFinal[index]", failure = "null")}
 
               private final String[] names = { ${structType.fields.map(f => s""""${f.name}"""").mkString(",")} };
               private final java.util.Map.Entry<String, Object>[] backingSet = {
