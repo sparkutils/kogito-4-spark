@@ -182,8 +182,11 @@ case class KogitoDDLResult(debug: Boolean, underlyingType: StructType, config: M
         val dr = res.getDecisionResultByName(decisionName)
         if (dr ne null) {
           row.update(i, dr.getEvaluationStatus match {
+            // $COVERAGE-OFF$
+            // would require throwing in the evaluation, not sure how to reproduce that
             case DecisionEvaluationStatus.NOT_EVALUATED => NOT_EVALUATED
             case DecisionEvaluationStatus.EVALUATING => EVALUATING
+            // $COVERAGE-ON$
             case DecisionEvaluationStatus.SUCCEEDED => SUCCEEDED
             case DecisionEvaluationStatus.SKIPPED if dr.hasErrors => SKIPPED_ERROR
             case DecisionEvaluationStatus.SKIPPED => SKIPPED_WARN

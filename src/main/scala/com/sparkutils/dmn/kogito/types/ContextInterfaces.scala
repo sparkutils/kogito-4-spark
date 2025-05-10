@@ -33,6 +33,15 @@ object ContextInterfaces {
   def forType(dataType: DataType, dmnConfiguration: Map[String, String]): Accessor[_] = dataType match {
     case structType: StructType =>
       val s = struct(structType.fields.zipWithIndex.map { case (f, i) => (f.name, (i, forType(f.dataType, dmnConfiguration))) }.toMap)
+      /* nullAtOr {
+        (r: SpecializedGetters, i: Int) =>
+          val input =
+            if (i == -1)
+              r
+            else
+              r.getStruct(i, structType.fields.length)
+          s.forPath(input, i)
+      } */
       new Accessor[util.Map[String, Object]] {
         override def forPath(path: Any, i: Int): util.Map[String, Object] = {
           if (path == null) null else {
@@ -46,7 +55,7 @@ object ContextInterfaces {
           }
         }
       }
-    case StringType =>  nullAtOr {
+    case StringType => nullAtOr {
       (path: SpecializedGetters, i: Int) =>
         path.getUTF8String(i).toString
     }

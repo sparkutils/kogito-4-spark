@@ -59,7 +59,7 @@ object Utils {
           }
           """)
   }
-
+/*
   def exprCode(boxed: Class[_], ctx: CodegenContext, code: Block, cast: Boolean = true): ExprCode = {
     val isNull = ctx.freshName("isNull")
     val value = ctx.freshName("value")
@@ -74,7 +74,14 @@ object Utils {
         boolean ${expr.isNull} = (${expr.value} == null);
           """)
   }
-
+*/
+  /**
+   * compares two options where normal equality doesn't work.
+   * useful for nullability tests.  If either a or b are undefined the function f
+   * won't be called.
+   * @tparam A
+   * @return true if both are undefined or if both are defined and f returns true
+   */
   def optEqual[A](a: Option[A], b: Option[A])(f: (A,A) => Boolean): Boolean =
     ((a.isDefined && b.isDefined && (f(a.get, b.get))) ||
       a.isEmpty && b.isEmpty)
