@@ -405,22 +405,6 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="com.sparkutils.dmn.kogito.types.Utils#exprCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="exprCode(boxed:Class[_],ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,code:org.apache.spark.sql.catalyst.expressions.codegen.Block,cast:Boolean):org.apache.spark.sql.catalyst.expressions.codegen.ExprCode"></a><a id="exprCode(Class[_],CodegenContext,Block,Boolean):ExprCode"></a>
-      <span class="permalink">
-      <a href="../../../../../com/sparkutils/dmn/kogito/types/Utils$.html#exprCode(boxed:Class[_],ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,code:org.apache.spark.sql.catalyst.expressions.codegen.Block,cast:Boolean):org.apache.spark.sql.catalyst.expressions.codegen.ExprCode" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">exprCode</span><span class="params">(<span name="boxed">boxed: <span class="extype" name="scala.Predef.Class">Class</span>[_]</span>, <span name="ctx">ctx: <span class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</span></span>, <span name="code">code: <span class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.Block">Block</span></span>, <span name="cast">cast: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</span></span>
-      </span>
-      
-      
-    </li><li name="com.sparkutils.dmn.kogito.types.Utils#exprCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="exprCode(clazz:Class[_],ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext):org.apache.spark.sql.catalyst.expressions.codegen.ExprCode"></a><a id="exprCode(Class[_],CodegenContext):ExprCode"></a>
       <span class="permalink">
       <a href="../../../../../com/sparkutils/dmn/kogito/types/Utils$.html#exprCode(clazz:Class[_],ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext):org.apache.spark.sql.catalyst.expressions.codegen.ExprCode" title="Permalink">
@@ -584,7 +568,7 @@
                 <span class="name">@IntrinsicCandidate</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="com.sparkutils.dmn.kogito.types.Utils#optEqual" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="com.sparkutils.dmn.kogito.types.Utils#optEqual" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="optEqual[A](a:Option[A],b:Option[A])(f:(A,A)=&gt;Boolean):Boolean"></a><a id="optEqual[A](Option[A],Option[A])((A,A)⇒Boolean):Boolean"></a>
       <span class="permalink">
       <a href="../../../../../com/sparkutils/dmn/kogito/types/Utils$.html#optEqual[A](a:Option[A],b:Option[A])(f:(A,A)=&gt;Boolean):Boolean" title="Permalink">
@@ -599,7 +583,9 @@
         <span class="name">optEqual</span><span class="tparams">[<span name="A">A</span>]</span><span class="params">(<span name="a">a: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.sparkutils.dmn.kogito.types.Utils.optEqual.A">A</span>]</span>, <span name="b">b: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.sparkutils.dmn.kogito.types.Utils.optEqual.A">A</span>]</span>)</span><span class="params">(<span name="f">f: (<span class="extype" name="com.sparkutils.dmn.kogito.types.Utils.optEqual.A">A</span>, <span class="extype" name="com.sparkutils.dmn.kogito.types.Utils.optEqual.A">A</span>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       
-      
+      <p class="shortcomment cmt">compares two options where normal equality doesn't work.</p><div class="fullcomment"><div class="comment cmt"><p>compares two options where normal equality doesn't work.
+useful for nullability tests.  If either a or b are undefined the function f
+won't be called.</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>true if both are undefined or if both are defined and f returns true</p></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a><a id="synchronized[T0](⇒T0):T0"></a>
       <span class="permalink">

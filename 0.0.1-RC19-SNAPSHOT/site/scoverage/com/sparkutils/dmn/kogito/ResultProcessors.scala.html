@@ -206,136 +206,139 @@
 </span>182 <span style=''></span><span style='background: #AEF1AE'>        val dr = res.getDecisionResultByName(decisionName)
 </span>183 <span style=''></span><span style='background: #AEF1AE'>        if (dr ne null) {
 </span>184 <span style=''></span><span style='background: #AEF1AE'>          row.update(i, dr.getEvaluationStatus match {
-</span>185 <span style=''></span><span style='background: #AEF1AE'>            case DecisionEvaluationStatus.NOT_EVALUATED =&gt; </span><span style='background: #F0ADAD'>NOT_EVALUATED</span><span style='background: #AEF1AE'>
-</span>186 <span style=''></span><span style='background: #AEF1AE'>            case DecisionEvaluationStatus.EVALUATING =&gt; </span><span style='background: #F0ADAD'>EVALUATING</span><span style='background: #AEF1AE'>
-</span>187 <span style=''></span><span style='background: #AEF1AE'>            case DecisionEvaluationStatus.SUCCEEDED =&gt; SUCCEEDED
-</span>188 <span style=''></span><span style='background: #AEF1AE'>            case DecisionEvaluationStatus.SKIPPED if dr.hasErrors =&gt; SKIPPED_ERROR
-</span>189 <span style=''></span><span style='background: #AEF1AE'>            case DecisionEvaluationStatus.SKIPPED =&gt; SKIPPED_WARN
-</span>190 <span style=''></span><span style='background: #AEF1AE'>            case DecisionEvaluationStatus.FAILED =&gt; FAILED
-</span>191 <span style=''></span><span style='background: #AEF1AE'>          })
-</span>192 <span style=''></span><span style='background: #AEF1AE'>        } else {
-</span>193 <span style=''></span><span style='background: #AEF1AE'>          row.update(i, NOT_FOUND)
-</span>194 <span style=''></span><span style='background: #AEF1AE'>        }
-</span>195 <span style=''></span><span style='background: #AEF1AE'>        row
-</span>196 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
-</span>197 <span style=''>
-</span>198 <span style=''>  // $COVERAGE-OFF$
-</span>199 <span style=''>  override def eval(input: InternalRow): Any = ???
-</span>200 <span style=''>  // $COVERAGE-ON$
-</span>201 <span style=''>
-</span>202 <span style=''>  override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
-</span>203 <span style=''>    </span><span style='background: #AEF1AE'>ctx.references += this</span><span style=''>
-</span>204 <span style=''>    val ddlResultClassName = </span><span style='background: #AEF1AE'>classOf[KogitoDDLResult].getName</span><span style=''>
-</span>205 <span style=''>
-</span>206 <span style=''>    val resultIdx = </span><span style='background: #AEF1AE'>ctx.references.size - 1</span><span style=''>
-</span>207 <span style=''>
-</span>208 <span style=''>    val decisionResults = </span><span style='background: #AEF1AE'>ctx.freshName(&quot;decisionResults&quot;)</span><span style=''>
-</span>209 <span style=''>    val dm = </span><span style='background: #AEF1AE'>decisionMap(ctx, decisionResults)</span><span style=''>
-</span>210 <span style=''>    val decisionMapN = </span><span style='background: #AEF1AE'>dm.value</span><span style=''>
-</span>211 <span style=''>
-</span>212 <span style=''>
-</span>213 <span style=''>    val getExpr = </span><span style='background: #AEF1AE'>forTypeCodeGen(underlyingType).forPath(ctx, decisionMapN)</span><span style=''>
+</span>185 <span style=''></span><span style='background: #AEF1AE'>            // $COVERAGE-OFF$
+</span>186 <span style=''></span><span style='background: #AEF1AE'>            // would require throwing in the evaluation, not sure how to reproduce that
+</span>187 <span style=''></span><span style='background: #AEF1AE'>            case DecisionEvaluationStatus.NOT_EVALUATED =&gt; NOT_EVALUATED
+</span>188 <span style=''></span><span style='background: #AEF1AE'>            case DecisionEvaluationStatus.EVALUATING =&gt; EVALUATING
+</span>189 <span style=''></span><span style='background: #AEF1AE'>            // $COVERAGE-ON$
+</span>190 <span style=''></span><span style='background: #AEF1AE'>            case DecisionEvaluationStatus.SUCCEEDED =&gt; SUCCEEDED
+</span>191 <span style=''></span><span style='background: #AEF1AE'>            case DecisionEvaluationStatus.SKIPPED if dr.hasErrors =&gt; SKIPPED_ERROR
+</span>192 <span style=''></span><span style='background: #AEF1AE'>            case DecisionEvaluationStatus.SKIPPED =&gt; SKIPPED_WARN
+</span>193 <span style=''></span><span style='background: #AEF1AE'>            case DecisionEvaluationStatus.FAILED =&gt; FAILED
+</span>194 <span style=''></span><span style='background: #AEF1AE'>          })
+</span>195 <span style=''></span><span style='background: #AEF1AE'>        } else {
+</span>196 <span style=''></span><span style='background: #AEF1AE'>          row.update(i, NOT_FOUND)
+</span>197 <span style=''></span><span style='background: #AEF1AE'>        }
+</span>198 <span style=''></span><span style='background: #AEF1AE'>        row
+</span>199 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>200 <span style=''>
+</span>201 <span style=''>  // $COVERAGE-OFF$
+</span>202 <span style=''>  override def eval(input: InternalRow): Any = ???
+</span>203 <span style=''>  // $COVERAGE-ON$
+</span>204 <span style=''>
+</span>205 <span style=''>  override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
+</span>206 <span style=''>    </span><span style='background: #AEF1AE'>ctx.references += this</span><span style=''>
+</span>207 <span style=''>    val ddlResultClassName = </span><span style='background: #AEF1AE'>classOf[KogitoDDLResult].getName</span><span style=''>
+</span>208 <span style=''>
+</span>209 <span style=''>    val resultIdx = </span><span style='background: #AEF1AE'>ctx.references.size - 1</span><span style=''>
+</span>210 <span style=''>
+</span>211 <span style=''>    val decisionResults = </span><span style='background: #AEF1AE'>ctx.freshName(&quot;decisionResults&quot;)</span><span style=''>
+</span>212 <span style=''>    val dm = </span><span style='background: #AEF1AE'>decisionMap(ctx, decisionResults)</span><span style=''>
+</span>213 <span style=''>    val decisionMapN = </span><span style='background: #AEF1AE'>dm.value</span><span style=''>
 </span>214 <span style=''>
-</span>215 <span style=''>    </span><span style='background: #AEF1AE'>ev.copy(code =
-</span>216 <span style=''></span><span style='background: #AEF1AE'>      code&quot;&quot;&quot;
-</span>217 <span style=''></span><span style='background: #AEF1AE'>         org.apache.spark.sql.catalyst.expressions.GenericInternalRow ${ev.value} = null;
-</span>218 <span style=''></span><span style='background: #AEF1AE'>         // uncomment to debug the result
-</span>219 <span style=''></span><span style='background: #AEF1AE'>         // (($ddlResultClassName)references[$resultIdx]).checkResult($kogitoResultStr);
-</span>220 <span style=''></span><span style='background: #AEF1AE'>         boolean ${ev.isNull} = ($kogitoResultStr == null);
-</span>221 <span style=''></span><span style='background: #AEF1AE'>         if (!${ev.isNull}) {
-</span>222 <span style=''></span><span style='background: #AEF1AE'>           final java.util.List&lt;org.kie.dmn.api.core.DMNDecisionResult&gt; $decisionResults = $kogitoResultStr.getDecisionResults();
-</span>223 <span style=''></span><span style='background: #AEF1AE'>           ${dm.code}
-</span>224 <span style=''></span><span style='background: #AEF1AE'>           ${getExpr.code}
-</span>225 <span style=''></span><span style='background: #AEF1AE'>
-</span>226 <span style=''></span><span style='background: #AEF1AE'>           ${ev.value} = ${getExpr.value};
-</span>227 <span style=''></span><span style='background: #AEF1AE'>
-</span>228 <span style=''></span><span style='background: #AEF1AE'>           ${ev.isNull} = (${ev.value} == null);
-</span>229 <span style=''></span><span style='background: #AEF1AE'>           if (!${ev.isNull}) {
-</span>230 <span style=''></span><span style='background: #AEF1AE'>             ${if (evalStatus.nonEmpty) code&quot;&quot;&quot;${ev.value} = (($ddlResultClassName)references[$resultIdx]).setStatuses(${getExpr.value}, $kogitoResultStr);&quot;&quot;&quot; else code&quot;&quot;}
-</span>231 <span style=''></span><span style='background: #AEF1AE'>
-</span>232 <span style=''></span><span style='background: #AEF1AE'>             ${if (debug) code&quot;${ev.value} = (($ddlResultClassName)references[$resultIdx]).withDebug($kogitoResultStr, ${ev.value});&quot; else code&quot;&quot;}
-</span>233 <span style=''></span><span style='background: #AEF1AE'>             ${ev.isNull} = (${ev.value} == null);
-</span>234 <span style=''></span><span style='background: #AEF1AE'>           }
-</span>235 <span style=''></span><span style='background: #AEF1AE'>         }
-</span>236 <span style=''></span><span style='background: #AEF1AE'>          &quot;&quot;&quot;)</span><span style=''>
-</span>237 <span style=''>  }
-</span>238 <span style=''>}
-</span>239 <span style=''>
-</span>240 <span style=''>/**
-</span>241 <span style=''> * @param debug
-</span>242 <span style=''> */
-</span>243 <span style=''>case class KogitoJSONResultProvider(debug: Boolean, config: Map[String, String]) extends LeafExpression with DMNResultProvider with KogitoProcess {
-</span>244 <span style=''>
-</span>245 <span style=''>  // $COVERAGE-OFF$
-</span>246 <span style=''>  override def underlyingType: StructType = ???
-</span>247 <span style=''>  // $COVERAGE-ON$
-</span>248 <span style=''>
-</span>249 <span style=''>  @transient
-</span>250 <span style=''>  lazy val mapper =
-</span>251 <span style=''>    new ObjectMapper()
-</span>252 <span style=''>      .registerModule(
-</span>253 <span style=''>        new SimpleModule()
-</span>254 <span style=''>          .addSerializer(classOf[ComparablePeriod], new DMNFEELComparablePeriodSerializer())
-</span>255 <span style=''>      )
-</span>256 <span style=''>      .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-</span>257 <span style=''>
-</span>258 <span style=''>  override def nullable: Boolean = </span><span style='background: #AEF1AE'>true</span><span style=''>
-</span>259 <span style=''>
-</span>260 <span style=''>  // $COVERAGE-OFF$
-</span>261 <span style=''>  override def eval(input: InternalRow): Any = ???
-</span>262 <span style=''>  // $COVERAGE-ON$
-</span>263 <span style=''>
-</span>264 <span style=''>  override def dataType: DataType = </span><span style='background: #AEF1AE'>StringType</span><span style=''>
-</span>265 <span style=''>
-</span>266 <span style=''>  override def process(result: core.DMNResult): Any = {
-</span>267 <span style=''>    val what =
-</span>268 <span style=''>      if (</span><span style='background: #AEF1AE'>debug</span><span style=''>)
-</span>269 <span style=''>        </span><span style='background: #AEF1AE'>result.getDecisionResults</span><span style=''>
-</span>270 <span style=''>      else
-</span>271 <span style=''>        </span><span style='background: #AEF1AE'>result.getDecisionResults.asScala.map(r =&gt; r.getDecisionName -&gt; r.getResult).toMap.asJava</span><span style=''>
-</span>272 <span style=''>
-</span>273 <span style=''>    </span><span style='background: #AEF1AE'>UTF8String.fromString(mapper.writeValueAsString(
-</span>274 <span style=''></span><span style='background: #AEF1AE'>      what
-</span>275 <span style=''></span><span style='background: #AEF1AE'>    ))</span><span style=''>
-</span>276 <span style=''>  }
-</span>277 <span style=''>
-</span>278 <span style=''>  override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
-</span>279 <span style=''>    val mapperName = </span><span style='background: #AEF1AE'>ctx.addMutableState(classOf[ObjectMapper].getName, &quot;mapper&quot;, v =&gt;
-</span>280 <span style=''></span><span style='background: #AEF1AE'>      s&quot;&quot;&quot;
-</span>281 <span style=''></span><span style='background: #AEF1AE'>         $v = new ${classOf[ObjectMapper].getName}().registerModule(
-</span>282 <span style=''></span><span style='background: #AEF1AE'>            new ${classOf[SimpleModule].getName}()
-</span>283 <span style=''></span><span style='background: #AEF1AE'>              .addSerializer(${classOf[ComparablePeriod].getName}.class, new ${classOf[DMNFEELComparablePeriodSerializer].getName}())
-</span>284 <span style=''></span><span style='background: #AEF1AE'>          )
-</span>285 <span style=''></span><span style='background: #AEF1AE'>          .disable(${classOf[SerializationFeature].getName}.FAIL_ON_EMPTY_BEANS);
-</span>286 <span style=''></span><span style='background: #AEF1AE'>         &quot;&quot;&quot;)</span><span style=''>
-</span>287 <span style=''>
-</span>288 <span style=''>    val decisionResults = </span><span style='background: #AEF1AE'>ctx.freshName(&quot;decisionResults&quot;)</span><span style=''>
-</span>289 <span style=''>    val what = </span><span style='background: #AEF1AE'>ctx.freshName(&quot;what&quot;)</span><span style=''>
-</span>290 <span style=''>    val dm = </span><span style='background: #AEF1AE'>decisionMap(ctx, decisionResults)</span><span style=''>
-</span>291 <span style=''>
-</span>292 <span style=''>    </span><span style='background: #AEF1AE'>ev.copy(code =
-</span>293 <span style=''></span><span style='background: #AEF1AE'>      code&quot;&quot;&quot;
-</span>294 <span style=''></span><span style='background: #AEF1AE'>         UTF8String ${ev.value} = null;
-</span>295 <span style=''></span><span style='background: #AEF1AE'>         boolean ${ev.isNull} = false;
-</span>296 <span style=''></span><span style='background: #AEF1AE'>         final java.util.List&lt;org.kie.dmn.api.core.DMNDecisionResult&gt; $decisionResults = $kogitoResultStr.getDecisionResults();
-</span>297 <span style=''></span><span style='background: #AEF1AE'>         ${dm.code}
-</span>298 <span style=''></span><span style='background: #AEF1AE'>         Object $what = ${
-</span>299 <span style=''></span><span style='background: #AEF1AE'>          if (debug)
-</span>300 <span style=''></span><span style='background: #AEF1AE'>            s&quot;$decisionResults;&quot;
-</span>301 <span style=''></span><span style='background: #AEF1AE'>          else
-</span>302 <span style=''></span><span style='background: #AEF1AE'>            s&quot;${dm.value};&quot;
-</span>303 <span style=''></span><span style='background: #AEF1AE'>          }
-</span>304 <span style=''></span><span style='background: #AEF1AE'>          try {
-</span>305 <span style=''></span><span style='background: #AEF1AE'>            ${ev.value} = UTF8String.fromString($mapperName.writeValueAsString(
-</span>306 <span style=''></span><span style='background: #AEF1AE'>              $what
-</span>307 <span style=''></span><span style='background: #AEF1AE'>            ));
-</span>308 <span style=''></span><span style='background: #AEF1AE'>            ${ev.isNull} = ${ev.value} == null;
-</span>309 <span style=''></span><span style='background: #AEF1AE'>          } catch (sparkutilsKogito.com.fasterxml.jackson.core.JsonProcessingException e) {
-</span>310 <span style=''></span><span style='background: #AEF1AE'>            ${ev.isNull} = true;
-</span>311 <span style=''></span><span style='background: #AEF1AE'>          }
-</span>312 <span style=''></span><span style='background: #AEF1AE'>      &quot;&quot;&quot;)</span><span style=''>
-</span>313 <span style=''>  }
-</span>314 <span style=''>}
+</span>215 <span style=''>
+</span>216 <span style=''>    val getExpr = </span><span style='background: #AEF1AE'>forTypeCodeGen(underlyingType).forPath(ctx, decisionMapN)</span><span style=''>
+</span>217 <span style=''>
+</span>218 <span style=''>    </span><span style='background: #AEF1AE'>ev.copy(code =
+</span>219 <span style=''></span><span style='background: #AEF1AE'>      code&quot;&quot;&quot;
+</span>220 <span style=''></span><span style='background: #AEF1AE'>         org.apache.spark.sql.catalyst.expressions.GenericInternalRow ${ev.value} = null;
+</span>221 <span style=''></span><span style='background: #AEF1AE'>         // uncomment to debug the result
+</span>222 <span style=''></span><span style='background: #AEF1AE'>         // (($ddlResultClassName)references[$resultIdx]).checkResult($kogitoResultStr);
+</span>223 <span style=''></span><span style='background: #AEF1AE'>         boolean ${ev.isNull} = ($kogitoResultStr == null);
+</span>224 <span style=''></span><span style='background: #AEF1AE'>         if (!${ev.isNull}) {
+</span>225 <span style=''></span><span style='background: #AEF1AE'>           final java.util.List&lt;org.kie.dmn.api.core.DMNDecisionResult&gt; $decisionResults = $kogitoResultStr.getDecisionResults();
+</span>226 <span style=''></span><span style='background: #AEF1AE'>           ${dm.code}
+</span>227 <span style=''></span><span style='background: #AEF1AE'>           ${getExpr.code}
+</span>228 <span style=''></span><span style='background: #AEF1AE'>
+</span>229 <span style=''></span><span style='background: #AEF1AE'>           ${ev.value} = ${getExpr.value};
+</span>230 <span style=''></span><span style='background: #AEF1AE'>
+</span>231 <span style=''></span><span style='background: #AEF1AE'>           ${ev.isNull} = (${ev.value} == null);
+</span>232 <span style=''></span><span style='background: #AEF1AE'>           if (!${ev.isNull}) {
+</span>233 <span style=''></span><span style='background: #AEF1AE'>             ${if (evalStatus.nonEmpty) code&quot;&quot;&quot;${ev.value} = (($ddlResultClassName)references[$resultIdx]).setStatuses(${getExpr.value}, $kogitoResultStr);&quot;&quot;&quot; else code&quot;&quot;}
+</span>234 <span style=''></span><span style='background: #AEF1AE'>
+</span>235 <span style=''></span><span style='background: #AEF1AE'>             ${if (debug) code&quot;${ev.value} = (($ddlResultClassName)references[$resultIdx]).withDebug($kogitoResultStr, ${ev.value});&quot; else code&quot;&quot;}
+</span>236 <span style=''></span><span style='background: #AEF1AE'>             ${ev.isNull} = (${ev.value} == null);
+</span>237 <span style=''></span><span style='background: #AEF1AE'>           }
+</span>238 <span style=''></span><span style='background: #AEF1AE'>         }
+</span>239 <span style=''></span><span style='background: #AEF1AE'>          &quot;&quot;&quot;)</span><span style=''>
+</span>240 <span style=''>  }
+</span>241 <span style=''>}
+</span>242 <span style=''>
+</span>243 <span style=''>/**
+</span>244 <span style=''> * @param debug
+</span>245 <span style=''> */
+</span>246 <span style=''>case class KogitoJSONResultProvider(debug: Boolean, config: Map[String, String]) extends LeafExpression with DMNResultProvider with KogitoProcess {
+</span>247 <span style=''>
+</span>248 <span style=''>  // $COVERAGE-OFF$
+</span>249 <span style=''>  override def underlyingType: StructType = ???
+</span>250 <span style=''>  // $COVERAGE-ON$
+</span>251 <span style=''>
+</span>252 <span style=''>  @transient
+</span>253 <span style=''>  lazy val mapper =
+</span>254 <span style=''>    new ObjectMapper()
+</span>255 <span style=''>      .registerModule(
+</span>256 <span style=''>        new SimpleModule()
+</span>257 <span style=''>          .addSerializer(classOf[ComparablePeriod], new DMNFEELComparablePeriodSerializer())
+</span>258 <span style=''>      )
+</span>259 <span style=''>      .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+</span>260 <span style=''>
+</span>261 <span style=''>  override def nullable: Boolean = </span><span style='background: #AEF1AE'>true</span><span style=''>
+</span>262 <span style=''>
+</span>263 <span style=''>  // $COVERAGE-OFF$
+</span>264 <span style=''>  override def eval(input: InternalRow): Any = ???
+</span>265 <span style=''>  // $COVERAGE-ON$
+</span>266 <span style=''>
+</span>267 <span style=''>  override def dataType: DataType = </span><span style='background: #AEF1AE'>StringType</span><span style=''>
+</span>268 <span style=''>
+</span>269 <span style=''>  override def process(result: core.DMNResult): Any = {
+</span>270 <span style=''>    val what =
+</span>271 <span style=''>      if (</span><span style='background: #AEF1AE'>debug</span><span style=''>)
+</span>272 <span style=''>        </span><span style='background: #AEF1AE'>result.getDecisionResults</span><span style=''>
+</span>273 <span style=''>      else
+</span>274 <span style=''>        </span><span style='background: #AEF1AE'>result.getDecisionResults.asScala.map(r =&gt; r.getDecisionName -&gt; r.getResult).toMap.asJava</span><span style=''>
+</span>275 <span style=''>
+</span>276 <span style=''>    </span><span style='background: #AEF1AE'>UTF8String.fromString(mapper.writeValueAsString(
+</span>277 <span style=''></span><span style='background: #AEF1AE'>      what
+</span>278 <span style=''></span><span style='background: #AEF1AE'>    ))</span><span style=''>
+</span>279 <span style=''>  }
+</span>280 <span style=''>
+</span>281 <span style=''>  override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
+</span>282 <span style=''>    val mapperName = </span><span style='background: #AEF1AE'>ctx.addMutableState(classOf[ObjectMapper].getName, &quot;mapper&quot;, v =&gt;
+</span>283 <span style=''></span><span style='background: #AEF1AE'>      s&quot;&quot;&quot;
+</span>284 <span style=''></span><span style='background: #AEF1AE'>         $v = new ${classOf[ObjectMapper].getName}().registerModule(
+</span>285 <span style=''></span><span style='background: #AEF1AE'>            new ${classOf[SimpleModule].getName}()
+</span>286 <span style=''></span><span style='background: #AEF1AE'>              .addSerializer(${classOf[ComparablePeriod].getName}.class, new ${classOf[DMNFEELComparablePeriodSerializer].getName}())
+</span>287 <span style=''></span><span style='background: #AEF1AE'>          )
+</span>288 <span style=''></span><span style='background: #AEF1AE'>          .disable(${classOf[SerializationFeature].getName}.FAIL_ON_EMPTY_BEANS);
+</span>289 <span style=''></span><span style='background: #AEF1AE'>         &quot;&quot;&quot;)</span><span style=''>
+</span>290 <span style=''>
+</span>291 <span style=''>    val decisionResults = </span><span style='background: #AEF1AE'>ctx.freshName(&quot;decisionResults&quot;)</span><span style=''>
+</span>292 <span style=''>    val what = </span><span style='background: #AEF1AE'>ctx.freshName(&quot;what&quot;)</span><span style=''>
+</span>293 <span style=''>    val dm = </span><span style='background: #AEF1AE'>decisionMap(ctx, decisionResults)</span><span style=''>
+</span>294 <span style=''>
+</span>295 <span style=''>    </span><span style='background: #AEF1AE'>ev.copy(code =
+</span>296 <span style=''></span><span style='background: #AEF1AE'>      code&quot;&quot;&quot;
+</span>297 <span style=''></span><span style='background: #AEF1AE'>         UTF8String ${ev.value} = null;
+</span>298 <span style=''></span><span style='background: #AEF1AE'>         boolean ${ev.isNull} = false;
+</span>299 <span style=''></span><span style='background: #AEF1AE'>         final java.util.List&lt;org.kie.dmn.api.core.DMNDecisionResult&gt; $decisionResults = $kogitoResultStr.getDecisionResults();
+</span>300 <span style=''></span><span style='background: #AEF1AE'>         ${dm.code}
+</span>301 <span style=''></span><span style='background: #AEF1AE'>         Object $what = ${
+</span>302 <span style=''></span><span style='background: #AEF1AE'>          if (debug)
+</span>303 <span style=''></span><span style='background: #AEF1AE'>            s&quot;$decisionResults;&quot;
+</span>304 <span style=''></span><span style='background: #AEF1AE'>          else
+</span>305 <span style=''></span><span style='background: #AEF1AE'>            s&quot;${dm.value};&quot;
+</span>306 <span style=''></span><span style='background: #AEF1AE'>          }
+</span>307 <span style=''></span><span style='background: #AEF1AE'>          try {
+</span>308 <span style=''></span><span style='background: #AEF1AE'>            ${ev.value} = UTF8String.fromString($mapperName.writeValueAsString(
+</span>309 <span style=''></span><span style='background: #AEF1AE'>              $what
+</span>310 <span style=''></span><span style='background: #AEF1AE'>            ));
+</span>311 <span style=''></span><span style='background: #AEF1AE'>            ${ev.isNull} = ${ev.value} == null;
+</span>312 <span style=''></span><span style='background: #AEF1AE'>          } catch (sparkutilsKogito.com.fasterxml.jackson.core.JsonProcessingException e) {
+</span>313 <span style=''></span><span style='background: #AEF1AE'>            ${ev.isNull} = true;
+</span>314 <span style=''></span><span style='background: #AEF1AE'>          }
+</span>315 <span style=''></span><span style='background: #AEF1AE'>      &quot;&quot;&quot;)</span><span style=''>
+</span>316 <span style=''>  }
+</span>317 <span style=''>}
 </span></pre>
           </div>
           <div class="tab-pane" id="statementlist">
@@ -4597,7 +4600,7 @@ else
         <td>
           7397
           -
-          8175
+          8322
         </td>
         <td>
           Apply
@@ -4638,7 +4641,7 @@ else
         <td>
           7454
           -
-          8169
+          8316
         </td>
         <td>
           Block
@@ -4821,7 +4824,7 @@ else
         <td>
           7625
           -
-          8095
+          8242
         </td>
         <td>
           Apply
@@ -4852,7 +4855,7 @@ else
         <td>
           7625
           -
-          8095
+          8242
         </td>
         <td>
           Block
@@ -4875,111 +4878,15 @@ else
         </td>
       </tr><tr>
         <td>
-          185
-        </td>
-        <td>
-          385
-        </td>
-        <td>
-          7729
-          -
-          7742
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          com.sparkutils.dmn.kogito.types.ResultInterfaces.NOT_EVALUATED
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          com.sparkutils.dmn.kogito.types.ResultInterfaces.NOT_EVALUATED
-        </td>
-      </tr><tr>
-        <td>
-          185
-        </td>
-        <td>
-          386
-        </td>
-        <td>
-          7729
-          -
-          7742
-        </td>
-        <td>
-          Block
-        </td>
-        <td>
-          com.sparkutils.dmn.kogito.types.ResultInterfaces.NOT_EVALUATED
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          com.sparkutils.dmn.kogito.types.ResultInterfaces.NOT_EVALUATED
-        </td>
-      </tr><tr>
-        <td>
-          186
-        </td>
-        <td>
-          387
-        </td>
-        <td>
-          7799
-          -
-          7809
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          com.sparkutils.dmn.kogito.types.ResultInterfaces.EVALUATING
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          com.sparkutils.dmn.kogito.types.ResultInterfaces.EVALUATING
-        </td>
-      </tr><tr>
-        <td>
-          186
-        </td>
-        <td>
-          388
-        </td>
-        <td>
-          7799
-          -
-          7809
-        </td>
-        <td>
-          Block
-        </td>
-        <td>
-          com.sparkutils.dmn.kogito.types.ResultInterfaces.EVALUATING
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          com.sparkutils.dmn.kogito.types.ResultInterfaces.EVALUATING
-        </td>
-      </tr><tr>
-        <td>
-          187
+          190
         </td>
         <td>
           389
         </td>
         <td>
-          7865
+          8012
           -
-          7874
+          8021
         </td>
         <td>
           Select
@@ -4995,15 +4902,15 @@ else
         </td>
       </tr><tr>
         <td>
-          187
+          190
         </td>
         <td>
           390
         </td>
         <td>
-          7865
+          8012
           -
-          7874
+          8021
         </td>
         <td>
           Block
@@ -5019,15 +4926,15 @@ else
         </td>
       </tr><tr>
         <td>
-          188
+          191
         </td>
         <td>
           391
         </td>
         <td>
-          7928
+          8075
           -
-          7940
+          8087
         </td>
         <td>
           Apply
@@ -5043,15 +4950,15 @@ else
         </td>
       </tr><tr>
         <td>
-          188
+          191
         </td>
         <td>
           392
         </td>
         <td>
-          7944
+          8091
           -
-          7957
+          8104
         </td>
         <td>
           Select
@@ -5067,15 +4974,15 @@ else
         </td>
       </tr><tr>
         <td>
-          188
+          191
         </td>
         <td>
           393
         </td>
         <td>
-          7944
+          8091
           -
-          7957
+          8104
         </td>
         <td>
           Block
@@ -5091,15 +4998,15 @@ else
         </td>
       </tr><tr>
         <td>
-          189
+          192
         </td>
         <td>
           394
         </td>
         <td>
-          8011
+          8158
           -
-          8023
+          8170
         </td>
         <td>
           Select
@@ -5115,15 +5022,15 @@ else
         </td>
       </tr><tr>
         <td>
-          189
+          192
         </td>
         <td>
           395
         </td>
         <td>
-          8011
+          8158
           -
-          8023
+          8170
         </td>
         <td>
           Block
@@ -5139,15 +5046,15 @@ else
         </td>
       </tr><tr>
         <td>
-          190
+          193
         </td>
         <td>
           396
         </td>
         <td>
-          8076
+          8223
           -
-          8082
+          8229
         </td>
         <td>
           Select
@@ -5163,15 +5070,15 @@ else
         </td>
       </tr><tr>
         <td>
-          190
+          193
         </td>
         <td>
           397
         </td>
         <td>
-          8076
+          8223
           -
-          8082
+          8229
         </td>
         <td>
           Block
@@ -5187,15 +5094,15 @@ else
         </td>
       </tr><tr>
         <td>
-          193
+          196
         </td>
         <td>
           400
         </td>
         <td>
-          8137
+          8284
           -
-          8146
+          8293
         </td>
         <td>
           Select
@@ -5211,15 +5118,15 @@ else
         </td>
       </tr><tr>
         <td>
-          193
+          196
         </td>
         <td>
           401
         </td>
         <td>
-          8123
+          8270
           -
-          8147
+          8294
         </td>
         <td>
           Apply
@@ -5235,15 +5142,15 @@ else
         </td>
       </tr><tr>
         <td>
-          193
+          196
         </td>
         <td>
           402
         </td>
         <td>
-          8123
+          8270
           -
-          8147
+          8294
         </td>
         <td>
           Block
@@ -5259,15 +5166,15 @@ else
         </td>
       </tr><tr>
         <td>
-          203
+          206
         </td>
         <td>
           406
         </td>
         <td>
-          8356
+          8503
           -
-          8378
+          8525
         </td>
         <td>
           Apply
@@ -5283,15 +5190,15 @@ else
         </td>
       </tr><tr>
         <td>
-          204
+          207
         </td>
         <td>
           407
         </td>
         <td>
-          8408
+          8555
           -
-          8440
+          8587
         </td>
         <td>
           Apply
@@ -5307,15 +5214,15 @@ else
         </td>
       </tr><tr>
         <td>
-          206
+          209
         </td>
         <td>
           408
         </td>
         <td>
-          8462
+          8609
           -
-          8485
+          8632
         </td>
         <td>
           Apply
@@ -5331,15 +5238,15 @@ else
         </td>
       </tr><tr>
         <td>
-          208
+          211
         </td>
         <td>
           409
         </td>
         <td>
-          8513
+          8660
           -
-          8545
+          8692
         </td>
         <td>
           Apply
@@ -5355,15 +5262,15 @@ else
         </td>
       </tr><tr>
         <td>
-          209
+          212
         </td>
         <td>
           410
         </td>
         <td>
-          8559
+          8706
           -
-          8592
+          8739
         </td>
         <td>
           Apply
@@ -5379,15 +5286,15 @@ else
         </td>
       </tr><tr>
         <td>
-          210
+          213
         </td>
         <td>
           411
         </td>
         <td>
-          8616
+          8763
           -
-          8624
+          8771
         </td>
         <td>
           Select
@@ -5403,15 +5310,15 @@ else
         </td>
       </tr><tr>
         <td>
-          213
+          216
         </td>
         <td>
           412
         </td>
         <td>
-          8660
+          8807
           -
-          8674
+          8821
         </td>
         <td>
           Select
@@ -5427,15 +5334,15 @@ else
         </td>
       </tr><tr>
         <td>
-          213
+          216
         </td>
         <td>
           413
         </td>
         <td>
-          8689
+          8836
           -
-          8701
+          8848
         </td>
         <td>
           ApplyImplicitView
@@ -5451,15 +5358,15 @@ else
         </td>
       </tr><tr>
         <td>
-          213
+          216
         </td>
         <td>
           414
         </td>
         <td>
-          8645
+          8792
           -
-          8702
+          8849
         </td>
         <td>
           Apply
@@ -5475,15 +5382,15 @@ else
         </td>
       </tr><tr>
         <td>
-          215
+          218
         </td>
         <td>
           450
         </td>
         <td>
-          8708
+          8855
           -
-          9762
+          9909
         </td>
         <td>
           Apply
@@ -5505,15 +5412,15 @@ else
         </td>
       </tr><tr>
         <td>
-          216
+          219
         </td>
         <td>
           415
         </td>
         <td>
-          8729
+          8876
           -
-          9761
+          9908
         </td>
         <td>
           Apply
@@ -5529,15 +5436,15 @@ else
         </td>
       </tr><tr>
         <td>
-          216
+          219
         </td>
         <td>
           449
         </td>
         <td>
-          8729
+          8876
           -
-          9761
+          9908
         </td>
         <td>
           Apply
@@ -5559,15 +5466,15 @@ else
         </td>
       </tr><tr>
         <td>
-          217
+          220
         </td>
         <td>
           416
         </td>
         <td>
-          8809
+          8956
           -
-          8817
+          8964
         </td>
         <td>
           Select
@@ -5583,111 +5490,15 @@ else
         </td>
       </tr><tr>
         <td>
-          219
+          222
         </td>
         <td>
           417
         </td>
         <td>
-          8940
+          9087
           -
-          8955
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          com.sparkutils.dmn.kogito.KogitoProcess.kogitoResultStr
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          KogitoDDLResult.this.kogitoResultStr
-        </td>
-      </tr><tr>
-        <td>
-          220
-        </td>
-        <td>
-          418
-        </td>
-        <td>
-          8977
-          -
-          8986
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.isNull
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          ev.isNull
-        </td>
-      </tr><tr>
-        <td>
-          220
-        </td>
-        <td>
-          419
-        </td>
-        <td>
-          8992
-          -
-          9007
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          com.sparkutils.dmn.kogito.KogitoProcess.kogitoResultStr
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          KogitoDDLResult.this.kogitoResultStr
-        </td>
-      </tr><tr>
-        <td>
-          221
-        </td>
-        <td>
-          420
-        </td>
-        <td>
-          9034
-          -
-          9043
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.isNull
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          ev.isNull
-        </td>
-      </tr><tr>
-        <td>
-          222
-        </td>
-        <td>
-          421
-        </td>
-        <td>
-          9140
-          -
-          9155
+          9102
         </td>
         <td>
           Select
@@ -5706,108 +5517,12 @@ else
           223
         </td>
         <td>
-          422
+          418
         </td>
         <td>
-          9191
+          9124
           -
-          9198
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.code
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          dm.code
-        </td>
-      </tr><tr>
-        <td>
-          224
-        </td>
-        <td>
-          423
-        </td>
-        <td>
-          9213
-          -
-          9225
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.code
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          getExpr.code
-        </td>
-      </tr><tr>
-        <td>
-          226
-        </td>
-        <td>
-          424
-        </td>
-        <td>
-          9241
-          -
-          9249
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.value
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          ev.value
-        </td>
-      </tr><tr>
-        <td>
-          226
-        </td>
-        <td>
-          425
-        </td>
-        <td>
-          9255
-          -
-          9268
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.value
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          getExpr.value
-        </td>
-      </tr><tr>
-        <td>
-          228
-        </td>
-        <td>
-          426
-        </td>
-        <td>
-          9285
-          -
-          9294
+          9133
         </td>
         <td>
           Select
@@ -5823,15 +5538,135 @@ else
         </td>
       </tr><tr>
         <td>
-          228
+          223
         </td>
         <td>
-          427
+          419
         </td>
         <td>
-          9301
+          9139
           -
-          9309
+          9154
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoProcess.kogitoResultStr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoDDLResult.this.kogitoResultStr
+        </td>
+      </tr><tr>
+        <td>
+          224
+        </td>
+        <td>
+          420
+        </td>
+        <td>
+          9181
+          -
+          9190
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.isNull
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ev.isNull
+        </td>
+      </tr><tr>
+        <td>
+          225
+        </td>
+        <td>
+          421
+        </td>
+        <td>
+          9287
+          -
+          9302
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoProcess.kogitoResultStr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoDDLResult.this.kogitoResultStr
+        </td>
+      </tr><tr>
+        <td>
+          226
+        </td>
+        <td>
+          422
+        </td>
+        <td>
+          9338
+          -
+          9345
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.code
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          dm.code
+        </td>
+      </tr><tr>
+        <td>
+          227
+        </td>
+        <td>
+          423
+        </td>
+        <td>
+          9360
+          -
+          9372
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.code
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          getExpr.code
+        </td>
+      </tr><tr>
+        <td>
+          229
+        </td>
+        <td>
+          424
+        </td>
+        <td>
+          9388
+          -
+          9396
         </td>
         <td>
           Select
@@ -5850,108 +5685,12 @@ else
           229
         </td>
         <td>
-          428
-        </td>
-        <td>
-          9339
-          -
-          9348
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.isNull
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          ev.isNull
-        </td>
-      </tr><tr>
-        <td>
-          230
-        </td>
-        <td>
-          429
-        </td>
-        <td>
-          9372
-          -
-          9391
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          scala.collection.TraversableOnce.nonEmpty
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          scala.Predef.refArrayOps[(org.apache.spark.sql.types.StructField, Int)](KogitoDDLResult.this.evalStatus).nonEmpty
-        </td>
-      </tr><tr>
-        <td>
-          230
-        </td>
-        <td>
-          430
-        </td>
-        <td>
-          9393
-          -
-          9511
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          scala.StringContext.apply
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          scala.StringContext.apply(&quot;&quot;, &quot; = ((&quot;, &quot;)references[&quot;, &quot;]).setStatuses(&quot;, &quot;, &quot;, &quot;);&quot;)
-        </td>
-      </tr><tr>
-        <td>
-          230
-        </td>
-        <td>
-          431
+          425
         </td>
         <td>
           9402
           -
-          9410
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.value
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          ev.value
-        </td>
-      </tr><tr>
-        <td>
-          230
-        </td>
-        <td>
-          432
-        </td>
-        <td>
-          9474
-          -
-          9487
+          9415
         </td>
         <td>
           Select
@@ -5967,183 +5706,39 @@ else
         </td>
       </tr><tr>
         <td>
-          230
+          231
         </td>
         <td>
-          433
+          426
         </td>
         <td>
-          9491
+          9432
           -
-          9506
+          9441
         </td>
         <td>
           Select
         </td>
         <td>
-          com.sparkutils.dmn.kogito.KogitoProcess.kogitoResultStr
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.isNull
         </td>
         <td>
           
         </td>
         <td style="background: #AEF1AE">
-          KogitoDDLResult.this.kogitoResultStr
+          ev.isNull
         </td>
       </tr><tr>
         <td>
-          230
+          231
         </td>
         <td>
-          434
+          427
         </td>
         <td>
-          9393
+          9448
           -
-          9511
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper.code
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;&quot;, &quot; = ((&quot;, &quot;)references[&quot;, &quot;]).setStatuses(&quot;, &quot;, &quot;, &quot;);&quot;)).code(ev.value, ddlResultClassName, resultIdx, getExpr.value, KogitoDDLResult.this.kogitoResultStr)
-        </td>
-      </tr><tr>
-        <td>
-          230
-        </td>
-        <td>
-          435
-        </td>
-        <td>
-          9393
-          -
-          9511
-        </td>
-        <td>
-          Block
-        </td>
-        <td>
-          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper.code
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;&quot;, &quot; = ((&quot;, &quot;)references[&quot;, &quot;]).setStatuses(&quot;, &quot;, &quot;, &quot;);&quot;)).code(ev.value, ddlResultClassName, resultIdx, getExpr.value, KogitoDDLResult.this.kogitoResultStr)
-        </td>
-      </tr><tr>
-        <td>
-          230
-        </td>
-        <td>
-          436
-        </td>
-        <td>
-          9517
-          -
-          9523
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper.code
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;&quot;)).code()
-        </td>
-      </tr><tr>
-        <td>
-          230
-        </td>
-        <td>
-          437
-        </td>
-        <td>
-          9517
-          -
-          9523
-        </td>
-        <td>
-          Block
-        </td>
-        <td>
-          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper.code
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;&quot;)).code()
-        </td>
-      </tr><tr>
-        <td>
-          232
-        </td>
-        <td>
-          438
-        </td>
-        <td>
-          9545
-          -
-          9550
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          com.sparkutils.dmn.kogito.KogitoDDLResult.debug
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          KogitoDDLResult.this.debug
-        </td>
-      </tr><tr>
-        <td>
-          232
-        </td>
-        <td>
-          439
-        </td>
-        <td>
-          9552
-          -
-          9659
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          scala.StringContext.apply
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          scala.StringContext.apply(&quot;&quot;, &quot; = ((&quot;, &quot;)references[&quot;, &quot;]).withDebug(&quot;, &quot;, &quot;, &quot;);&quot;)
-        </td>
-      </tr><tr>
-        <td>
-          232
-        </td>
-        <td>
-          440
-        </td>
-        <td>
-          9559
-          -
-          9567
+          9456
         </td>
         <td>
           Select
@@ -6162,156 +5757,12 @@ else
           232
         </td>
         <td>
-          441
+          428
         </td>
         <td>
-          9628
+          9486
           -
-          9643
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          com.sparkutils.dmn.kogito.KogitoProcess.kogitoResultStr
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          KogitoDDLResult.this.kogitoResultStr
-        </td>
-      </tr><tr>
-        <td>
-          232
-        </td>
-        <td>
-          442
-        </td>
-        <td>
-          9647
-          -
-          9655
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.value
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          ev.value
-        </td>
-      </tr><tr>
-        <td>
-          232
-        </td>
-        <td>
-          443
-        </td>
-        <td>
-          9552
-          -
-          9659
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper.code
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;&quot;, &quot; = ((&quot;, &quot;)references[&quot;, &quot;]).withDebug(&quot;, &quot;, &quot;, &quot;);&quot;)).code(ev.value, ddlResultClassName, resultIdx, KogitoDDLResult.this.kogitoResultStr, ev.value)
-        </td>
-      </tr><tr>
-        <td>
-          232
-        </td>
-        <td>
-          444
-        </td>
-        <td>
-          9552
-          -
-          9659
-        </td>
-        <td>
-          Block
-        </td>
-        <td>
-          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper.code
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;&quot;, &quot; = ((&quot;, &quot;)references[&quot;, &quot;]).withDebug(&quot;, &quot;, &quot;, &quot;);&quot;)).code(ev.value, ddlResultClassName, resultIdx, KogitoDDLResult.this.kogitoResultStr, ev.value)
-        </td>
-      </tr><tr>
-        <td>
-          232
-        </td>
-        <td>
-          445
-        </td>
-        <td>
-          9665
-          -
-          9671
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper.code
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;&quot;)).code()
-        </td>
-      </tr><tr>
-        <td>
-          232
-        </td>
-        <td>
-          446
-        </td>
-        <td>
-          9665
-          -
-          9671
-        </td>
-        <td>
-          Block
-        </td>
-        <td>
-          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper.code
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;&quot;)).code()
-        </td>
-      </tr><tr>
-        <td>
-          233
-        </td>
-        <td>
-          447
-        </td>
-        <td>
-          9688
-          -
-          9697
+          9495
         </td>
         <td>
           Select
@@ -6330,12 +5781,60 @@ else
           233
         </td>
         <td>
-          448
+          429
         </td>
         <td>
-          9704
+          9519
           -
-          9712
+          9538
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.TraversableOnce.nonEmpty
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.refArrayOps[(org.apache.spark.sql.types.StructField, Int)](KogitoDDLResult.this.evalStatus).nonEmpty
+        </td>
+      </tr><tr>
+        <td>
+          233
+        </td>
+        <td>
+          430
+        </td>
+        <td>
+          9540
+          -
+          9658
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;&quot;, &quot; = ((&quot;, &quot;)references[&quot;, &quot;]).setStatuses(&quot;, &quot;, &quot;, &quot;);&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          233
+        </td>
+        <td>
+          431
+        </td>
+        <td>
+          9549
+          -
+          9557
         </td>
         <td>
           Select
@@ -6351,15 +5850,423 @@ else
         </td>
       </tr><tr>
         <td>
-          258
+          233
+        </td>
+        <td>
+          432
+        </td>
+        <td>
+          9621
+          -
+          9634
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          getExpr.value
+        </td>
+      </tr><tr>
+        <td>
+          233
+        </td>
+        <td>
+          433
+        </td>
+        <td>
+          9638
+          -
+          9653
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoProcess.kogitoResultStr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoDDLResult.this.kogitoResultStr
+        </td>
+      </tr><tr>
+        <td>
+          233
+        </td>
+        <td>
+          434
+        </td>
+        <td>
+          9540
+          -
+          9658
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper.code
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;&quot;, &quot; = ((&quot;, &quot;)references[&quot;, &quot;]).setStatuses(&quot;, &quot;, &quot;, &quot;);&quot;)).code(ev.value, ddlResultClassName, resultIdx, getExpr.value, KogitoDDLResult.this.kogitoResultStr)
+        </td>
+      </tr><tr>
+        <td>
+          233
+        </td>
+        <td>
+          435
+        </td>
+        <td>
+          9540
+          -
+          9658
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper.code
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;&quot;, &quot; = ((&quot;, &quot;)references[&quot;, &quot;]).setStatuses(&quot;, &quot;, &quot;, &quot;);&quot;)).code(ev.value, ddlResultClassName, resultIdx, getExpr.value, KogitoDDLResult.this.kogitoResultStr)
+        </td>
+      </tr><tr>
+        <td>
+          233
+        </td>
+        <td>
+          436
+        </td>
+        <td>
+          9664
+          -
+          9670
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper.code
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;&quot;)).code()
+        </td>
+      </tr><tr>
+        <td>
+          233
+        </td>
+        <td>
+          437
+        </td>
+        <td>
+          9664
+          -
+          9670
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper.code
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;&quot;)).code()
+        </td>
+      </tr><tr>
+        <td>
+          235
+        </td>
+        <td>
+          438
+        </td>
+        <td>
+          9692
+          -
+          9697
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoDDLResult.debug
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoDDLResult.this.debug
+        </td>
+      </tr><tr>
+        <td>
+          235
+        </td>
+        <td>
+          439
+        </td>
+        <td>
+          9699
+          -
+          9806
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;&quot;, &quot; = ((&quot;, &quot;)references[&quot;, &quot;]).withDebug(&quot;, &quot;, &quot;, &quot;);&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          235
+        </td>
+        <td>
+          440
+        </td>
+        <td>
+          9706
+          -
+          9714
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ev.value
+        </td>
+      </tr><tr>
+        <td>
+          235
+        </td>
+        <td>
+          441
+        </td>
+        <td>
+          9775
+          -
+          9790
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoProcess.kogitoResultStr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoDDLResult.this.kogitoResultStr
+        </td>
+      </tr><tr>
+        <td>
+          235
+        </td>
+        <td>
+          442
+        </td>
+        <td>
+          9794
+          -
+          9802
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ev.value
+        </td>
+      </tr><tr>
+        <td>
+          235
+        </td>
+        <td>
+          443
+        </td>
+        <td>
+          9699
+          -
+          9806
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper.code
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;&quot;, &quot; = ((&quot;, &quot;)references[&quot;, &quot;]).withDebug(&quot;, &quot;, &quot;, &quot;);&quot;)).code(ev.value, ddlResultClassName, resultIdx, KogitoDDLResult.this.kogitoResultStr, ev.value)
+        </td>
+      </tr><tr>
+        <td>
+          235
+        </td>
+        <td>
+          444
+        </td>
+        <td>
+          9699
+          -
+          9806
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper.code
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;&quot;, &quot; = ((&quot;, &quot;)references[&quot;, &quot;]).withDebug(&quot;, &quot;, &quot;, &quot;);&quot;)).code(ev.value, ddlResultClassName, resultIdx, KogitoDDLResult.this.kogitoResultStr, ev.value)
+        </td>
+      </tr><tr>
+        <td>
+          235
+        </td>
+        <td>
+          445
+        </td>
+        <td>
+          9812
+          -
+          9818
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper.code
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;&quot;)).code()
+        </td>
+      </tr><tr>
+        <td>
+          235
+        </td>
+        <td>
+          446
+        </td>
+        <td>
+          9812
+          -
+          9818
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper.code
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;&quot;)).code()
+        </td>
+      </tr><tr>
+        <td>
+          236
+        </td>
+        <td>
+          447
+        </td>
+        <td>
+          9835
+          -
+          9844
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.isNull
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ev.isNull
+        </td>
+      </tr><tr>
+        <td>
+          236
+        </td>
+        <td>
+          448
+        </td>
+        <td>
+          9851
+          -
+          9859
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ev.value
+        </td>
+      </tr><tr>
+        <td>
+          261
         </td>
         <td>
           452
         </td>
         <td>
-          10331
+          10478
           -
-          10335
+          10482
         </td>
         <td>
           Literal
@@ -6375,15 +6282,15 @@ else
         </td>
       </tr><tr>
         <td>
-          264
+          267
         </td>
         <td>
           454
         </td>
         <td>
-          10464
+          10611
           -
-          10474
+          10621
         </td>
         <td>
           Select
@@ -6399,15 +6306,15 @@ else
         </td>
       </tr><tr>
         <td>
-          268
+          271
         </td>
         <td>
           455
         </td>
         <td>
-          10557
+          10704
           -
-          10562
+          10709
         </td>
         <td>
           Select
@@ -6423,15 +6330,15 @@ else
         </td>
       </tr><tr>
         <td>
-          269
+          272
         </td>
         <td>
           456
         </td>
         <td>
-          10572
+          10719
           -
-          10597
+          10744
         </td>
         <td>
           Apply
@@ -6447,15 +6354,15 @@ else
         </td>
       </tr><tr>
         <td>
-          269
+          272
         </td>
         <td>
           457
         </td>
         <td>
-          10572
+          10719
           -
-          10597
+          10744
         </td>
         <td>
           Block
@@ -6471,15 +6378,15 @@ else
         </td>
       </tr><tr>
         <td>
-          271
+          274
         </td>
         <td>
           458
         </td>
         <td>
-          10617
+          10764
           -
-          10642
+          10789
         </td>
         <td>
           Apply
@@ -6495,15 +6402,15 @@ else
         </td>
       </tr><tr>
         <td>
-          271
+          274
         </td>
         <td>
           459
         </td>
         <td>
-          10660
+          10807
           -
-          10677
+          10824
         </td>
         <td>
           Apply
@@ -6519,15 +6426,15 @@ else
         </td>
       </tr><tr>
         <td>
-          271
+          274
         </td>
         <td>
           460
         </td>
         <td>
-          10681
+          10828
           -
-          10692
+          10839
         </td>
         <td>
           Apply
@@ -6543,15 +6450,15 @@ else
         </td>
       </tr><tr>
         <td>
-          271
+          274
         </td>
         <td>
           461
         </td>
         <td>
-          10660
+          10807
           -
-          10692
+          10839
         </td>
         <td>
           Apply
@@ -6567,15 +6474,15 @@ else
         </td>
       </tr><tr>
         <td>
-          271
+          274
         </td>
         <td>
           462
         </td>
         <td>
-          10654
+          10801
           -
-          10654
+          10801
         </td>
         <td>
           TypeApply
@@ -6591,15 +6498,15 @@ else
         </td>
       </tr><tr>
         <td>
-          271
+          274
         </td>
         <td>
           463
         </td>
         <td>
-          10694
+          10841
           -
-          10694
+          10841
         </td>
         <td>
           TypeApply
@@ -6615,15 +6522,15 @@ else
         </td>
       </tr><tr>
         <td>
-          271
+          274
         </td>
         <td>
           464
         </td>
         <td>
-          10617
+          10764
           -
-          10699
+          10846
         </td>
         <td>
           ApplyToImplicitArgs
@@ -6639,15 +6546,15 @@ else
         </td>
       </tr><tr>
         <td>
-          271
+          274
         </td>
         <td>
           465
         </td>
         <td>
-          10617
+          10764
           -
-          10706
+          10853
         </td>
         <td>
           Select
@@ -6663,15 +6570,15 @@ else
         </td>
       </tr><tr>
         <td>
-          271
+          274
         </td>
         <td>
           466
         </td>
         <td>
-          10617
+          10764
           -
-          10706
+          10853
         </td>
         <td>
           Block
@@ -6687,15 +6594,15 @@ else
         </td>
       </tr><tr>
         <td>
-          273
+          276
         </td>
         <td>
           467
         </td>
         <td>
-          10734
+          10881
           -
-          10777
+          10924
         </td>
         <td>
           Apply
@@ -6711,15 +6618,15 @@ else
         </td>
       </tr><tr>
         <td>
-          273
+          276
         </td>
         <td>
           468
         </td>
         <td>
-          10712
+          10859
           -
-          10778
+          10925
         </td>
         <td>
           Apply
@@ -6735,15 +6642,15 @@ else
         </td>
       </tr><tr>
         <td>
-          279
+          282
         </td>
         <td>
           469
         </td>
         <td>
-          10909
+          11056
           -
-          10938
+          11085
         </td>
         <td>
           Apply
@@ -6759,15 +6666,15 @@ else
         </td>
       </tr><tr>
         <td>
-          279
+          282
         </td>
         <td>
           470
         </td>
         <td>
-          10940
+          11087
           -
-          10948
+          11095
         </td>
         <td>
           Literal
@@ -6783,15 +6690,15 @@ else
         </td>
       </tr><tr>
         <td>
-          279
+          282
         </td>
         <td>
           484
         </td>
         <td>
-          10889
+          11036
           -
-          11327
+          11474
         </td>
         <td>
           Apply
@@ -6807,15 +6714,15 @@ else
         </td>
       </tr><tr>
         <td>
-          280
+          283
         </td>
         <td>
           471
         </td>
         <td>
-          10965
+          11112
           -
-          10976
+          11123
         </td>
         <td>
           Literal
@@ -6831,15 +6738,15 @@ else
         </td>
       </tr><tr>
         <td>
-          280
+          283
         </td>
         <td>
           483
         </td>
         <td>
-          10961
+          11108
           -
-          11326
+          11473
         </td>
         <td>
           Apply
@@ -6855,15 +6762,15 @@ else
         </td>
       </tr><tr>
         <td>
-          281
+          284
         </td>
         <td>
           472
         </td>
         <td>
-          10977
+          11124
           -
-          10985
+          11132
         </td>
         <td>
           Literal
@@ -6879,15 +6786,15 @@ else
         </td>
       </tr><tr>
         <td>
-          281
+          284
         </td>
         <td>
           473
         </td>
         <td>
-          11016
+          11163
           -
-          11052
+          11199
         </td>
         <td>
           Literal
@@ -6903,15 +6810,15 @@ else
         </td>
       </tr><tr>
         <td>
-          281
+          284
         </td>
         <td>
           478
         </td>
         <td>
-          10986
+          11133
           -
-          11015
+          11162
         </td>
         <td>
           Apply
@@ -6927,15 +6834,15 @@ else
         </td>
       </tr><tr>
         <td>
-          282
+          285
         </td>
         <td>
           474
         </td>
         <td>
-          11083
+          11230
           -
-          11116
+          11263
         </td>
         <td>
           Literal
@@ -6951,15 +6858,15 @@ else
         </td>
       </tr><tr>
         <td>
-          282
+          285
         </td>
         <td>
           479
         </td>
         <td>
-          11053
+          11200
           -
-          11082
+          11229
         </td>
         <td>
           Apply
@@ -6975,15 +6882,15 @@ else
         </td>
       </tr><tr>
         <td>
-          283
+          286
         </td>
         <td>
           475
         </td>
         <td>
-          11151
+          11298
           -
-          11164
+          11311
         </td>
         <td>
           Literal
@@ -6999,15 +6906,15 @@ else
         </td>
       </tr><tr>
         <td>
-          283
+          286
         </td>
         <td>
           476
         </td>
         <td>
-          11216
+          11363
           -
-          11252
+          11399
         </td>
         <td>
           Literal
@@ -7023,15 +6930,15 @@ else
         </td>
       </tr><tr>
         <td>
-          283
+          286
         </td>
         <td>
           480
         </td>
         <td>
-          11117
+          11264
           -
-          11150
+          11297
         </td>
         <td>
           Apply
@@ -7047,15 +6954,15 @@ else
         </td>
       </tr><tr>
         <td>
-          283
+          286
         </td>
         <td>
           481
         </td>
         <td>
-          11165
+          11312
           -
-          11215
+          11362
         </td>
         <td>
           Apply
@@ -7071,15 +6978,15 @@ else
         </td>
       </tr><tr>
         <td>
-          285
+          288
         </td>
         <td>
           477
         </td>
         <td>
-          11291
+          11438
           -
-          11326
+          11473
         </td>
         <td>
           Literal
@@ -7095,15 +7002,15 @@ else
         </td>
       </tr><tr>
         <td>
-          285
+          288
         </td>
         <td>
           482
         </td>
         <td>
-          11253
+          11400
           -
-          11290
+          11437
         </td>
         <td>
           Apply
@@ -7119,15 +7026,15 @@ else
         </td>
       </tr><tr>
         <td>
-          288
+          291
         </td>
         <td>
           485
         </td>
         <td>
-          11355
+          11502
           -
-          11387
+          11534
         </td>
         <td>
           Apply
@@ -7143,15 +7050,15 @@ else
         </td>
       </tr><tr>
         <td>
-          289
+          292
         </td>
         <td>
           486
         </td>
         <td>
-          11403
+          11550
           -
-          11424
+          11571
         </td>
         <td>
           Apply
@@ -7167,15 +7074,15 @@ else
         </td>
       </tr><tr>
         <td>
-          290
+          293
         </td>
         <td>
           487
         </td>
         <td>
-          11438
+          11585
           -
-          11471
+          11618
         </td>
         <td>
           Apply
@@ -7191,15 +7098,15 @@ else
         </td>
       </tr><tr>
         <td>
-          292
+          295
         </td>
         <td>
           506
         </td>
         <td>
-          11477
+          11624
           -
-          12196
+          12343
         </td>
         <td>
           Apply
@@ -7218,15 +7125,15 @@ else
         </td>
       </tr><tr>
         <td>
-          293
+          296
         </td>
         <td>
           488
         </td>
         <td>
-          11498
+          11645
           -
-          12195
+          12342
         </td>
         <td>
           Apply
@@ -7242,15 +7149,15 @@ else
         </td>
       </tr><tr>
         <td>
-          293
+          296
         </td>
         <td>
           505
         </td>
         <td>
-          11498
+          11645
           -
-          12195
+          12342
         </td>
         <td>
           Apply
@@ -7269,15 +7176,15 @@ else
         </td>
       </tr><tr>
         <td>
-          294
+          297
         </td>
         <td>
           489
         </td>
         <td>
-          11528
+          11675
           -
-          11536
+          11683
         </td>
         <td>
           Select
@@ -7293,15 +7200,15 @@ else
         </td>
       </tr><tr>
         <td>
-          295
+          298
         </td>
         <td>
           490
         </td>
         <td>
-          11565
+          11712
           -
-          11574
+          11721
         </td>
         <td>
           Select
@@ -7317,15 +7224,15 @@ else
         </td>
       </tr><tr>
         <td>
-          296
+          299
         </td>
         <td>
           491
         </td>
         <td>
-          11675
+          11822
           -
-          11690
+          11837
         </td>
         <td>
           Select
@@ -7341,15 +7248,15 @@ else
         </td>
       </tr><tr>
         <td>
-          297
+          300
         </td>
         <td>
           492
         </td>
         <td>
-          11724
+          11871
           -
-          11731
+          11878
         </td>
         <td>
           Select
@@ -7365,15 +7272,15 @@ else
         </td>
       </tr><tr>
         <td>
-          299
+          302
         </td>
         <td>
           493
         </td>
         <td>
-          11774
+          11921
           -
-          11779
+          11926
         </td>
         <td>
           Select
@@ -7389,15 +7296,15 @@ else
         </td>
       </tr><tr>
         <td>
-          300
+          303
         </td>
         <td>
           494
         </td>
         <td>
-          11793
+          11940
           -
-          11813
+          11960
         </td>
         <td>
           Apply
@@ -7413,15 +7320,15 @@ else
         </td>
       </tr><tr>
         <td>
-          300
+          303
         </td>
         <td>
           495
         </td>
         <td>
-          11793
+          11940
           -
-          11813
+          11960
         </td>
         <td>
           Block
@@ -7437,15 +7344,15 @@ else
         </td>
       </tr><tr>
         <td>
-          302
+          305
         </td>
         <td>
           496
         </td>
         <td>
-          11843
+          11990
           -
-          11844
+          11991
         </td>
         <td>
           Literal
@@ -7461,15 +7368,15 @@ else
         </td>
       </tr><tr>
         <td>
-          302
+          305
         </td>
         <td>
           497
         </td>
         <td>
-          11854
+          12001
           -
-          11856
+          12003
         </td>
         <td>
           Literal
@@ -7485,15 +7392,15 @@ else
         </td>
       </tr><tr>
         <td>
-          302
+          305
         </td>
         <td>
           498
         </td>
         <td>
-          11845
+          11992
           -
-          11853
+          12000
         </td>
         <td>
           Select
@@ -7509,15 +7416,15 @@ else
         </td>
       </tr><tr>
         <td>
-          302
+          305
         </td>
         <td>
           499
         </td>
         <td>
-          11841
+          11988
           -
-          11856
+          12003
         </td>
         <td>
           Apply
@@ -7533,15 +7440,15 @@ else
         </td>
       </tr><tr>
         <td>
-          302
+          305
         </td>
         <td>
           500
         </td>
         <td>
-          11841
+          11988
           -
-          11856
+          12003
         </td>
         <td>
           Block
@@ -7557,15 +7464,15 @@ else
         </td>
       </tr><tr>
         <td>
-          305
+          308
         </td>
         <td>
           501
         </td>
         <td>
-          11899
+          12046
           -
-          11907
+          12054
         </td>
         <td>
           Select
@@ -7581,15 +7488,15 @@ else
         </td>
       </tr><tr>
         <td>
-          308
+          311
         </td>
         <td>
           502
         </td>
         <td>
-          12015
+          12162
           -
-          12024
+          12171
         </td>
         <td>
           Select
@@ -7605,15 +7512,15 @@ else
         </td>
       </tr><tr>
         <td>
-          308
+          311
         </td>
         <td>
           503
         </td>
         <td>
-          12030
+          12177
           -
-          12038
+          12185
         </td>
         <td>
           Select
@@ -7629,15 +7536,15 @@ else
         </td>
       </tr><tr>
         <td>
-          310
+          313
         </td>
         <td>
           504
         </td>
         <td>
-          12155
+          12302
           -
-          12164
+          12311
         </td>
         <td>
           Select
