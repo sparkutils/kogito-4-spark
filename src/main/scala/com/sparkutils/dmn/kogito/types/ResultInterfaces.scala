@@ -1,7 +1,7 @@
 package com.sparkutils.dmn.kogito.types
 
 import com.sparkutils.dmn.DMNException
-import com.sparkutils.dmn.kogito.types.Arrays.{exprCode, exprCodeInterim}
+import com.sparkutils.dmn.kogito.types.Utils.{exprCode, exprCodeInterim}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.GenericInternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper

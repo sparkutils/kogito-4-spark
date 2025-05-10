@@ -3,7 +3,7 @@ package com.sparkutils.dmn.kogito
 import com.sparkutils.dmn
 import com.sparkutils.dmn.DMNResultProvider
 import com.sparkutils.dmn.impl.DMNExpression
-import com.sparkutils.dmn.kogito.types.Arrays.exprCode
+import com.sparkutils.dmn.kogito.types.Utils.exprCode
 import com.sparkutils.dmn.kogito.types.ResultInterfaces
 import com.sparkutils.dmn.kogito.types.ResultInterfaces.{EVALUATING, FAILED, NOT_EVALUATED, NOT_FOUND, SKIPPED_ERROR, SKIPPED_WARN, SUCCEEDED, evalStatusEnding, forTypeCodeGen}
 import org.apache.spark.sql.catalyst.InternalRow

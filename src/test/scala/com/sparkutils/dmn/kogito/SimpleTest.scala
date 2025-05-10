@@ -275,7 +275,7 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
     res.head shouldBe """{"evaluate":null}"""
   }
 
-  def testNullable(fields: scala.collection.immutable.Seq[DMNInputField]): Unit = {
+  def testNullable(fields: scala.collection.immutable.Seq[DMNInputField]): Unit = evalCodeGens {
     import sparkSession.implicits._
 
     val ds = Seq(dataBasisNulls).toDS.selectExpr("explode(value) as f").selectExpr("f.*")

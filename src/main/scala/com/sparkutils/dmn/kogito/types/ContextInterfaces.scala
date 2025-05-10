@@ -1,6 +1,6 @@
 package com.sparkutils.dmn.kogito.types
 
-import com.sparkutils.dmn.kogito.types.Arrays.{exprCode, exprCodeInterim, exprCodeIsNullAt}
+import com.sparkutils.dmn.kogito.types.Utils.{exprCode, exprCodeInterim, exprCodeIsNullAt}
 import com.sparkutils.dmn.{DMNContextPath, DMNContextProvider, DMNException, UnaryDMNContextProvider}
 import org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeGenerator, CodegenContext, ExprCode}

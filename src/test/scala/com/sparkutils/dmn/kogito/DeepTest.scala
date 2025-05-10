@@ -7,7 +7,7 @@ import org.junit.runner.RunWith
 import org.scalatest.{FunSuite, Matchers}
 import org.scalatestplus.junit.JUnitRunner
 import frameless._
-import org.apache.spark.sql.execution.streaming.state.HDFSBackedStateStoreMap.MapType
+import java.time.{LocalDate, LocalDateTime}
 
 case class Pair(a: Boolean, b: Boolean) extends Serializable
 case class Deep[A,B](a: String, b: Option[java.math.BigDecimal], d: Pair, c: Map[A,B]) extends Serializable {
@@ -28,6 +28,8 @@ case class Quality[A,B](quality: Result[A,B]) extends Serializable
 case class DebugResult[A,B](eval: Top[A,B], debugMode: Seq[KogitoResult]) extends Serializable
 
 case class DebugQuality[A,B](quality: DebugResult[A,B]) extends Serializable
+
+case class Others(s: Option[String], l: Option[Long], b: Option[Boolean], d: Option[Double], f: Option[Float], by: Option[Byte], bytes: Option[Array[Byte]], sh: Option[Short], date: Option[LocalDate], dateTime: Option[LocalDateTime]) extends Serializable
 
 @RunWith(classOf[JUnitRunner])
 class DeepTest extends FunSuite with Matchers with TestUtils {
@@ -410,6 +412,20 @@ class DeepTest extends FunSuite with Matchers with TestUtils {
 
     testDebugStructs(s"<String, ${deepType("<int, int>")}>",  (1 to 5). map( i => Map(
       s"a$i" -> Deep(i.toString, null, Pair(true, true), Map(1 -> 2)) )),
+      fullProxyDS = false, deriveContextTypes = true)
+  }
+
+  test("Deep test struct 1:1 Reply - String, Pair context - debug - derive context types - deep deep with nulls all other types") {
+    import sparkSession.implicits._
+
+    implicit val oenc = TypedEncoder[Others]
+
+    testDebugStructs(s"<String, struct<s: String, l: Long, b: Boolean, d: Double, f: Float, " +
+      s"by: Byte, bytes: Binary, sh: Short, date: Date, dateTime: Timestamp>",  (1 to 5). map( i => Map(
+      s"a$i" -> Others(None,None,None,None,None,None,None,None,None, None),
+      s"b$i" -> Others(Some(""),Some(1l),Some(true),Some(0.2),Some(0.2f),Some(0),
+        Some(Array(0: Byte)),Some(1),Some(LocalDate.now()), Some(LocalDateTime.now())),
+    )),
       fullProxyDS = false, deriveContextTypes = true)
   }
 

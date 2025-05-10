@@ -1,19 +1,15 @@
 package com.sparkutils.dmn.kogito.types
 
 import com.sparkutils.dmn.kogito.types.ContextInterfaces.Accessor
-import org.apache.spark.sql.catalyst.expressions.UnsafeArrayData
 import org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper
 import org.apache.spark.sql.catalyst.expressions.codegen.{Block, CodegenContext, ExprCode, JavaCode}
-import org.apache.spark.sql.catalyst.util.ArrayData
-import org.apache.spark.sql.types.DataType
 import org.kie.dmn.api.core.DMNDecisionResult
 
 import java.util
 import java.util.Map
 import scala.collection.JavaConverters.{asJavaIteratorConverter, setAsJavaSetConverter}
-import scala.reflect.ClassTag
 
-object Arrays {
+object Utils {
   def exprCode(clazz: Class[_], ctx: CodegenContext): ExprCode = {
     val isNull = ctx.freshName("isNull")
     val value = ctx.freshName("value")
@@ -68,11 +64,10 @@ object Arrays {
 
 }
 
-
-
 class BaseKogitoMap(path: Any, pairs: scala.collection.Map[String, (Int, Accessor[_])]) extends SimpleMap {
 
-  override def containsKey(key: Any): Boolean = pairs.contains(key.toString)
+  override def containsKey(key: Any): Boolean =
+    pairs.contains(key.toString)
 
   override def get(key: Any): AnyRef = {
     val (i, a) = pairs(key.toString)
@@ -126,6 +121,8 @@ class DecisionResultFullProxyEntry() extends ProxyEntry[java.util.List[org.kie.d
 
 class ProxyMap[T](var _size: Int, var t: T, val proxyEntry: ProxyEntry[T]) extends SimpleMap {
 
+  // should never be called
+  // $COVERAGE-OFF$
   override def containsKey(key: Any): Boolean = {
     for(i <- 0 until _size) {
       val e = proxyEntry.get(i, t)
@@ -135,6 +132,7 @@ class ProxyMap[T](var _size: Int, var t: T, val proxyEntry: ProxyEntry[T]) exten
     }
     false
   }
+  // $COVERAGE-ON$
 
   // resets the underlying data - e.g. new dmn result
   def reset(size: Int, _t: T): Unit = {
