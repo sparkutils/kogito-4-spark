@@ -7,7 +7,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
-import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DataType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, MapType, ObjectType, ShortType, StringType, StructType, TimestampType}
+import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DataType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, MapType, ObjectType, ShortType, StringType, StructType, TimestampNTZType, TimestampType}
 import org.kie.dmn.feel.lang.types.impl.ComparablePeriod
 import org.kie.kogito.dmn.rest.DMNFEELComparablePeriodSerializer
 import sparkutilsKogito.com.fasterxml.jackson.databind.module.SimpleModule
@@ -97,7 +97,7 @@ object ContextProviders {
         Some(((t: Any) => DateTimeUtils.daysToLocalDate(t.asInstanceOf[Int]),
           (codegen, input) => s"org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate((int)$input)"))
       ) // an int
-      case TimestampType => SimpleContextProvider[LocalDateTime](path, stillSetWhenNull, expr,
+      case TimestampType | TimestampNTZType => SimpleContextProvider[LocalDateTime](path, stillSetWhenNull, expr,
         Some(((t: Any) => DateTimeUtils.microsToLocalDateTime(t.asInstanceOf[Long]),
           (codegen, input) => s"org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime((long)$input)"))
       ) // a long

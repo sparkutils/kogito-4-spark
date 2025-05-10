@@ -7,7 +7,7 @@ import org.apache.spark.sql.catalyst.expressions.GenericInternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeGenerator, CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.util.{ArrayBasedMapData, DateTimeUtils, GenericArrayData}
-import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DataType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, MapType, ShortType, StringType, StructType, TimestampType}
+import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DataType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, MapType, ShortType, StringType, StructType, TimestampNTZType, TimestampType}
 import org.apache.spark.unsafe.types.UTF8String
 
 import java.time.{LocalDate, LocalDateTime}
@@ -63,7 +63,7 @@ object ResultInterfaces {
     case ByteType => (path: Any) => if (path == null) null else path.asInstanceOf[Byte]
     case ShortType => (path: Any) => if (path == null) null else path.asInstanceOf[Short]
     case DateType => (path: Any) => if (path == null) null else DateTimeUtils.localDateToDays( path.asInstanceOf[LocalDate] )
-    case TimestampType => (path: Any) => if (path == null) null else DateTimeUtils.localDateTimeToMicros( path.asInstanceOf[LocalDateTime] )
+    case TimestampType | TimestampNTZType => (path: Any) => if (path == null) null else DateTimeUtils.localDateTimeToMicros( path.asInstanceOf[LocalDateTime] )
     case _: DecimalType => (path: Any) =>
       if (path == null) null else Decimal.apply(path.asInstanceOf[java.math.BigDecimal])
     case ArrayType(typ, _) =>
@@ -157,7 +157,7 @@ object ResultInterfaces {
     case ShortType => nullOr[Short]()
     case DateType =>
       nullOr[Int]( path => s"org.apache.spark.sql.catalyst.util.DateTimeUtils.localDateToDays( (java.time.LocalDate) $path )")
-    case TimestampType =>
+    case TimestampType  | TimestampNTZType =>
       nullOr[Long]( path => s"org.apache.spark.sql.catalyst.util.DateTimeUtils.localDateTimeToMicros( (java.time.LocalDateTime) $path )")
     case _: DecimalType =>
       nullOr[Decimal]( path => s"org.apache.spark.sql.types.Decimal.apply( (java.math.BigDecimal) $path )")

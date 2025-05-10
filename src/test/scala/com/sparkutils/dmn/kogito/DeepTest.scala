@@ -1,5 +1,6 @@
 package com.sparkutils.dmn.kogito
 
+import com.sparkutils.dmn.kogito.types.Utils.optEqual
 import com.sparkutils.dmn.{DMNConfiguration, DMNExecution, DMNFile, DMNInputField, DMNModelService}
 import frameless.{RecordFieldEncoder, TypedEncoder, TypedExpressionEncoder}
 import org.apache.spark.sql.Encoder
@@ -7,7 +8,9 @@ import org.junit.runner.RunWith
 import org.scalatest.{FunSuite, Matchers}
 import org.scalatestplus.junit.JUnitRunner
 import frameless._
-import java.time.{LocalDate, LocalDateTime}
+
+import java.time.temporal.ChronoUnit
+import java.time.{LocalDate, LocalDateTime, ZoneOffset}
 
 case class Pair(a: Boolean, b: Boolean) extends Serializable
 case class Deep[A,B](a: String, b: Option[java.math.BigDecimal], d: Pair, c: Map[A,B]) extends Serializable {
@@ -29,7 +32,19 @@ case class DebugResult[A,B](eval: Top[A,B], debugMode: Seq[KogitoResult]) extend
 
 case class DebugQuality[A,B](quality: DebugResult[A,B]) extends Serializable
 
-case class Others(s: Option[String], l: Option[Long], b: Option[Boolean], d: Option[Double], f: Option[Float], by: Option[Byte], bytes: Option[Array[Byte]], sh: Option[Short], date: Option[LocalDate], dateTime: Option[LocalDateTime]) extends Serializable
+case class Others(s: Option[String], l: Option[Long], b: Option[Boolean], d: Option[Double],
+                  f: Option[Float], by: Option[Byte], bytes: Option[Array[Byte]],
+                  sh: Option[Short], date: Option[LocalDate], dateTime: Option[LocalDateTime]) extends Serializable {
+  override def equals(obj: Any): Boolean = obj match {
+    // precision isn't correct in frameless encoding
+    case o: Others =>
+      s == o.s && l == o.l && b == o.b && d == o.d && f == o.f && by == o.by &&
+        sh == o.sh && date == o.date &&
+        optEqual(dateTime, o.dateTime)(_.truncatedTo(ChronoUnit.MICROS) == _.truncatedTo(ChronoUnit.MICROS)) &&
+        optEqual(bytes, o.bytes)(_ sameElements _)
+    case _ => false
+  }
+}
 
 @RunWith(classOf[JUnitRunner])
 class DeepTest extends FunSuite with Matchers with TestUtils {
@@ -420,11 +435,14 @@ class DeepTest extends FunSuite with Matchers with TestUtils {
 
     implicit val oenc = TypedEncoder[Others]
 
+    val date = LocalDate.now()
+    val dateTime = LocalDateTime.now(ZoneOffset.UTC)
+
     testDebugStructs(s"<String, struct<s: String, l: Long, b: Boolean, d: Double, f: Float, " +
-      s"by: Byte, bytes: Binary, sh: Short, date: Date, dateTime: Timestamp>",  (1 to 5). map( i => Map(
+      s"by: Byte, bytes: Binary, sh: Short, date: Date, dateTime: timestamp>>",  (1 to 5). map( i => Map(
       s"a$i" -> Others(None,None,None,None,None,None,None,None,None, None),
       s"b$i" -> Others(Some(""),Some(1l),Some(true),Some(0.2),Some(0.2f),Some(0),
-        Some(Array(0: Byte)),Some(1),Some(LocalDate.now()), Some(LocalDateTime.now())),
+        Some(Array(0: Byte)),Some(1),Some(date), Some(dateTime)),
     )),
       fullProxyDS = false, deriveContextTypes = true)
   }

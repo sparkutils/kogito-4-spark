@@ -6,7 +6,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeGenerator, CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Expression, SpecializedGetters}
 import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
-import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DataType, DateType, DecimalType, DoubleType, FloatType, IntegerType, LongType, MapType, ShortType, StringType, StructType, TimestampType}
+import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DataType, DateType, DecimalType, DoubleType, FloatType, IntegerType, LongType, MapType, ShortType, StringType, StructType, TimestampNTZType, TimestampType}
 
 import java.time.{LocalDate, LocalDateTime}
 import scala.collection.JavaConverters._
@@ -19,6 +19,15 @@ object ContextInterfaces {
   trait Accessor[T] extends Serializable {
     def forPath(path: Any, i: Int): T
   }
+
+  def nullAtOr(f: (SpecializedGetters, Int) => Any): Accessor[Any] =
+    (path: Any, i: Int) =>
+      if (path == null) null else {
+        if (path.asInstanceOf[SpecializedGetters].isNullAt(i))
+          null
+        else
+          f( path.asInstanceOf[SpecializedGetters], i)
+      }
 
   // -1 as top level field, only for struct/map/array
   def forType(dataType: DataType, dmnConfiguration: Map[String, String]): Accessor[_] = dataType match {
@@ -37,28 +46,49 @@ object ContextInterfaces {
           }
         }
       }
-    case StringType => (path: Any, i: Int) => if (path == null) null else {
-      val t = path.asInstanceOf[SpecializedGetters].getUTF8String(i)
-      if (t == null) null else t.toString}
-    case IntegerType => (path: Any, i: Int) => if (path == null) null else path.asInstanceOf[SpecializedGetters].getInt(i)
-    case LongType => (path: Any, i: Int) => if (path == null) null else path.asInstanceOf[SpecializedGetters].getLong(i)
-    case BooleanType => (path: Any, i: Int) => if (path == null) null else path.asInstanceOf[SpecializedGetters].getBoolean(i)
-    case DoubleType => (path: Any, i: Int) => if (path == null) null else path.asInstanceOf[SpecializedGetters].getDouble(i)
-    case FloatType => (path: Any, i: Int) => if (path == null) null else path.asInstanceOf[SpecializedGetters].getFloat(i)
-    case BinaryType => (path: Any, i: Int) => if (path == null) null else path.asInstanceOf[SpecializedGetters].getBinary(i)
-    case ByteType => (path: Any, i: Int) => if (path == null) null else path.asInstanceOf[SpecializedGetters].getByte(i)
-    case ShortType => (path: Any, i: Int) => if (path == null) null else path.asInstanceOf[SpecializedGetters].getShort(i)
-    case DateType => (path: Any, i: Int) => if (path == null) null else {
-      if (path.asInstanceOf[SpecializedGetters].isNullAt(i))
-        null
-      else
-        DateTimeUtils.daysToLocalDate( path.asInstanceOf[SpecializedGetters].getInt(i) )
+    case StringType =>  nullAtOr {
+      (path: SpecializedGetters, i: Int) =>
+        path.getUTF8String(i).toString
     }
-    case TimestampType => (path: Any, i: Int) => if (path == null) null else {
-      if (path.asInstanceOf[SpecializedGetters].isNullAt(i))
-        null
-      else
-        DateTimeUtils.microsToLocalDateTime( path.asInstanceOf[SpecializedGetters].getLong(i) )
+    case IntegerType => nullAtOr {
+      (path: SpecializedGetters, i: Int) =>
+        path.getInt(i)
+    }
+    case LongType => nullAtOr {
+      (path: SpecializedGetters, i: Int) =>
+        path.getLong(i)
+    }
+    case BooleanType =>nullAtOr {
+      (path: SpecializedGetters, i: Int) =>
+        path.getBoolean(i)
+    }
+    case DoubleType => nullAtOr {
+      (path: SpecializedGetters, i: Int) =>
+        path.getDouble(i)
+    }
+    case FloatType =>nullAtOr {
+      (path: SpecializedGetters, i: Int) =>
+        path.getFloat(i)
+    }
+    case BinaryType => nullAtOr {
+      (path: SpecializedGetters, i: Int) =>
+        path.getBinary(i)
+    }
+    case ByteType => nullAtOr {
+      (path: SpecializedGetters, i: Int) =>
+        path.getByte(i)
+    }
+    case ShortType => nullAtOr {
+      (path: SpecializedGetters, i: Int) =>
+        path.getShort(i)
+    }
+    case DateType => nullAtOr{
+      (path: SpecializedGetters, i: Int) =>
+        DateTimeUtils.daysToLocalDate( path.getInt(i) )
+    }
+    case TimestampType | TimestampNTZType => nullAtOr{
+      (path: SpecializedGetters, i: Int) =>
+        DateTimeUtils.microsToLocalDateTime( path.getLong(i) )
     }
     case _: DecimalType => (path: Any, i: Int) =>
       // max needed as Spark's past 3.4 move everything to max anyway, 1.0 comes back as 1.0 instead of 2016...
@@ -140,18 +170,34 @@ object ContextInterfaces {
     case StringType => (ctx: CodegenContext, pathName: String, iName: String) =>
       exprCodeInterim(classOf[String], ctx,
         code"$pathName.getUTF8String($iName)", i => code"((UTF8String)$i).toString()")
-    case IntegerType => (ctx: CodegenContext, pathName: String, iName: String) => exprCode(classOf[Integer], ctx, code"$pathName.getInt($iName);")
-    case LongType => (ctx: CodegenContext, pathName: String, iName: String) => exprCode(classOf[Long], ctx, code"$pathName.getLong($iName);")
-    case BooleanType => (ctx: CodegenContext, pathName: String, iName: String) => exprCode(classOf[Boolean], ctx, code"$pathName.getBoolean($iName);")
-    case DoubleType => (ctx: CodegenContext, pathName: String, iName: String) => exprCode(classOf[Double], ctx, code"$pathName.getDouble($iName);")
-    case FloatType => (ctx: CodegenContext, pathName: String, iName: String) => exprCode(classOf[Float], ctx, code"$pathName.getFloat($iName);")
-    case BinaryType => (ctx: CodegenContext, pathName: String, iName: String) => exprCode(classOf[Array[Byte]], ctx, code"$pathName.getBinary($iName);")
-    case ByteType => (ctx: CodegenContext, pathName: String, iName: String) => exprCode(classOf[Byte], ctx, code"$pathName.getByte($iName);")
-    case ShortType => (ctx: CodegenContext, pathName: String, iName: String) => exprCode(classOf[Short], ctx, code"$pathName.getShort($iName);")
+    case IntegerType => (ctx: CodegenContext, pathName: String, iName: String) =>
+      exprCodeIsNullAt(classOf[Integer], ctx, code"$pathName.isNullAt($iName)",
+        code"$pathName.getInt($iName);")
+    case LongType => (ctx: CodegenContext, pathName: String, iName: String) =>
+      exprCodeIsNullAt(classOf[Long], ctx, code"$pathName.isNullAt($iName)",
+        code"$pathName.getLong($iName);")
+    case BooleanType => (ctx: CodegenContext, pathName: String, iName: String) =>
+      exprCodeIsNullAt(classOf[Boolean], ctx, code"$pathName.isNullAt($iName)",
+        code"$pathName.getBoolean($iName);")
+    case DoubleType => (ctx: CodegenContext, pathName: String, iName: String) =>
+      exprCodeIsNullAt(classOf[Double], ctx, code"$pathName.isNullAt($iName)",
+        code"$pathName.getDouble($iName);")
+    case FloatType => (ctx: CodegenContext, pathName: String, iName: String) =>
+      exprCodeIsNullAt(classOf[Float], ctx, code"$pathName.isNullAt($iName)",
+        code"$pathName.getFloat($iName);")
+    case BinaryType => (ctx: CodegenContext, pathName: String, iName: String) =>
+      exprCodeIsNullAt(classOf[Array[Byte]], ctx, code"$pathName.isNullAt($iName)",
+        code"$pathName.getBinary($iName);")
+    case ByteType => (ctx: CodegenContext, pathName: String, iName: String) =>
+      exprCodeIsNullAt(classOf[Byte], ctx, code"$pathName.isNullAt($iName)",
+        code"$pathName.getByte($iName);")
+    case ShortType => (ctx: CodegenContext, pathName: String, iName: String) =>
+      exprCodeIsNullAt(classOf[Short], ctx, code"$pathName.isNullAt($iName)",
+        code"$pathName.getShort($iName);")
     case DateType => (ctx: CodegenContext, pathName: String, iName: String) =>
       exprCodeIsNullAt(classOf[LocalDate], ctx, code"$pathName.isNullAt($iName)",
         code"org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate($pathName.getInt($iName))")
-    case TimestampType => (ctx: CodegenContext, pathName: String, iName: String) =>
+    case TimestampType | TimestampNTZType => (ctx: CodegenContext, pathName: String, iName: String) =>
       exprCodeIsNullAt(classOf[LocalDateTime], ctx, code"$pathName.isNullAt($iName)",
         code"org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime($pathName.getLong($iName));")
     case _: DecimalType => (ctx: CodegenContext, pathName: String, iName: String) =>

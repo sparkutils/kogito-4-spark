@@ -30,9 +30,22 @@ object Utils {
           Object ${ev.value} = null;
           boolean ${ev.isNull} = ($interim == null);
           if (!${ev.isNull}) {
-            ${ev.value} = ${if (cast) s"(${boxed.getName})" else ""} ${withInterim(interim)};
+            ${ev.value} = ${doCast(boxed, cast)} ${withInterim(interim)};
           }
           """)
+  }
+
+  private def doCast(boxed: Class[_], cast: Boolean) = {
+    val box =
+      if (boxed.isArray)
+        s"${boxed.componentType().getName}[]"
+      else
+        boxed.getName
+
+    if (cast)
+      s"($box)"
+    else
+      ""
   }
 
   def exprCodeIsNullAt(boxed: Class[_], ctx: CodegenContext, nullCheck: Block, nonNull: Block, cast: Boolean = true): ExprCode = {
@@ -42,7 +55,7 @@ object Utils {
           Object ${ev.value} = null;
           boolean ${ev.isNull} = $nullCheck;
           if (!${ev.isNull}) {
-            ${ev.value} = ${if (cast) s"(${boxed.getName})" else ""} $nonNull;
+            ${ev.value} = ${doCast(boxed, cast)} $nonNull;
           }
           """)
   }
@@ -57,10 +70,14 @@ object Utils {
     )
     expr.copy(code =
       code"""
-        Object ${expr.value} = ${if (cast) s"(${boxed.getName})" else ""} $code
+        Object ${expr.value} = ${doCast(boxed, cast)} $code
         boolean ${expr.isNull} = (${expr.value} == null);
           """)
   }
+
+  def optEqual[A](a: Option[A], b: Option[A])(f: (A,A) => Boolean): Boolean =
+    ((a.isDefined && b.isDefined && (f(a.get, b.get))) ||
+      a.isEmpty && b.isEmpty)
 
 }
 
