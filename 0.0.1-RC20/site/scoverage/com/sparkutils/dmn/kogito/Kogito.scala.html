@@ -1,0 +1,2967 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          com/sparkutils/dmn/kogito/Kogito.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package com.sparkutils.dmn.kogito
+</span>2 <span style=''>
+</span>3 <span style=''>import com.sparkutils.dmn._
+</span>4 <span style=''>import com.sparkutils.dmn.impl._
+</span>5 <span style=''>import com.sparkutils.dmn.impl.utils.configMap
+</span>6 <span style=''>import com.sparkutils.dmn.kogito.ContextProviders.contextProviderFromDDL
+</span>7 <span style=''>import com.sparkutils.dmn.kogito.Types.MAP
+</span>8 <span style=''>import org.apache.spark.sql.types.{DataType, StructType}
+</span>9 <span style=''>import org.kie.dmn.core.internal.utils.DMNRuntimeBuilder
+</span>10 <span style=''>import org.kie.internal.io.ResourceFactory
+</span>11 <span style=''>
+</span>12 <span style=''>import java.util
+</span>13 <span style=''>import scala.collection.JavaConverters._
+</span>14 <span style=''>import scala.util.Try
+</span>15 <span style=''>
+</span>16 <span style=''>case class KogitoDMNResult(result: org.kie.dmn.api.core.DMNResult) extends DMNResult
+</span>17 <span style=''>
+</span>18 <span style=''>case class KogitoDMNContextPath(path: String) extends DMNContextPath
+</span>19 <span style=''>
+</span>20 <span style=''>/**
+</span>21 <span style=''> * Represents an executable DMN Model
+</span>22 <span style=''> */
+</span>23 <span style=''>case class KogitoDMNModel(model: org.kie.dmn.api.core.DMNModel, runtime: org.kie.dmn.api.core.DMNRuntime) extends DMNModel {
+</span>24 <span style=''>
+</span>25 <span style=''>  def evaluateAll(ctx: DMNContext): DMNResult =
+</span>26 <span style=''>    </span><span style='background: #AEF1AE'>KogitoDMNResult(runtime.evaluateAll(model, ctx.asInstanceOf[KogitoDMNContext].ctx))</span><span style=''>
+</span>27 <span style=''>
+</span>28 <span style=''>  def evaluateDecisionService(ctx: DMNContext, service: String): DMNResult =
+</span>29 <span style=''>    </span><span style='background: #AEF1AE'>KogitoDMNResult(runtime.evaluateDecisionService(model, ctx.asInstanceOf[KogitoDMNContext].ctx, service))</span><span style=''>
+</span>30 <span style=''>
+</span>31 <span style=''>}
+</span>32 <span style=''>
+</span>33 <span style=''>/**
+</span>34 <span style=''> * Represents a repository of DMN, this is the actual root provider
+</span>35 <span style=''> */
+</span>36 <span style=''>class KogitoDMNRepository() extends DMNRepository {
+</span>37 <span style=''>  /**
+</span>38 <span style=''>   * Throws DMNException if it can't be constructed
+</span>39 <span style=''>   * @param dmnFiles
+</span>40 <span style=''>   * @return
+</span>41 <span style=''>   */
+</span>42 <span style=''>  def dmnRuntimeFor(dmnFiles: scala.collection.immutable.Seq[DMNFile], dmnConfiguration: DMNConfiguration): DMNRuntime = {
+</span>43 <span style=''>
+</span>44 <span style=''>    val resources = </span><span style='background: #AEF1AE'>dmnFiles.map{ f =&gt;
+</span>45 <span style=''></span><span style='background: #AEF1AE'>      val r = ResourceFactory.newByteArrayResource(f.bytes)
+</span>46 <span style=''></span><span style='background: #AEF1AE'>      f.locationURI -&gt; r.setSourcePath(f.locationURI)
+</span>47 <span style=''></span><span style='background: #AEF1AE'>    }.toMap</span><span style=''>
+</span>48 <span style=''>
+</span>49 <span style=''>    </span><span style='background: #AEF1AE'>KogitoDMNRuntime(
+</span>50 <span style=''></span><span style='background: #AEF1AE'>      DMNRuntimeBuilder.fromDefaults()
+</span>51 <span style=''></span><span style='background: #AEF1AE'>        .setRelativeImportResolver((_,_, locationURI) =&gt; </span><span style='background: #F0ADAD'>resources(locationURI).getReader</span><span style='background: #AEF1AE'>)
+</span>52 <span style=''></span><span style='background: #AEF1AE'>        .buildConfiguration()
+</span>53 <span style=''></span><span style='background: #AEF1AE'>        .fromResources(resources.values.asJavaCollection)
+</span>54 <span style=''></span><span style='background: #AEF1AE'>        .getOrElseThrow(p =&gt; </span><span style='background: #F0ADAD'>new DMNException(&quot;Could not create Kogito DMNRuntime&quot;, p)</span><span style='background: #AEF1AE'>)
+</span>55 <span style=''></span><span style='background: #AEF1AE'>    )</span><span style=''>
+</span>56 <span style=''>  }
+</span>57 <span style=''>
+</span>58 <span style=''>  override def supportsDecisionService: Boolean = </span><span style='background: #AEF1AE'>true</span><span style=''>
+</span>59 <span style=''>
+</span>60 <span style=''>  override def providerForType(inputField: DMNInputField, debug: Boolean, dmnConfiguration: DMNConfiguration): DMNContextProvider[_] = {
+</span>61 <span style=''>    val (path, expr) = (KogitoDMNContextPath(inputField.contextPath), inputField.defaultExpr)
+</span>62 <span style=''>
+</span>63 <span style=''>    val config = </span><span style='background: #AEF1AE'>configMap(dmnConfiguration)</span><span style=''>
+</span>64 <span style=''>
+</span>65 <span style=''>    </span><span style='background: #AEF1AE'>inputField.providerType</span><span style=''> match {
+</span>66 <span style=''>      case &quot;&quot; =&gt; </span><span style='background: #AEF1AE'>ContextProviderProxy(path, inputField.stillSetWhenNull, expr, config)</span><span style=''>
+</span>67 <span style=''>      case &quot;JSON&quot; =&gt; </span><span style='background: #AEF1AE'>KogitoJSONContextProvider(path, inputField.stillSetWhenNull, expr)</span><span style=''>
+</span>68 <span style=''>      case t if </span><span style='background: #AEF1AE'>Try(DataType.fromDDL(t)).isSuccess</span><span style=''> </span><span style='background: #AEF1AE'>=&gt;
+</span>69 <span style=''></span><span style='background: #AEF1AE'>        val dataType = DataType.fromDDL(t)
+</span>70 <span style=''></span><span style='background: #AEF1AE'>        contextProviderFromDDL(inputField.stillSetWhenNull, path, expr, config, dataType)</span><span style=''>
+</span>71 <span style=''>      case _ =&gt;
+</span>72 <span style=''>        </span><span style='background: #F0ADAD'>utils.loadUnaryContextProvider(inputField.providerType, path, expr)</span><span style=''>
+</span>73 <span style=''>    }
+</span>74 <span style=''>
+</span>75 <span style=''>  }
+</span>76 <span style=''>
+</span>77 <span style=''>  override def resultProviderForType(resultProviderType: String, debug: Boolean, dmnConfiguration: DMNConfiguration): DMNResultProvider =
+</span>78 <span style=''>    resultProviderType match {
+</span>79 <span style=''>      case _ if </span><span style='background: #AEF1AE'>resultProviderType.toUpperCase == &quot;JSON&quot;</span><span style=''> =&gt;
+</span>80 <span style=''>        </span><span style='background: #AEF1AE'>KogitoJSONResultProvider(debug, configMap(dmnConfiguration))</span><span style=''>
+</span>81 <span style=''>      case t if </span><span style='background: #AEF1AE'>Try(DataType.fromDDL(t)).isSuccess</span><span style=''> </span><span style='background: #AEF1AE'>=&gt;
+</span>82 <span style=''></span><span style='background: #AEF1AE'>        val dataType = DataType.fromDDL(t)
+</span>83 <span style=''></span><span style='background: #AEF1AE'>        dataType match {
+</span>84 <span style=''></span><span style='background: #AEF1AE'>          case s: StructType =&gt;
+</span>85 <span style=''></span><span style='background: #AEF1AE'>            KogitoDDLResult(debug = debug, underlyingType = s, configMap(dmnConfiguration))
+</span>86 <span style=''></span><span style='background: #AEF1AE'>          case _ =&gt; </span><span style='background: #F0ADAD'>throw new DMNException(s&quot;ResultProvider type $t is not supported, only JSON and Struct is&quot;)</span><span style='background: #AEF1AE'>
+</span>87 <span style=''></span><span style='background: #AEF1AE'>        }</span><span style=''>
+</span>88 <span style=''>      case _ =&gt;
+</span>89 <span style=''>        </span><span style='background: #F0ADAD'>utils.loadResultProvider(resultProviderType, debug)</span><span style=''>
+</span>90 <span style=''>    }
+</span>91 <span style=''>}
+</span>92 <span style=''>
+</span>93 <span style=''>object Types {
+</span>94 <span style=''>  type MAP = java.util.Map[String, Object]
+</span>95 <span style=''>}
+</span>96 <span style=''>
+</span>97 <span style=''>case class KogitoDMNContext(ctx: org.kie.dmn.api.core.DMNContext) extends DMNContext {
+</span>98 <span style=''>
+</span>99 <span style=''>  def set(path: DMNContextPath, data: Any): Unit = {
+</span>100 <span style=''>    val bits = </span><span style='background: #AEF1AE'>path.asInstanceOf[KogitoDMNContextPath].path.split('.')</span><span style=''>
+</span>101 <span style=''>    val starter =
+</span>102 <span style=''>      </span><span style='background: #AEF1AE'>ctx.get(bits(0))</span><span style=''> match {
+</span>103 <span style=''>        case _ if </span><span style='background: #AEF1AE'>bits.length == 1</span><span style=''> </span><span style='background: #AEF1AE'>=&gt;
+</span>104 <span style=''></span><span style='background: #AEF1AE'>          ctx.set(bits.head, data)
+</span>105 <span style=''></span><span style='background: #AEF1AE'>          return</span><span style=''>
+</span>106 <span style=''>        case null if </span><span style='background: #AEF1AE'>bits.length &gt; 1</span><span style=''> </span><span style='background: #AEF1AE'>=&gt;
+</span>107 <span style=''></span><span style='background: #AEF1AE'>          val n = new util.HashMap[String, Object]()
+</span>108 <span style=''></span><span style='background: #AEF1AE'>          ctx.set(bits.head, n)
+</span>109 <span style=''></span><span style='background: #AEF1AE'>          n</span><span style=''>
+</span>110 <span style=''>        case t: MAP =&gt;
+</span>111 <span style=''>          </span><span style='background: #AEF1AE'>t</span><span style=''>
+</span>112 <span style=''>        case _ </span><span style='background: #F0ADAD'>=&gt; // TODO log warn
+</span>113 <span style=''></span><span style='background: #F0ADAD'>          ctx.set(bits.head, data)
+</span>114 <span style=''></span><span style='background: #F0ADAD'>          return</span><span style=''>
+</span>115 <span style=''>      }
+</span>116 <span style=''>
+</span>117 <span style=''>    // top is the root context, bottom is the place we'd store things
+</span>118 <span style=''>    </span><span style='background: #AEF1AE'>bits.drop(1).dropRight(1).foldLeft(starter){
+</span>119 <span style=''></span><span style='background: #AEF1AE'>      (map, pathBit) =&gt;
+</span>120 <span style=''></span><span style='background: #AEF1AE'>        map match {
+</span>121 <span style=''></span><span style='background: #AEF1AE'>          case t: MAP </span><span style='background: #F0ADAD'>=&gt;
+</span>122 <span style=''></span><span style='background: #F0ADAD'>            val n =
+</span>123 <span style=''></span><span style='background: #F0ADAD'>              t.get(pathBit) match {
+</span>124 <span style=''></span><span style='background: #F0ADAD'>                case null =&gt; new util.HashMap[String, Object]()
+</span>125 <span style=''></span><span style='background: #F0ADAD'>                case t: MAP =&gt; t
+</span>126 <span style=''></span><span style='background: #F0ADAD'>                case _ =&gt; new util.HashMap[String, Object]()
+</span>127 <span style=''></span><span style='background: #F0ADAD'>              }
+</span>128 <span style=''></span><span style='background: #F0ADAD'>            t.put(pathBit, n)
+</span>129 <span style=''></span><span style='background: #F0ADAD'>            n</span><span style='background: #AEF1AE'>
+</span>130 <span style=''></span><span style='background: #AEF1AE'>          case _ =&gt; </span><span style='background: #F0ADAD'>map</span><span style='background: #AEF1AE'>
+</span>131 <span style=''></span><span style='background: #AEF1AE'>        }
+</span>132 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>133 <span style=''>
+</span>134 <span style=''>    def updateContext(bits: Seq[String], map: MAP): MAP =
+</span>135 <span style=''>      if (</span><span style='background: #AEF1AE'>bits.size == 1</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>136 <span style=''></span><span style='background: #AEF1AE'>        map.put(bits.head, data.asInstanceOf[Object])
+</span>137 <span style=''></span><span style='background: #AEF1AE'>        map
+</span>138 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''> else
+</span>139 <span style=''>        </span><span style='background: #F0ADAD'>updateContext(bits.drop(1), map.get(bits.head).asInstanceOf[MAP])</span><span style=''>
+</span>140 <span style=''>
+</span>141 <span style=''>    </span><span style='background: #AEF1AE'>ctx.set(bits.head, updateContext(bits.drop(1).toVector, starter))</span><span style=''> // drop the 1st as that's for the root context
+</span>142 <span style=''>  }
+</span>143 <span style=''>}
+</span>144 <span style=''>
+</span>145 <span style=''>case class KogitoDMNRuntime(runtime: org.kie.dmn.api.core.DMNRuntime) extends DMNRuntime {
+</span>146 <span style=''>
+</span>147 <span style=''>  def getModel(name: String, namespace: String): DMNModel = {
+</span>148 <span style=''>    val model = </span><span style='background: #AEF1AE'>runtime.getModel(namespace, name)</span><span style=''>
+</span>149 <span style=''>    if (</span><span style='background: #AEF1AE'>model eq null</span><span style=''>) {
+</span>150 <span style=''>      </span><span style='background: #F0ADAD'>throw new DMNException(s&quot;Could not load model from Kogito runtime with namespace $namespace and name $name - {$namespace}$name&quot;)</span><span style=''>
+</span>151 <span style=''>    }
+</span>152 <span style=''>    </span><span style='background: #AEF1AE'>KogitoDMNModel(model, runtime)</span><span style=''>
+</span>153 <span style=''>  }
+</span>154 <span style=''>
+</span>155 <span style=''>  def context(): DMNContext = </span><span style='background: #AEF1AE'>KogitoDMNContext(runtime.newContext())</span><span style=''>
+</span>156 <span style=''>}
+</span>157 <span style=''>
+</span>158 <span style=''>case class KogitoFeelEvent(severity: String, message: String, line: Int, column: Int, sourceException: String, offendingSymbol: String) extends Serializable
+</span>159 <span style=''>
+</span>160 <span style=''>case class KogitoMessage(sourceId: String, sourceReference: String, exception: String, feelEvent: KogitoFeelEvent) extends Serializable
+</span>161 <span style=''>
+</span>162 <span style=''>/**
+</span>163 <span style=''> * Represents the DDL provider output type for debugMode
+</span>164 <span style=''> * @param decisionId
+</span>165 <span style=''> * @param decisionName
+</span>166 <span style=''> * @param hasErrors
+</span>167 <span style=''> * @param messages
+</span>168 <span style=''> */
+</span>169 <span style=''>case class KogitoResult(decisionId: String, decisionName: String, hasErrors: Boolean, messages: Seq[KogitoMessage], evaluationStatus: String) extends Serializable
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          93
+        </td>
+        <td>
+          914
+          -
+          919
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoDMNModel.model
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoDMNModel.this.model
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          94
+        </td>
+        <td>
+          921
+          -
+          959
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoDMNContext.ctx
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ctx.asInstanceOf[com.sparkutils.dmn.kogito.KogitoDMNContext].ctx
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          95
+        </td>
+        <td>
+          894
+          -
+          960
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.kie.dmn.api.core.DMNRuntime.evaluateAll
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoDMNModel.this.runtime.evaluateAll(KogitoDMNModel.this.model, ctx.asInstanceOf[com.sparkutils.dmn.kogito.KogitoDMNContext].ctx)
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          96
+        </td>
+        <td>
+          878
+          -
+          961
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoDMNResult.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoDMNResult.apply(KogitoDMNModel.this.runtime.evaluateAll(KogitoDMNModel.this.model, ctx.asInstanceOf[com.sparkutils.dmn.kogito.KogitoDMNContext].ctx))
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          97
+        </td>
+        <td>
+          1092
+          -
+          1097
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoDMNModel.model
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoDMNModel.this.model
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          98
+        </td>
+        <td>
+          1099
+          -
+          1137
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoDMNContext.ctx
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ctx.asInstanceOf[com.sparkutils.dmn.kogito.KogitoDMNContext].ctx
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          99
+        </td>
+        <td>
+          1060
+          -
+          1147
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.kie.dmn.api.core.DMNRuntime.evaluateDecisionService
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoDMNModel.this.runtime.evaluateDecisionService(KogitoDMNModel.this.model, ctx.asInstanceOf[com.sparkutils.dmn.kogito.KogitoDMNContext].ctx, service)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          100
+        </td>
+        <td>
+          1044
+          -
+          1148
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoDMNResult.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoDMNResult.apply(KogitoDMNModel.this.runtime.evaluateDecisionService(KogitoDMNModel.this.model, ctx.asInstanceOf[com.sparkutils.dmn.kogito.KogitoDMNContext].ctx, service))
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          107
+        </td>
+        <td>
+          1535
+          -
+          1535
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.immutable.Seq.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          immutable.this.Seq.canBuildFrom[(String, org.kie.api.io.Resource)]
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          101
+        </td>
+        <td>
+          1593
+          -
+          1600
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.DMNFile.bytes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          f.bytes
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          102
+        </td>
+        <td>
+          1556
+          -
+          1601
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.kie.internal.io.ResourceFactory.newByteArrayResource
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.kie.internal.io.ResourceFactory.newByteArrayResource(f.bytes)
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          103
+        </td>
+        <td>
+          1608
+          -
+          1621
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.DMNFile.locationURI
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          f.locationURI
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          104
+        </td>
+        <td>
+          1641
+          -
+          1654
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.DMNFile.locationURI
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          f.locationURI
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          105
+        </td>
+        <td>
+          1625
+          -
+          1655
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.kie.api.io.Resource.setSourcePath
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          r.setSourcePath(f.locationURI)
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          106
+        </td>
+        <td>
+          1608
+          -
+          1655
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.ArrowAssoc.-&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.ArrowAssoc[String](f.locationURI).-&gt;[org.kie.api.io.Resource](r.setSourcePath(f.locationURI))
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          108
+        </td>
+        <td>
+          1662
+          -
+          1662
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Predef.$conforms
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.$conforms[(String, org.kie.api.io.Resource)]
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          109
+        </td>
+        <td>
+          1523
+          -
+          1667
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableOnce.toMap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          dmnFiles.map[(String, org.kie.api.io.Resource), scala.collection.immutable.Seq[(String, org.kie.api.io.Resource)]](((f: com.sparkutils.dmn.DMNFile) =&gt; {
+  val r: org.kie.api.io.Resource = org.kie.internal.io.ResourceFactory.newByteArrayResource(f.bytes);
+  scala.Predef.ArrowAssoc[String](f.locationURI).-&gt;[org.kie.api.io.Resource](r.setSourcePath(f.locationURI))
+}))(immutable.this.Seq.canBuildFrom[(String, org.kie.api.io.Resource)]).toMap[String, org.kie.api.io.Resource](scala.Predef.$conforms[(String, org.kie.api.io.Resource)])
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          115
+        </td>
+        <td>
+          1673
+          -
+          2002
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoDMNRuntime.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoDMNRuntime.apply(org.kie.dmn.core.internal.utils.DMNRuntimeBuilder.fromDefaults().setRelativeImportResolver(((x$1: String, x$2: String, locationURI: String) =&gt; resources.apply(locationURI).getReader())).buildConfiguration().fromResources(scala.collection.JavaConverters.asJavaCollectionConverter[org.kie.api.io.Resource](resources.values).asJavaCollection).getOrElseThrow[com.sparkutils.dmn.DMNException](((p: Exception) =&gt; new com.sparkutils.dmn.DMNException(&quot;Could not create Kogito DMNRuntime&quot;, p))))
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          110
+        </td>
+        <td>
+          1787
+          -
+          1819
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.kie.api.io.Resource.getReader
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          resources.apply(locationURI).getReader()
+        </td>
+      </tr><tr>
+        <td>
+          53
+        </td>
+        <td>
+          111
+        </td>
+        <td>
+          1874
+          -
+          1890
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.MapLike.values
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          resources.values
+        </td>
+      </tr><tr>
+        <td>
+          53
+        </td>
+        <td>
+          112
+        </td>
+        <td>
+          1874
+          -
+          1907
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.convert.Decorators.AsJavaCollection.asJavaCollection
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.collection.JavaConverters.asJavaCollectionConverter[org.kie.api.io.Resource](resources.values).asJavaCollection
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          113
+        </td>
+        <td>
+          1938
+          -
+          1995
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.DMNException.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new com.sparkutils.dmn.DMNException(&quot;Could not create Kogito DMNRuntime&quot;, p)
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          114
+        </td>
+        <td>
+          1697
+          -
+          1996
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.kie.dmn.feel.util.Either.getOrElseThrow
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.kie.dmn.core.internal.utils.DMNRuntimeBuilder.fromDefaults().setRelativeImportResolver(((x$1: String, x$2: String, locationURI: String) =&gt; resources.apply(locationURI).getReader())).buildConfiguration().fromResources(scala.collection.JavaConverters.asJavaCollectionConverter[org.kie.api.io.Resource](resources.values).asJavaCollection).getOrElseThrow[com.sparkutils.dmn.DMNException](((p: Exception) =&gt; new com.sparkutils.dmn.DMNException(&quot;Could not create Kogito DMNRuntime&quot;, p)))
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          116
+        </td>
+        <td>
+          2058
+          -
+          2062
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          61
+        </td>
+        <td>
+          117
+        </td>
+        <td>
+          2210
+          -
+          2210
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$3._1
+        </td>
+      </tr><tr>
+        <td>
+          61
+        </td>
+        <td>
+          118
+        </td>
+        <td>
+          2216
+          -
+          2216
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$3._2
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          119
+        </td>
+        <td>
+          2313
+          -
+          2340
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.utils.configMap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.utils.configMap(dmnConfiguration)
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          120
+        </td>
+        <td>
+          2346
+          -
+          2369
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.DMNInputField.providerType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          inputField.providerType
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          121
+        </td>
+        <td>
+          2422
+          -
+          2449
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.DMNInputField.stillSetWhenNull
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          inputField.stillSetWhenNull
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          122
+        </td>
+        <td>
+          2395
+          -
+          2464
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.ContextProviderProxy.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ContextProviderProxy.apply(path, inputField.stillSetWhenNull, expr, config)
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          123
+        </td>
+        <td>
+          2395
+          -
+          2464
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.ContextProviderProxy.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ContextProviderProxy.apply(path, inputField.stillSetWhenNull, expr, config)
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          124
+        </td>
+        <td>
+          2518
+          -
+          2545
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.DMNInputField.stillSetWhenNull
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          inputField.stillSetWhenNull
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          125
+        </td>
+        <td>
+          2486
+          -
+          2552
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoJSONContextProvider.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoJSONContextProvider.apply(path, inputField.stillSetWhenNull, expr)
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          126
+        </td>
+        <td>
+          2486
+          -
+          2552
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoJSONContextProvider.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoJSONContextProvider.apply(path, inputField.stillSetWhenNull, expr)
+        </td>
+      </tr><tr>
+        <td>
+          68
+        </td>
+        <td>
+          127
+        </td>
+        <td>
+          2573
+          -
+          2592
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.types.DataType.fromDDL
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.types.DataType.fromDDL(t)
+        </td>
+      </tr><tr>
+        <td>
+          68
+        </td>
+        <td>
+          128
+        </td>
+        <td>
+          2569
+          -
+          2603
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.util.Try.isSuccess
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.util.Try.apply[org.apache.spark.sql.types.DataType](org.apache.spark.sql.types.DataType.fromDDL(t)).isSuccess
+        </td>
+      </tr><tr>
+        <td>
+          68
+        </td>
+        <td>
+          132
+        </td>
+        <td>
+          2604
+          -
+          2739
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val dataType: org.apache.spark.sql.types.DataType = org.apache.spark.sql.types.DataType.fromDDL(t);
+  com.sparkutils.dmn.kogito.ContextProviders.contextProviderFromDDL(inputField.stillSetWhenNull, path, expr, config, dataType)
+}
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          129
+        </td>
+        <td>
+          2630
+          -
+          2649
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.types.DataType.fromDDL
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.types.DataType.fromDDL(t)
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          130
+        </td>
+        <td>
+          2681
+          -
+          2708
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.DMNInputField.stillSetWhenNull
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          inputField.stillSetWhenNull
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          131
+        </td>
+        <td>
+          2658
+          -
+          2739
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.ContextProviders.contextProviderFromDDL
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.kogito.ContextProviders.contextProviderFromDDL(inputField.stillSetWhenNull, path, expr, config, dataType)
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          133
+        </td>
+        <td>
+          2795
+          -
+          2818
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.DMNInputField.providerType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          inputField.providerType
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          134
+        </td>
+        <td>
+          2764
+          -
+          2831
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.utils.loadUnaryContextProvider
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          com.sparkutils.dmn.impl.utils.loadUnaryContextProvider(inputField.providerType, path, expr)
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          135
+        </td>
+        <td>
+          2764
+          -
+          2831
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.utils.loadUnaryContextProvider
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          com.sparkutils.dmn.impl.utils.loadUnaryContextProvider(inputField.providerType, path, expr)
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          136
+        </td>
+        <td>
+          3029
+          -
+          3069
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          resultProviderType.toUpperCase().==(&quot;JSON&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          137
+        </td>
+        <td>
+          3113
+          -
+          3140
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.utils.configMap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.utils.configMap(dmnConfiguration)
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          138
+        </td>
+        <td>
+          3081
+          -
+          3141
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoJSONResultProvider.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoJSONResultProvider.apply(debug, com.sparkutils.dmn.impl.utils.configMap(dmnConfiguration))
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          139
+        </td>
+        <td>
+          3081
+          -
+          3141
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoJSONResultProvider.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoJSONResultProvider.apply(debug, com.sparkutils.dmn.impl.utils.configMap(dmnConfiguration))
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          140
+        </td>
+        <td>
+          3162
+          -
+          3181
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.types.DataType.fromDDL
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.types.DataType.fromDDL(t)
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          141
+        </td>
+        <td>
+          3158
+          -
+          3192
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.util.Try.isSuccess
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.util.Try.apply[org.apache.spark.sql.types.DataType](org.apache.spark.sql.types.DataType.fromDDL(t)).isSuccess
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          148
+        </td>
+        <td>
+          3193
+          -
+          3509
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val dataType: org.apache.spark.sql.types.DataType = org.apache.spark.sql.types.DataType.fromDDL(t);
+  dataType match {
+    case (s @ (_: org.apache.spark.sql.types.StructType)) =&gt; KogitoDDLResult.apply(debug, s, com.sparkutils.dmn.impl.utils.configMap(dmnConfiguration))
+    case _ =&gt; throw new com.sparkutils.dmn.DMNException(scala.StringContext.apply(&quot;ResultProvider type &quot;, &quot; is not supported, only JSON and Struct is&quot;).s(t))
+  }
+}
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          142
+        </td>
+        <td>
+          3219
+          -
+          3238
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.types.DataType.fromDDL
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.types.DataType.fromDDL(t)
+        </td>
+      </tr><tr>
+        <td>
+          85
+        </td>
+        <td>
+          143
+        </td>
+        <td>
+          3359
+          -
+          3386
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.utils.configMap
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.utils.configMap(dmnConfiguration)
+        </td>
+      </tr><tr>
+        <td>
+          85
+        </td>
+        <td>
+          144
+        </td>
+        <td>
+          3308
+          -
+          3387
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoDDLResult.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoDDLResult.apply(debug, s, com.sparkutils.dmn.impl.utils.configMap(dmnConfiguration))
+        </td>
+      </tr><tr>
+        <td>
+          85
+        </td>
+        <td>
+          145
+        </td>
+        <td>
+          3308
+          -
+          3387
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoDDLResult.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoDDLResult.apply(debug, s, com.sparkutils.dmn.impl.utils.configMap(dmnConfiguration))
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          146
+        </td>
+        <td>
+          3408
+          -
+          3499
+        </td>
+        <td>
+          Throw
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new com.sparkutils.dmn.DMNException(scala.StringContext.apply(&quot;ResultProvider type &quot;, &quot; is not supported, only JSON and Struct is&quot;).s(t))
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          147
+        </td>
+        <td>
+          3408
+          -
+          3499
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new com.sparkutils.dmn.DMNException(scala.StringContext.apply(&quot;ResultProvider type &quot;, &quot; is not supported, only JSON and Struct is&quot;).s(t))
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          149
+        </td>
+        <td>
+          3534
+          -
+          3585
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.utils.loadResultProvider
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          com.sparkutils.dmn.impl.utils.loadResultProvider(resultProviderType, debug)
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          150
+        </td>
+        <td>
+          3534
+          -
+          3585
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.utils.loadResultProvider
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          com.sparkutils.dmn.impl.utils.loadResultProvider(resultProviderType, debug)
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          151
+        </td>
+        <td>
+          3812
+          -
+          3867
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.StringLike.split
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.augmentString(path.asInstanceOf[com.sparkutils.dmn.kogito.KogitoDMNContextPath].path).split('.')
+        </td>
+      </tr><tr>
+        <td>
+          102
+        </td>
+        <td>
+          152
+        </td>
+        <td>
+          3900
+          -
+          3907
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Array.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          bits.apply(0)
+        </td>
+      </tr><tr>
+        <td>
+          102
+        </td>
+        <td>
+          153
+        </td>
+        <td>
+          3892
+          -
+          3908
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.kie.dmn.api.core.DMNContext.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoDMNContext.this.ctx.get(bits.apply(0))
+        </td>
+      </tr><tr>
+        <td>
+          103
+        </td>
+        <td>
+          154
+        </td>
+        <td>
+          3935
+          -
+          3951
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          bits.length.==(1)
+        </td>
+      </tr><tr>
+        <td>
+          103
+        </td>
+        <td>
+          158
+        </td>
+        <td>
+          3952
+          -
+          4006
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  KogitoDMNContext.this.ctx.set(scala.Predef.refArrayOps[String](bits).head, data);
+  return ()
+}
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          155
+        </td>
+        <td>
+          3973
+          -
+          3982
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IndexedSeqOptimized.head
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.refArrayOps[String](bits).head
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          156
+        </td>
+        <td>
+          3965
+          -
+          3989
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.kie.dmn.api.core.DMNContext.set
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoDMNContext.this.ctx.set(scala.Predef.refArrayOps[String](bits).head, data)
+        </td>
+      </tr><tr>
+        <td>
+          105
+        </td>
+        <td>
+          157
+        </td>
+        <td>
+          4000
+          -
+          4006
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          159
+        </td>
+        <td>
+          4028
+          -
+          4043
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          bits.length.&gt;(1)
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          163
+        </td>
+        <td>
+          4044
+          -
+          4143
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val n: java.util.HashMap[String,Object] = new java.util.HashMap[String,Object]();
+  KogitoDMNContext.this.ctx.set(scala.Predef.refArrayOps[String](bits).head, n);
+  n
+}
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          160
+        </td>
+        <td>
+          4065
+          -
+          4099
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.HashMap.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new java.util.HashMap[String,Object]()
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          161
+        </td>
+        <td>
+          4118
+          -
+          4127
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IndexedSeqOptimized.head
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.refArrayOps[String](bits).head
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          162
+        </td>
+        <td>
+          4110
+          -
+          4131
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.kie.dmn.api.core.DMNContext.set
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoDMNContext.this.ctx.set(scala.Predef.refArrayOps[String](bits).head, n)
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          164
+        </td>
+        <td>
+          4177
+          -
+          4178
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoDMNContext.t
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          t
+        </td>
+      </tr><tr>
+        <td>
+          112
+        </td>
+        <td>
+          168
+        </td>
+        <td>
+          4194
+          -
+          4265
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  KogitoDMNContext.this.ctx.set(scala.Predef.refArrayOps[String](bits).head, data);
+  return ()
+}
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          165
+        </td>
+        <td>
+          4232
+          -
+          4241
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IndexedSeqOptimized.head
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Predef.refArrayOps[String](bits).head
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          166
+        </td>
+        <td>
+          4224
+          -
+          4248
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.kie.dmn.api.core.DMNContext.set
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          KogitoDMNContext.this.ctx.set(scala.Predef.refArrayOps[String](bits).head, data)
+        </td>
+      </tr><tr>
+        <td>
+          114
+        </td>
+        <td>
+          167
+        </td>
+        <td>
+          4259
+          -
+          4265
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          169
+        </td>
+        <td>
+          4349
+          -
+          4374
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.IndexedSeqOptimized.dropRight
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.refArrayOps[String](scala.Predef.refArrayOps[String](bits).drop(1)).dropRight(1)
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          179
+        </td>
+        <td>
+          4349
+          -
+          4777
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.IndexedSeqOptimized.foldLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.refArrayOps[String](scala.Predef.refArrayOps[String](scala.Predef.refArrayOps[String](bits).drop(1)).dropRight(1)).foldLeft[com.sparkutils.dmn.kogito.Types.MAP](starter)(((map: com.sparkutils.dmn.kogito.Types.MAP, pathBit: String) =&gt; map match {
+  case (t @ (_: com.sparkutils.dmn.kogito.Types.MAP)) =&gt; {
+    val n: com.sparkutils.dmn.kogito.Types.MAP = t.get(pathBit) match {
+      case null =&gt; new java.util.HashMap[String,Object]()
+      case (t @ (_: com.sparkutils.dmn.kogito.Types.MAP)) =&gt; t
+      case _ =&gt; new java.util.HashMap[String,Object]()
+    };
+    t.put(pathBit, n);
+    n
+  }
+  case _ =&gt; map
+}))
+        </td>
+      </tr><tr>
+        <td>
+          121
+        </td>
+        <td>
+          177
+        </td>
+        <td>
+          4460
+          -
+          4737
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  val n: com.sparkutils.dmn.kogito.Types.MAP = t.get(pathBit) match {
+    case null =&gt; new java.util.HashMap[String,Object]()
+    case (t @ (_: com.sparkutils.dmn.kogito.Types.MAP)) =&gt; t
+    case _ =&gt; new java.util.HashMap[String,Object]()
+  };
+  t.put(pathBit, n);
+  n
+}
+        </td>
+      </tr><tr>
+        <td>
+          123
+        </td>
+        <td>
+          170
+        </td>
+        <td>
+          4497
+          -
+          4511
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.Map.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          t.get(pathBit)
+        </td>
+      </tr><tr>
+        <td>
+          124
+        </td>
+        <td>
+          171
+        </td>
+        <td>
+          4549
+          -
+          4583
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.HashMap.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new java.util.HashMap[String,Object]()
+        </td>
+      </tr><tr>
+        <td>
+          124
+        </td>
+        <td>
+          172
+        </td>
+        <td>
+          4549
+          -
+          4583
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          java.util.HashMap.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new java.util.HashMap[String,Object]()
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          173
+        </td>
+        <td>
+          4615
+          -
+          4616
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoDMNContext.t
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          t
+        </td>
+      </tr><tr>
+        <td>
+          126
+        </td>
+        <td>
+          174
+        </td>
+        <td>
+          4643
+          -
+          4677
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.HashMap.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new java.util.HashMap[String,Object]()
+        </td>
+      </tr><tr>
+        <td>
+          126
+        </td>
+        <td>
+          175
+        </td>
+        <td>
+          4643
+          -
+          4677
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          java.util.HashMap.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          new java.util.HashMap[String,Object]()
+        </td>
+      </tr><tr>
+        <td>
+          128
+        </td>
+        <td>
+          176
+        </td>
+        <td>
+          4706
+          -
+          4723
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.Map.put
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          t.put(pathBit, n)
+        </td>
+      </tr><tr>
+        <td>
+          130
+        </td>
+        <td>
+          178
+        </td>
+        <td>
+          4758
+          -
+          4761
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoDMNContext.map
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          map
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          180
+        </td>
+        <td>
+          4847
+          -
+          4861
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          bits.size.==(1)
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          184
+        </td>
+        <td>
+          4863
+          -
+          4938
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  map.put(bits.head, data.asInstanceOf[Object]);
+  map
+}
+        </td>
+      </tr><tr>
+        <td>
+          136
+        </td>
+        <td>
+          181
+        </td>
+        <td>
+          4881
+          -
+          4890
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.head
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          bits.head
+        </td>
+      </tr><tr>
+        <td>
+          136
+        </td>
+        <td>
+          182
+        </td>
+        <td>
+          4892
+          -
+          4917
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          data.asInstanceOf[Object]
+        </td>
+      </tr><tr>
+        <td>
+          136
+        </td>
+        <td>
+          183
+        </td>
+        <td>
+          4873
+          -
+          4918
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.Map.put
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          map.put(bits.head, data.asInstanceOf[Object])
+        </td>
+      </tr><tr>
+        <td>
+          139
+        </td>
+        <td>
+          185
+        </td>
+        <td>
+          4966
+          -
+          4978
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.IterableLike.drop
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          bits.drop(1)
+        </td>
+      </tr><tr>
+        <td>
+          139
+        </td>
+        <td>
+          186
+        </td>
+        <td>
+          4988
+          -
+          4997
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IterableLike.head
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          bits.head
+        </td>
+      </tr><tr>
+        <td>
+          139
+        </td>
+        <td>
+          187
+        </td>
+        <td>
+          4980
+          -
+          5016
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          map.get(bits.head).asInstanceOf[com.sparkutils.dmn.kogito.Types.MAP]
+        </td>
+      </tr><tr>
+        <td>
+          139
+        </td>
+        <td>
+          188
+        </td>
+        <td>
+          4952
+          -
+          5017
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoDMNContext.updateContext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          updateContext(bits.drop(1), map.get(bits.head).asInstanceOf[com.sparkutils.dmn.kogito.Types.MAP])
+        </td>
+      </tr><tr>
+        <td>
+          139
+        </td>
+        <td>
+          189
+        </td>
+        <td>
+          4952
+          -
+          5017
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoDMNContext.updateContext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          updateContext(bits.drop(1), map.get(bits.head).asInstanceOf[com.sparkutils.dmn.kogito.Types.MAP])
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          190
+        </td>
+        <td>
+          5031
+          -
+          5040
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.IndexedSeqOptimized.head
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.refArrayOps[String](bits).head
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          191
+        </td>
+        <td>
+          5056
+          -
+          5068
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.IndexedSeqOptimized.drop
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.refArrayOps[String](bits).drop(1)
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          192
+        </td>
+        <td>
+          5056
+          -
+          5077
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.TraversableOnce.toVector
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.refArrayOps[String](scala.Predef.refArrayOps[String](bits).drop(1)).toVector
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          193
+        </td>
+        <td>
+          5042
+          -
+          5087
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoDMNContext.updateContext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          updateContext(scala.Predef.refArrayOps[String](scala.Predef.refArrayOps[String](bits).drop(1)).toVector, starter)
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          194
+        </td>
+        <td>
+          5023
+          -
+          5088
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.kie.dmn.api.core.DMNContext.set
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoDMNContext.this.ctx.set(scala.Predef.refArrayOps[String](bits).head, updateContext(scala.Predef.refArrayOps[String](scala.Predef.refArrayOps[String](bits).drop(1)).toVector, starter))
+        </td>
+      </tr><tr>
+        <td>
+          141
+        </td>
+        <td>
+          195
+        </td>
+        <td>
+          5030
+          -
+          5030
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          196
+        </td>
+        <td>
+          5313
+          -
+          5346
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.kie.dmn.api.core.DMNRuntime.getModel
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoDMNRuntime.this.runtime.getModel(namespace, name)
+        </td>
+      </tr><tr>
+        <td>
+          149
+        </td>
+        <td>
+          197
+        </td>
+        <td>
+          5355
+          -
+          5368
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.eq
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          model.eq(null)
+        </td>
+      </tr><tr>
+        <td>
+          149
+        </td>
+        <td>
+          200
+        </td>
+        <td>
+          5351
+          -
+          5351
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          149
+        </td>
+        <td>
+          201
+        </td>
+        <td>
+          5351
+          -
+          5351
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          150
+        </td>
+        <td>
+          198
+        </td>
+        <td>
+          5378
+          -
+          5506
+        </td>
+        <td>
+          Throw
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new com.sparkutils.dmn.DMNException(scala.StringContext.apply(&quot;Could not load model from Kogito runtime with namespace &quot;, &quot; and name &quot;, &quot; - {&quot;, &quot;}&quot;, &quot;&quot;).s(namespace, name, namespace, name))
+        </td>
+      </tr><tr>
+        <td>
+          150
+        </td>
+        <td>
+          199
+        </td>
+        <td>
+          5378
+          -
+          5506
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          throw new com.sparkutils.dmn.DMNException(scala.StringContext.apply(&quot;Could not load model from Kogito runtime with namespace &quot;, &quot; and name &quot;, &quot; - {&quot;, &quot;}&quot;, &quot;&quot;).s(namespace, name, namespace, name))
+        </td>
+      </tr><tr>
+        <td>
+          152
+        </td>
+        <td>
+          202
+        </td>
+        <td>
+          5539
+          -
+          5546
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoDMNRuntime.runtime
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoDMNRuntime.this.runtime
+        </td>
+      </tr><tr>
+        <td>
+          152
+        </td>
+        <td>
+          203
+        </td>
+        <td>
+          5517
+          -
+          5547
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoDMNModel.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoDMNModel.apply(model, KogitoDMNRuntime.this.runtime)
+        </td>
+      </tr><tr>
+        <td>
+          155
+        </td>
+        <td>
+          204
+        </td>
+        <td>
+          5600
+          -
+          5620
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.kie.dmn.api.core.DMNRuntime.newContext
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoDMNRuntime.this.runtime.newContext()
+        </td>
+      </tr><tr>
+        <td>
+          155
+        </td>
+        <td>
+          205
+        </td>
+        <td>
+          5583
+          -
+          5621
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoDMNContext.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoDMNContext.apply(KogitoDMNRuntime.this.runtime.newContext())
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>
