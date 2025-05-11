@@ -38,7 +38,7 @@ object Utils {
   private def doCast(boxed: Class[_], cast: Boolean) = {
     val box =
       if (boxed.isArray)
-        s"${boxed.componentType().getName}[]"
+        s"${boxed.getComponentType.getName}[]"
       else
         boxed.getName
 
