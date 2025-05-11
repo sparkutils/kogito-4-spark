@@ -317,7 +317,7 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
   )
   val odmnModel = DMNModelService(ons, ons, None, s"struct<evaluate: ${Others.ddl}>")
 
-  def testOneToOne[A: TypedEncoder](data: A, fields: scala.collection.immutable.Seq[DMNInputField]): Unit = forceInterpreted {
+  def testOneToOne[A: TypedEncoder](data: A, fields: scala.collection.immutable.Seq[DMNInputField]): Unit = evalCodeGens {
     implicit val spark = sparkSession
     val ds = TypedDataset.create(Seq(data)).dataset
 
