@@ -319,7 +319,8 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
 
   def testOneToOne[A: TypedEncoder](data: A, fields: scala.collection.immutable.Seq[DMNInputField]): Unit = evalCodeGens {
     implicit val spark = sparkSession
-    val ds = TypedDataset.create(Seq(data)).dataset
+    val tds = TypedDataset.create(Seq(data)).dataset
+    val ds = if (inCodegen) tds.repartition(4) else tds
 
     val exec = DMNExecution(odmnFiles, odmnModel, fields)
     val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec))

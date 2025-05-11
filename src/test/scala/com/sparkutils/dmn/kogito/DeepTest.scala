@@ -35,7 +35,7 @@ case class DebugQuality[A,B](quality: DebugResult[A,B]) extends Serializable
 case class Others(s: Option[String], l: Option[Long], b: Option[Boolean], d: Option[Double],
                   f: Option[Float], by: Option[Byte], bytes: Option[Array[Byte]],
                   sh: Option[Short], date: Option[LocalDate], dateTime: Option[LocalDateTime],
-                  m: Option[Map[Int, Int]], ar: Option[Seq[Int]]
+                  m: Option[Map[Int, Int]], ar: Option[Seq[Int]], bd: Option[java.math.BigDecimal]
                  ) extends Serializable {
   override def equals(obj: Any): Boolean = obj match {
     // precision isn't correct in frameless encoding
@@ -43,7 +43,7 @@ case class Others(s: Option[String], l: Option[Long], b: Option[Boolean], d: Opt
       s == o.s && l == o.l && b == o.b && d == o.d && f == o.f && by == o.by &&
         sh == o.sh && date == o.date &&
         optEqual(dateTime, o.dateTime)(_.truncatedTo(ChronoUnit.MICROS) == _.truncatedTo(ChronoUnit.MICROS)) &&
-        optEqual(bytes, o.bytes)(_ sameElements _)
+        optEqual(bytes, o.bytes)(_ sameElements _) && m == o.m && ar == o.ar
     case _ => false
   }
 }
@@ -81,7 +81,7 @@ class DeepTest extends FunSuite with Matchers with TestUtils {
 
   def dataBasis[A,B](maps: Seq[Map[A,B]]): Seq[Wrapper[A, B]] = maps.zipWithIndex.map{ case (m, i) =>
     Wrapper(
-      Top(i.toString, Seq("a","b","c","d").map(_+i.toString), Seq(Deep(i.toString, Some(java.math.BigDecimal.valueOf(1.0)), Pair(true, true), m)))
+      Top(i.toString, Seq("a","b","c","d").map(_+i.toString), Seq(Deep(i.toString, Others.bd, Pair(true, true), m)))
   )}
 
   def testResults[A: RecordFieldEncoder, B: RecordFieldEncoder, R: TypedEncoder](maps: Seq[Map[A,B]], mapType: String, outputProvider: String, dmnFiles: Seq[DMNFile], deriveContextTypes: Boolean = false, debug: Boolean = false, useTreeMap: Boolean = false, fullProxyDS: Boolean = true): Seq[R] = {
@@ -448,7 +448,8 @@ class DeepTest extends FunSuite with Matchers with TestUtils {
 
 object Others {
   val ddl = s"struct<s: String, l: Long, b: Boolean, d: Double, f: Float, " +
-    s"by: Byte, bytes: Binary, sh: Short, date: Date, dateTime: timestamp, m: Map<int,int>, ar: array<int>>"
+    s"by: Byte, bytes: Binary, sh: Short, date: Date, dateTime: timestamp, " +
+    s"m: Map<int,int>, ar: array<int>, bd: decimal(10,1)>"
 
   val fields = scala.collection.immutable.Seq(
     DMNInputField("s", "", "inputData.s"),
@@ -463,6 +464,7 @@ object Others {
     DMNInputField("dateTime", "", "inputData.dateTime"),
     DMNInputField("m", "", "inputData.m"),
     DMNInputField("ar", "", "inputData.ar"),
+    DMNInputField("bd", "", "inputData.bd"),
   )
 
   val struct = scala.collection.immutable.Seq(
@@ -472,7 +474,10 @@ object Others {
   val date = LocalDate.now()
   val dateTime = LocalDateTime.now(ZoneOffset.UTC)
 
-  val nulls = Others(None,None,None,None,None,None,None,None,None,None,None,None)
+  val bd = Some(java.math.BigDecimal.valueOf(1.0))
+
+  val nulls = Others(None,None,None,None,None,None,None,None,None,None,None,None,None)
   val vals = Others(Some(""),Some(1l),Some(true),Some(0.2),Some(0.2f),Some(0),
-    Some(Array(0: Byte)),Some(1),Some(date), Some(dateTime), Some(Map(1 -> 1)), Some(Array(1,2)))
+    Some(Array(0: Byte)),Some(1),Some(date), Some(dateTime), Some(Map(1 -> 1)), Some(Array(1,2)),
+    bd)
 }
