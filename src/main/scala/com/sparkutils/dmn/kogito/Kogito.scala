@@ -4,7 +4,9 @@ import com.sparkutils.dmn._
 import com.sparkutils.dmn.impl._
 import com.sparkutils.dmn.impl.utils.configMap
 import com.sparkutils.dmn.kogito.ContextProviders.contextProviderFromDDL
+import com.sparkutils.dmn.kogito.Errors.CONTEXT_PROVIDER_PARSE
 import com.sparkutils.dmn.kogito.Types.MAP
+import org.apache.spark.sql.catalyst.parser.ParseException
 import org.apache.spark.sql.types.{DataType, StructType}
 import org.kie.dmn.core.internal.utils.DMNRuntimeBuilder
 import org.kie.internal.io.ResourceFactory
@@ -58,7 +60,11 @@ class KogitoDMNRepository() extends DMNRepository {
   override def supportsDecisionService: Boolean = true
 
   override def providerForType(inputField: DMNInputField, debug: Boolean, dmnConfiguration: DMNConfiguration): DMNContextProvider[_] = {
-    val (path, expr) = (KogitoDMNContextPath(inputField.contextPath), inputField.defaultExpr)
+    val (path, expr) = try {
+      (KogitoDMNContextPath(inputField.contextPath), inputField.defaultExpr)
+    } catch {
+      case p: ParseException => throw DMNException(s"$CONTEXT_PROVIDER_PARSE : ${inputField.fieldExpression}", p)
+    }
 
     val config = configMap(dmnConfiguration)
 
@@ -167,3 +173,7 @@ case class KogitoMessage(sourceId: String, sourceReference: String, exception: S
  * @param messages
  */
 case class KogitoResult(decisionId: String, decisionName: String, hasErrors: Boolean, messages: Seq[KogitoMessage], evaluationStatus: String) extends Serializable
+
+object Errors {
+  val CONTEXT_PROVIDER_PARSE = "FieldExpression is invalid SQL"
+}
