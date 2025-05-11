@@ -209,6 +209,10 @@
             <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
         </repository>
         <repository>
+            <id>ossrh_rel</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/releases/</url>
+        </repository>
+        <repository>
             <id>apache_snaps</id>
             <url>https://repository.apache.org/content/repositories/snapshots/</url>
         </repository>
