@@ -2,7 +2,7 @@ package com.sparkutils.dmn.kogito
 
 import com.sparkutils.dmn.kogito.types.ResultInterfaces.{SUCCEEDED, evalStatusEnding}
 import com.sparkutils.dmn.{DMNExecution, DMNFile, DMNInputField, DMNModelService}
-import frameless.TypedExpressionEncoder
+import frameless.{TypedDataset, TypedEncoder, TypedExpressionEncoder}
 import org.apache.spark.sql.{DataFrame, SaveMode}
 import org.junit.runner.RunWith
 import org.scalatest.{FunSuite, Matchers}
@@ -306,6 +306,42 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
       scala.collection.immutable.Seq(
         DMNInputField("struct(*)", "", "testData")
       ))
+  }
+
+  val ons = "onetoone"
+
+  val odmnFiles = scala.collection.immutable.Seq(
+    DMNFile("onetoone.dmn",
+      this.getClass.getClassLoader.getResourceAsStream("onetoone.dmn").readAllBytes()
+    )
+  )
+  val odmnModel = DMNModelService(ons, ons, None, s"struct<evaluate: ${Others.ddl}>")
+
+  def testOneToOne[A: TypedEncoder](data: A, fields: scala.collection.immutable.Seq[DMNInputField]): Unit = forceInterpreted {
+    implicit val spark = sparkSession
+    val ds = TypedDataset.create(Seq(data)).dataset
+
+    val exec = DMNExecution(odmnFiles, odmnModel, fields)
+    val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec))
+    val asSeqs = dres.select("quality.evaluate.*").as[A](TypedExpressionEncoder[A]).collect()
+    asSeqs.length shouldBe 1
+    asSeqs.head shouldBe data
+  }
+
+  test("top fields others nulls - straight through") {
+    testOneToOne(Others.nulls, Others.fields)
+  }
+
+  test("top fields others - straight through") {
+    testOneToOne(Others.vals, Others.fields)
+  }
+
+  test("top struct others nulls - straight through") {
+    testOneToOne(Others.nulls, Others.struct)
+  }
+
+  test("top struct others - straight through") {
+    testOneToOne(Others.vals, Others.struct)
   }
 
 }

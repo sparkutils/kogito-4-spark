@@ -34,7 +34,9 @@ case class DebugQuality[A,B](quality: DebugResult[A,B]) extends Serializable
 
 case class Others(s: Option[String], l: Option[Long], b: Option[Boolean], d: Option[Double],
                   f: Option[Float], by: Option[Byte], bytes: Option[Array[Byte]],
-                  sh: Option[Short], date: Option[LocalDate], dateTime: Option[LocalDateTime]) extends Serializable {
+                  sh: Option[Short], date: Option[LocalDate], dateTime: Option[LocalDateTime],
+                  m: Option[Map[Int, Int]], ar: Option[Seq[Int]]
+                 ) extends Serializable {
   override def equals(obj: Any): Boolean = obj match {
     // precision isn't correct in frameless encoding
     case o: Others =>
@@ -435,16 +437,42 @@ class DeepTest extends FunSuite with Matchers with TestUtils {
 
     implicit val oenc = TypedEncoder[Others]
 
-    val date = LocalDate.now()
-    val dateTime = LocalDateTime.now(ZoneOffset.UTC)
-
-    testDebugStructs(s"<String, struct<s: String, l: Long, b: Boolean, d: Double, f: Float, " +
-      s"by: Byte, bytes: Binary, sh: Short, date: Date, dateTime: timestamp>>",  (1 to 5). map( i => Map(
-      s"a$i" -> Others(None,None,None,None,None,None,None,None,None, None),
-      s"b$i" -> Others(Some(""),Some(1l),Some(true),Some(0.2),Some(0.2f),Some(0),
-        Some(Array(0: Byte)),Some(1),Some(date), Some(dateTime)),
+    testDebugStructs(s"<String, ${Others.ddl}>",  (1 to 5). map( i => Map(
+      s"a$i" -> Others.nulls,
+      s"b$i" -> Others.vals,
     )),
       fullProxyDS = false, deriveContextTypes = true)
   }
 
+}
+
+object Others {
+  val ddl = s"struct<s: String, l: Long, b: Boolean, d: Double, f: Float, " +
+    s"by: Byte, bytes: Binary, sh: Short, date: Date, dateTime: timestamp, m: Map<int,int>, ar: array<int>>"
+
+  val fields = scala.collection.immutable.Seq(
+    DMNInputField("s", "", "inputData.s"),
+    DMNInputField("l", "", "inputData.l"),
+    DMNInputField("b", "", "inputData.b"),
+    DMNInputField("d", "", "inputData.d"),
+    DMNInputField("f", "", "inputData.f"),
+    DMNInputField("by", "", "inputData.by"),
+    DMNInputField("bytes", "", "inputData.bytes"),
+    DMNInputField("sh", "", "inputData.sh"),
+    DMNInputField("date", "", "inputData.date"),
+    DMNInputField("dateTime", "", "inputData.dateTime"),
+    DMNInputField("m", "", "inputData.m"),
+    DMNInputField("ar", "", "inputData.ar"),
+  )
+
+  val struct = scala.collection.immutable.Seq(
+    DMNInputField("struct(*)", "", "inputData"),
+  )
+
+  val date = LocalDate.now()
+  val dateTime = LocalDateTime.now(ZoneOffset.UTC)
+
+  val nulls = Others(None,None,None,None,None,None,None,None,None,None,None,None)
+  val vals = Others(Some(""),Some(1l),Some(true),Some(0.2),Some(0.2f),Some(0),
+    Some(Array(0: Byte)),Some(1),Some(date), Some(dateTime), Some(Map(1 -> 1)), Some(Array(1,2)))
 }
