@@ -4,7 +4,7 @@ import com.globalmentor.apache.hadoop.fs.BareLocalFileSystem
 import frameless.TypedEncoder
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.expressions.Expression
-import org.apache.spark.sql.catalyst.expressions.objects.StaticInvoke
+import org.apache.spark.sql.shim.StaticInvoke4
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.types.{DataType, DateType, ObjectType, TimestampNTZType, TimestampType}
 import org.junit.Before
@@ -121,7 +121,7 @@ trait TestUtils {
     def catalystRepr: DataType = DateType
 
     def toCatalyst(path: Expression): Expression =
-      StaticInvoke(
+      StaticInvoke4(
         DateTimeUtils.getClass,
         DateType,
         "localDateToDays",
@@ -129,7 +129,7 @@ trait TestUtils {
         returnNullable = false)
 
     def fromCatalyst(path: Expression): Expression =
-      StaticInvoke(
+      StaticInvoke4(
         DateTimeUtils.getClass,
         ObjectType(classOf[java.time.LocalDate]),
         "daysToLocalDate",
@@ -145,7 +145,7 @@ trait TestUtils {
       def catalystRepr: DataType = TimestampType
 
       def toCatalyst(path: Expression): Expression =
-        StaticInvoke(
+        StaticInvoke4(
           DateTimeUtils.getClass,
           TimestampNTZType,
           "localDateTimeToMicros",
@@ -153,7 +153,7 @@ trait TestUtils {
           returnNullable = false)
 
       def fromCatalyst(path: Expression): Expression =
-        StaticInvoke(
+        StaticInvoke4(
           DateTimeUtils.getClass,
           ObjectType(classOf[java.time.LocalDateTime]),
           "microsToLocalDateTime",
