@@ -250,7 +250,7 @@
 </span>226 <span style=''></span><span style='background: #AEF1AE'>        expr.copy(
 </span>227 <span style=''></span><span style='background: #AEF1AE'>          code =
 </span>228 <span style=''></span><span style='background: #AEF1AE'>            code&quot;&quot;&quot;
-</span>229 <span style=''></span><span style='background: #AEF1AE'>              ${CodeGenerator.javaType(dataType)} $arr = ${if (topLevel) </span><span style='background: #F0ADAD'>pathName</span><span style='background: #AEF1AE'> else s&quot;$pathName.getArray($iName)&quot;};
+</span>229 <span style=''></span><span style='background: #AEF1AE'>              ${CodeGenerator.javaType(dataType)} $arr = ${if (topLevel) pathName else s&quot;$pathName.getArray($iName)&quot;};
 </span>230 <span style=''></span><span style='background: #AEF1AE'>              boolean ${expr.isNull} = ($arr == null);
 </span>231 <span style=''></span><span style='background: #AEF1AE'>              java.util.List ${expr.value} = null;
 </span>232 <span style=''></span><span style='background: #AEF1AE'>              if (!${expr.isNull}) {
@@ -284,7 +284,7 @@
 </span>260 <span style=''></span><span style='background: #AEF1AE'>        expr.copy(
 </span>261 <span style=''></span><span style='background: #AEF1AE'>          code =
 </span>262 <span style=''></span><span style='background: #AEF1AE'>            code&quot;&quot;&quot;
-</span>263 <span style=''></span><span style='background: #AEF1AE'>              ${CodeGenerator.javaType(dataType)} $map = ${if (topLevel) </span><span style='background: #F0ADAD'>pathName</span><span style='background: #AEF1AE'> else s&quot;$pathName.getMap($iName)&quot;};
+</span>263 <span style=''></span><span style='background: #AEF1AE'>              ${CodeGenerator.javaType(dataType)} $map = ${if (topLevel) pathName else s&quot;$pathName.getMap($iName)&quot;};
 </span>264 <span style=''></span><span style='background: #AEF1AE'>              boolean ${expr.isNull} = ($map == null);
 </span>265 <span style=''></span><span style='background: #AEF1AE'>              java.util.Map ${expr.value} = null;
 </span>266 <span style=''></span><span style='background: #AEF1AE'>              if (!${expr.isNull}) {
@@ -6374,7 +6374,7 @@ else
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           pathName
         </td>
       </tr><tr>
@@ -7360,7 +7360,7 @@ else
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           pathName
         </td>
       </tr><tr>

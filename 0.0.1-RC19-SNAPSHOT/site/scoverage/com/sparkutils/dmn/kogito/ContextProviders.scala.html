@@ -119,16 +119,16 @@
 </span>95 <span style=''>      case ShortType =&gt; </span><span style='background: #AEF1AE'>SimpleContextProvider[Short](path, stillSetWhenNull, expr)</span><span style=''>
 </span>96 <span style=''>      case DateType =&gt; </span><span style='background: #AEF1AE'>SimpleContextProvider[LocalDate](path, stillSetWhenNull, expr,
 </span>97 <span style=''></span><span style='background: #AEF1AE'>        Some(((t: Any) =&gt; DateTimeUtils.daysToLocalDate(t.asInstanceOf[Int]),
-</span>98 <span style=''></span><span style='background: #AEF1AE'>          (codegen, input) =&gt; </span><span style='background: #F0ADAD'>s&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate((int)$input)&quot;</span><span style='background: #AEF1AE'>))
+</span>98 <span style=''></span><span style='background: #AEF1AE'>          (codegen, input) =&gt; s&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate((int)$input)&quot;))
 </span>99 <span style=''></span><span style='background: #AEF1AE'>      )</span><span style=''> // an int
 </span>100 <span style=''>      case TimestampType | TimestampNTZType =&gt; </span><span style='background: #AEF1AE'>SimpleContextProvider[LocalDateTime](path, stillSetWhenNull, expr,
 </span>101 <span style=''></span><span style='background: #AEF1AE'>        Some(((t: Any) =&gt; DateTimeUtils.microsToLocalDateTime(t.asInstanceOf[Long]),
-</span>102 <span style=''></span><span style='background: #AEF1AE'>          (codegen, input) =&gt; </span><span style='background: #F0ADAD'>s&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime((long)$input)&quot;</span><span style='background: #AEF1AE'>))
+</span>102 <span style=''></span><span style='background: #AEF1AE'>          (codegen, input) =&gt; s&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime((long)$input)&quot;))
 </span>103 <span style=''></span><span style='background: #AEF1AE'>      )</span><span style=''> // a long
-</span>104 <span style=''>      case _: DecimalType =&gt; </span><span style='background: #F0ADAD'>SimpleContextProvider[java.math.BigDecimal](path, stillSetWhenNull, expr,
-</span>105 <span style=''></span><span style='background: #F0ADAD'>        Some(((t: Any) =&gt; t.asInstanceOf[Decimal].toJavaBigDecimal,
-</span>106 <span style=''></span><span style='background: #F0ADAD'>          (codegen, input) =&gt; s&quot;((${classOf[Decimal].getName})$input).toJavaBigDecimal()&quot;))
-</span>107 <span style=''></span><span style='background: #F0ADAD'>      )</span><span style=''>
+</span>104 <span style=''>      case _: DecimalType =&gt; </span><span style='background: #AEF1AE'>SimpleContextProvider[java.math.BigDecimal](path, stillSetWhenNull, expr,
+</span>105 <span style=''></span><span style='background: #AEF1AE'>        Some(((t: Any) =&gt; t.asInstanceOf[Decimal].toJavaBigDecimal,
+</span>106 <span style=''></span><span style='background: #AEF1AE'>          (codegen, input) =&gt; s&quot;((${classOf[Decimal].getName})$input).toJavaBigDecimal()&quot;))
+</span>107 <span style=''></span><span style='background: #AEF1AE'>      )</span><span style=''>
 </span>108 <span style=''>      case structType: StructType =&gt; </span><span style='background: #AEF1AE'>ContextInterfaces.structProvider(structType, path, expr, stillSetWhenNull, config)</span><span style=''>
 </span>109 <span style=''>      case mapType: MapType =&gt; </span><span style='background: #AEF1AE'>ContextInterfaces.mapProvider(mapType, path, expr, stillSetWhenNull, config)</span><span style=''>
 </span>110 <span style=''>      case arrayType: ArrayType =&gt; </span><span style='background: #AEF1AE'>ContextInterfaces.arrayProvider(arrayType, path, expr, stillSetWhenNull, config)</span><span style=''>
@@ -1730,7 +1730,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           scala.StringContext.apply(&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate((int)&quot;, &quot;)&quot;).s(input)
         </td>
       </tr><tr>
@@ -1898,7 +1898,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           scala.StringContext.apply(&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime((long)&quot;, &quot;)&quot;).s(input)
         </td>
       </tr><tr>
@@ -1922,7 +1922,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.SimpleContextProvider.apply[java.math.BigDecimal](path, stillSetWhenNull, expr, scala.Some.apply[(Any =&gt; java.math.BigDecimal, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String)](scala.Tuple2.apply[Any =&gt; java.math.BigDecimal, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String](((t: Any) =&gt; t.asInstanceOf[org.apache.spark.sql.types.Decimal].toJavaBigDecimal), ((codegen: org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, input: String) =&gt; scala.StringContext.apply(&quot;((&quot;, &quot;)&quot;, &quot;).toJavaBigDecimal()&quot;).s(classOf[org.apache.spark.sql.types.Decimal].getName(), input)))))((ClassTag.apply[java.math.BigDecimal](classOf[java.math.BigDecimal]): scala.reflect.ClassTag[java.math.BigDecimal]))
         </td>
       </tr><tr>
@@ -1946,7 +1946,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.SimpleContextProvider.apply[java.math.BigDecimal](path, stillSetWhenNull, expr, scala.Some.apply[(Any =&gt; java.math.BigDecimal, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String)](scala.Tuple2.apply[Any =&gt; java.math.BigDecimal, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String](((t: Any) =&gt; t.asInstanceOf[org.apache.spark.sql.types.Decimal].toJavaBigDecimal), ((codegen: org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, input: String) =&gt; scala.StringContext.apply(&quot;((&quot;, &quot;)&quot;, &quot;).toJavaBigDecimal()&quot;).s(classOf[org.apache.spark.sql.types.Decimal].getName(), input)))))((ClassTag.apply[java.math.BigDecimal](classOf[java.math.BigDecimal]): scala.reflect.ClassTag[java.math.BigDecimal]))
         </td>
       </tr><tr>
@@ -1970,7 +1970,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           t.asInstanceOf[org.apache.spark.sql.types.Decimal].toJavaBigDecimal
         </td>
       </tr><tr>
@@ -1994,7 +1994,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           scala.Tuple2.apply[Any =&gt; java.math.BigDecimal, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String](((t: Any) =&gt; t.asInstanceOf[org.apache.spark.sql.types.Decimal].toJavaBigDecimal), ((codegen: org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, input: String) =&gt; scala.StringContext.apply(&quot;((&quot;, &quot;)&quot;, &quot;).toJavaBigDecimal()&quot;).s(classOf[org.apache.spark.sql.types.Decimal].getName(), input)))
         </td>
       </tr><tr>
@@ -2018,7 +2018,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           scala.Some.apply[(Any =&gt; java.math.BigDecimal, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String)](scala.Tuple2.apply[Any =&gt; java.math.BigDecimal, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String](((t: Any) =&gt; t.asInstanceOf[org.apache.spark.sql.types.Decimal].toJavaBigDecimal), ((codegen: org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, input: String) =&gt; scala.StringContext.apply(&quot;((&quot;, &quot;)&quot;, &quot;).toJavaBigDecimal()&quot;).s(classOf[org.apache.spark.sql.types.Decimal].getName(), input))))
         </td>
       </tr><tr>
@@ -2042,7 +2042,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           &quot;((&quot;
         </td>
       </tr><tr>
@@ -2066,7 +2066,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           &quot;)&quot;
         </td>
       </tr><tr>
@@ -2090,7 +2090,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           &quot;).toJavaBigDecimal()&quot;
         </td>
       </tr><tr>
@@ -2114,7 +2114,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           classOf[org.apache.spark.sql.types.Decimal].getName()
         </td>
       </tr><tr>
@@ -2138,7 +2138,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           scala.StringContext.apply(&quot;((&quot;, &quot;)&quot;, &quot;).toJavaBigDecimal()&quot;).s(classOf[org.apache.spark.sql.types.Decimal].getName(), input)
         </td>
       </tr><tr>
