@@ -111,27 +111,27 @@
 </span>87 <span style=''>      case StringType =&gt; </span><span style='background: #AEF1AE'>StringContextProvider(path, stillSetWhenNull, expr)</span><span style=''>
 </span>88 <span style=''>      case IntegerType =&gt; </span><span style='background: #AEF1AE'>SimpleContextProvider[Integer](path, stillSetWhenNull, expr)</span><span style=''>
 </span>89 <span style=''>      case LongType =&gt; </span><span style='background: #AEF1AE'>SimpleContextProvider[Long](path, stillSetWhenNull, expr)</span><span style=''>
-</span>90 <span style=''>      case BooleanType =&gt; </span><span style='background: #F0ADAD'>SimpleContextProvider[Boolean](path, stillSetWhenNull, expr)</span><span style=''>
-</span>91 <span style=''>      case DoubleType =&gt; </span><span style='background: #F0ADAD'>SimpleContextProvider[Double](path, stillSetWhenNull, expr)</span><span style=''>
-</span>92 <span style=''>      case FloatType =&gt; </span><span style='background: #F0ADAD'>SimpleContextProvider[Float](path, stillSetWhenNull, expr)</span><span style=''>
-</span>93 <span style=''>      case BinaryType =&gt; </span><span style='background: #F0ADAD'>SimpleContextProvider[Array[Byte]](path, stillSetWhenNull, expr)</span><span style=''>
-</span>94 <span style=''>      case ByteType =&gt; </span><span style='background: #F0ADAD'>SimpleContextProvider[Byte](path, stillSetWhenNull, expr)</span><span style=''>
-</span>95 <span style=''>      case ShortType =&gt; </span><span style='background: #F0ADAD'>SimpleContextProvider[Short](path, stillSetWhenNull, expr)</span><span style=''>
-</span>96 <span style=''>      case DateType =&gt; </span><span style='background: #F0ADAD'>SimpleContextProvider[LocalDate](path, stillSetWhenNull, expr,
-</span>97 <span style=''></span><span style='background: #F0ADAD'>        Some(((t: Any) =&gt; DateTimeUtils.daysToLocalDate(t.asInstanceOf[Int]),
-</span>98 <span style=''></span><span style='background: #F0ADAD'>          (codegen, input) =&gt; s&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate((int)$input)&quot;))
-</span>99 <span style=''></span><span style='background: #F0ADAD'>      )</span><span style=''> // an int
-</span>100 <span style=''>      case TimestampType | TimestampNTZType =&gt; </span><span style='background: #F0ADAD'>SimpleContextProvider[LocalDateTime](path, stillSetWhenNull, expr,
-</span>101 <span style=''></span><span style='background: #F0ADAD'>        Some(((t: Any) =&gt; DateTimeUtils.microsToLocalDateTime(t.asInstanceOf[Long]),
-</span>102 <span style=''></span><span style='background: #F0ADAD'>          (codegen, input) =&gt; s&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime((long)$input)&quot;))
-</span>103 <span style=''></span><span style='background: #F0ADAD'>      )</span><span style=''> // a long
+</span>90 <span style=''>      case BooleanType =&gt; </span><span style='background: #AEF1AE'>SimpleContextProvider[Boolean](path, stillSetWhenNull, expr)</span><span style=''>
+</span>91 <span style=''>      case DoubleType =&gt; </span><span style='background: #AEF1AE'>SimpleContextProvider[Double](path, stillSetWhenNull, expr)</span><span style=''>
+</span>92 <span style=''>      case FloatType =&gt; </span><span style='background: #AEF1AE'>SimpleContextProvider[Float](path, stillSetWhenNull, expr)</span><span style=''>
+</span>93 <span style=''>      case BinaryType =&gt; </span><span style='background: #AEF1AE'>SimpleContextProvider[Array[Byte]](path, stillSetWhenNull, expr)</span><span style=''>
+</span>94 <span style=''>      case ByteType =&gt; </span><span style='background: #AEF1AE'>SimpleContextProvider[Byte](path, stillSetWhenNull, expr)</span><span style=''>
+</span>95 <span style=''>      case ShortType =&gt; </span><span style='background: #AEF1AE'>SimpleContextProvider[Short](path, stillSetWhenNull, expr)</span><span style=''>
+</span>96 <span style=''>      case DateType =&gt; </span><span style='background: #AEF1AE'>SimpleContextProvider[LocalDate](path, stillSetWhenNull, expr,
+</span>97 <span style=''></span><span style='background: #AEF1AE'>        Some(((t: Any) =&gt; DateTimeUtils.daysToLocalDate(t.asInstanceOf[Int]),
+</span>98 <span style=''></span><span style='background: #AEF1AE'>          (codegen, input) =&gt; </span><span style='background: #F0ADAD'>s&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate((int)$input)&quot;</span><span style='background: #AEF1AE'>))
+</span>99 <span style=''></span><span style='background: #AEF1AE'>      )</span><span style=''> // an int
+</span>100 <span style=''>      case TimestampType | TimestampNTZType =&gt; </span><span style='background: #AEF1AE'>SimpleContextProvider[LocalDateTime](path, stillSetWhenNull, expr,
+</span>101 <span style=''></span><span style='background: #AEF1AE'>        Some(((t: Any) =&gt; DateTimeUtils.microsToLocalDateTime(t.asInstanceOf[Long]),
+</span>102 <span style=''></span><span style='background: #AEF1AE'>          (codegen, input) =&gt; </span><span style='background: #F0ADAD'>s&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime((long)$input)&quot;</span><span style='background: #AEF1AE'>))
+</span>103 <span style=''></span><span style='background: #AEF1AE'>      )</span><span style=''> // a long
 </span>104 <span style=''>      case _: DecimalType =&gt; </span><span style='background: #F0ADAD'>SimpleContextProvider[java.math.BigDecimal](path, stillSetWhenNull, expr,
 </span>105 <span style=''></span><span style='background: #F0ADAD'>        Some(((t: Any) =&gt; t.asInstanceOf[Decimal].toJavaBigDecimal,
 </span>106 <span style=''></span><span style='background: #F0ADAD'>          (codegen, input) =&gt; s&quot;((${classOf[Decimal].getName})$input).toJavaBigDecimal()&quot;))
 </span>107 <span style=''></span><span style='background: #F0ADAD'>      )</span><span style=''>
 </span>108 <span style=''>      case structType: StructType =&gt; </span><span style='background: #AEF1AE'>ContextInterfaces.structProvider(structType, path, expr, stillSetWhenNull, config)</span><span style=''>
-</span>109 <span style=''>      case mapType: MapType =&gt; </span><span style='background: #F0ADAD'>ContextInterfaces.mapProvider(mapType, path, expr, stillSetWhenNull, config)</span><span style=''>
-</span>110 <span style=''>      case arrayType: ArrayType =&gt; </span><span style='background: #F0ADAD'>ContextInterfaces.arrayProvider(arrayType, path, expr, stillSetWhenNull, config)</span><span style=''>
+</span>109 <span style=''>      case mapType: MapType =&gt; </span><span style='background: #AEF1AE'>ContextInterfaces.mapProvider(mapType, path, expr, stillSetWhenNull, config)</span><span style=''>
+</span>110 <span style=''>      case arrayType: ArrayType =&gt; </span><span style='background: #AEF1AE'>ContextInterfaces.arrayProvider(arrayType, path, expr, stillSetWhenNull, config)</span><span style=''>
 </span>111 <span style=''>      // calendar interval?
 </span>112 <span style=''>      case t =&gt; </span><span style='background: #F0ADAD'>throw new DMNException(s&quot;Provider type $t is not supported&quot;)</span><span style=''>
 </span>113 <span style=''>    }
@@ -1154,7 +1154,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$4[Boolean]
         </td>
       </tr><tr>
@@ -1178,7 +1178,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.SimpleContextProvider.apply[Boolean](path, stillSetWhenNull, expr, com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$4[Boolean])((ClassTag.Boolean: scala.reflect.ClassTag[Boolean]))
         </td>
       </tr><tr>
@@ -1202,7 +1202,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.SimpleContextProvider.apply[Boolean](path, stillSetWhenNull, expr, com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$4[Boolean])((ClassTag.Boolean: scala.reflect.ClassTag[Boolean]))
         </td>
       </tr><tr>
@@ -1226,7 +1226,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$4[Double]
         </td>
       </tr><tr>
@@ -1250,7 +1250,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.SimpleContextProvider.apply[Double](path, stillSetWhenNull, expr, com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$4[Double])((ClassTag.Double: scala.reflect.ClassTag[Double]))
         </td>
       </tr><tr>
@@ -1274,7 +1274,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.SimpleContextProvider.apply[Double](path, stillSetWhenNull, expr, com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$4[Double])((ClassTag.Double: scala.reflect.ClassTag[Double]))
         </td>
       </tr><tr>
@@ -1298,7 +1298,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$4[Float]
         </td>
       </tr><tr>
@@ -1322,7 +1322,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.SimpleContextProvider.apply[Float](path, stillSetWhenNull, expr, com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$4[Float])((ClassTag.Float: scala.reflect.ClassTag[Float]))
         </td>
       </tr><tr>
@@ -1346,7 +1346,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.SimpleContextProvider.apply[Float](path, stillSetWhenNull, expr, com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$4[Float])((ClassTag.Float: scala.reflect.ClassTag[Float]))
         </td>
       </tr><tr>
@@ -1370,7 +1370,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$4[Array[Byte]]
         </td>
       </tr><tr>
@@ -1394,7 +1394,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.SimpleContextProvider.apply[Array[Byte]](path, stillSetWhenNull, expr, com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$4[Array[Byte]])((ClassTag.apply[Array[Byte]](scala.runtime.ScalaRunTime.arrayClass(classOf[scala.Byte])): scala.reflect.ClassTag[Array[Byte]]))
         </td>
       </tr><tr>
@@ -1418,7 +1418,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.SimpleContextProvider.apply[Array[Byte]](path, stillSetWhenNull, expr, com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$4[Array[Byte]])((ClassTag.apply[Array[Byte]](scala.runtime.ScalaRunTime.arrayClass(classOf[scala.Byte])): scala.reflect.ClassTag[Array[Byte]]))
         </td>
       </tr><tr>
@@ -1442,7 +1442,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$4[Byte]
         </td>
       </tr><tr>
@@ -1466,7 +1466,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.SimpleContextProvider.apply[Byte](path, stillSetWhenNull, expr, com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$4[Byte])((ClassTag.Byte: scala.reflect.ClassTag[Byte]))
         </td>
       </tr><tr>
@@ -1490,7 +1490,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.SimpleContextProvider.apply[Byte](path, stillSetWhenNull, expr, com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$4[Byte])((ClassTag.Byte: scala.reflect.ClassTag[Byte]))
         </td>
       </tr><tr>
@@ -1514,7 +1514,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$4[Short]
         </td>
       </tr><tr>
@@ -1538,7 +1538,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.SimpleContextProvider.apply[Short](path, stillSetWhenNull, expr, com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$4[Short])((ClassTag.Short: scala.reflect.ClassTag[Short]))
         </td>
       </tr><tr>
@@ -1562,7 +1562,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.SimpleContextProvider.apply[Short](path, stillSetWhenNull, expr, com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$4[Short])((ClassTag.Short: scala.reflect.ClassTag[Short]))
         </td>
       </tr><tr>
@@ -1586,7 +1586,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.SimpleContextProvider.apply[java.time.LocalDate](path, stillSetWhenNull, expr, scala.Some.apply[(Any =&gt; java.time.LocalDate, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String)](scala.Tuple2.apply[Any =&gt; java.time.LocalDate, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String](((t: Any) =&gt; org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate(t.asInstanceOf[Int])), ((codegen: org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, input: String) =&gt; scala.StringContext.apply(&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate((int)&quot;, &quot;)&quot;).s(input)))))((ClassTag.apply[java.time.LocalDate](classOf[java.time.LocalDate]): scala.reflect.ClassTag[java.time.LocalDate]))
         </td>
       </tr><tr>
@@ -1610,7 +1610,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.SimpleContextProvider.apply[java.time.LocalDate](path, stillSetWhenNull, expr, scala.Some.apply[(Any =&gt; java.time.LocalDate, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String)](scala.Tuple2.apply[Any =&gt; java.time.LocalDate, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String](((t: Any) =&gt; org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate(t.asInstanceOf[Int])), ((codegen: org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, input: String) =&gt; scala.StringContext.apply(&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate((int)&quot;, &quot;)&quot;).s(input)))))((ClassTag.apply[java.time.LocalDate](classOf[java.time.LocalDate]): scala.reflect.ClassTag[java.time.LocalDate]))
         </td>
       </tr><tr>
@@ -1634,7 +1634,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           t.asInstanceOf[Int]
         </td>
       </tr><tr>
@@ -1658,7 +1658,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate(t.asInstanceOf[Int])
         </td>
       </tr><tr>
@@ -1682,7 +1682,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           scala.Tuple2.apply[Any =&gt; java.time.LocalDate, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String](((t: Any) =&gt; org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate(t.asInstanceOf[Int])), ((codegen: org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, input: String) =&gt; scala.StringContext.apply(&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate((int)&quot;, &quot;)&quot;).s(input)))
         </td>
       </tr><tr>
@@ -1706,7 +1706,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           scala.Some.apply[(Any =&gt; java.time.LocalDate, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String)](scala.Tuple2.apply[Any =&gt; java.time.LocalDate, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String](((t: Any) =&gt; org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate(t.asInstanceOf[Int])), ((codegen: org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, input: String) =&gt; scala.StringContext.apply(&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate((int)&quot;, &quot;)&quot;).s(input))))
         </td>
       </tr><tr>
@@ -1754,7 +1754,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.SimpleContextProvider.apply[java.time.LocalDateTime](path, stillSetWhenNull, expr, scala.Some.apply[(Any =&gt; java.time.LocalDateTime, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String)](scala.Tuple2.apply[Any =&gt; java.time.LocalDateTime, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String](((t: Any) =&gt; org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime(t.asInstanceOf[Long])), ((codegen: org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, input: String) =&gt; scala.StringContext.apply(&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime((long)&quot;, &quot;)&quot;).s(input)))))((ClassTag.apply[java.time.LocalDateTime](classOf[java.time.LocalDateTime]): scala.reflect.ClassTag[java.time.LocalDateTime]))
         </td>
       </tr><tr>
@@ -1778,7 +1778,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.SimpleContextProvider.apply[java.time.LocalDateTime](path, stillSetWhenNull, expr, scala.Some.apply[(Any =&gt; java.time.LocalDateTime, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String)](scala.Tuple2.apply[Any =&gt; java.time.LocalDateTime, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String](((t: Any) =&gt; org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime(t.asInstanceOf[Long])), ((codegen: org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, input: String) =&gt; scala.StringContext.apply(&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime((long)&quot;, &quot;)&quot;).s(input)))))((ClassTag.apply[java.time.LocalDateTime](classOf[java.time.LocalDateTime]): scala.reflect.ClassTag[java.time.LocalDateTime]))
         </td>
       </tr><tr>
@@ -1802,7 +1802,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           t.asInstanceOf[Long]
         </td>
       </tr><tr>
@@ -1826,7 +1826,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime(t.asInstanceOf[Long])
         </td>
       </tr><tr>
@@ -1850,7 +1850,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           scala.Tuple2.apply[Any =&gt; java.time.LocalDateTime, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String](((t: Any) =&gt; org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime(t.asInstanceOf[Long])), ((codegen: org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, input: String) =&gt; scala.StringContext.apply(&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime((long)&quot;, &quot;)&quot;).s(input)))
         </td>
       </tr><tr>
@@ -1874,7 +1874,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           scala.Some.apply[(Any =&gt; java.time.LocalDateTime, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String)](scala.Tuple2.apply[Any =&gt; java.time.LocalDateTime, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String](((t: Any) =&gt; org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime(t.asInstanceOf[Long])), ((codegen: org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, input: String) =&gt; scala.StringContext.apply(&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime((long)&quot;, &quot;)&quot;).s(input))))
         </td>
       </tr><tr>
@@ -2210,7 +2210,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.kogito.types.ContextInterfaces.mapProvider(mapType, path, expr, stillSetWhenNull, config)
         </td>
       </tr><tr>
@@ -2234,7 +2234,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.kogito.types.ContextInterfaces.mapProvider(mapType, path, expr, stillSetWhenNull, config)
         </td>
       </tr><tr>
@@ -2258,7 +2258,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.kogito.types.ContextInterfaces.arrayProvider(arrayType, path, expr, stillSetWhenNull, config)
         </td>
       </tr><tr>
@@ -2282,7 +2282,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.kogito.types.ContextInterfaces.arrayProvider(arrayType, path, expr, stillSetWhenNull, config)
         </td>
       </tr><tr>

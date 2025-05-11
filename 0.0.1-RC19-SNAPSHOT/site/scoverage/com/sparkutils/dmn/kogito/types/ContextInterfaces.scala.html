@@ -135,11 +135,11 @@
 </span>111 <span style=''></span><span style='background: #AEF1AE'>        if (path == null) </span><span style='background: #F0ADAD'>null</span><span style='background: #AEF1AE'> else {
 </span>112 <span style=''></span><span style='background: #AEF1AE'>          val ar = {
 </span>113 <span style=''></span><span style='background: #AEF1AE'>            if (i == -1)
-</span>114 <span style=''></span><span style='background: #AEF1AE'>              </span><span style='background: #F0ADAD'>path.asInstanceOf[ArrayData]</span><span style='background: #AEF1AE'>
+</span>114 <span style=''></span><span style='background: #AEF1AE'>              path.asInstanceOf[ArrayData]
 </span>115 <span style=''></span><span style='background: #AEF1AE'>            else
 </span>116 <span style=''></span><span style='background: #AEF1AE'>              path.asInstanceOf[SpecializedGetters].getArray(i)
 </span>117 <span style=''></span><span style='background: #AEF1AE'>          }
-</span>118 <span style=''></span><span style='background: #AEF1AE'>          if (ar == null) </span><span style='background: #F0ADAD'>null</span><span style='background: #AEF1AE'> else arrayOfType(entryAccessor, ar).asJava
+</span>118 <span style=''></span><span style='background: #AEF1AE'>          if (ar == null) null else arrayOfType(entryAccessor, ar).asJava
 </span>119 <span style=''></span><span style='background: #AEF1AE'>        }
 </span>120 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
 </span>121 <span style=''>    case MapType(k, v, _) =&gt; </span><span style='background: #AEF1AE'>{
@@ -149,7 +149,7 @@
 </span>125 <span style=''></span><span style='background: #AEF1AE'>        if (path == null) </span><span style='background: #F0ADAD'>null</span><span style='background: #AEF1AE'> else {
 </span>126 <span style=''></span><span style='background: #AEF1AE'>          val m =
 </span>127 <span style=''></span><span style='background: #AEF1AE'>            if (i == -1)
-</span>128 <span style=''></span><span style='background: #AEF1AE'>              </span><span style='background: #F0ADAD'>path.asInstanceOf[MapData]</span><span style='background: #AEF1AE'>
+</span>128 <span style=''></span><span style='background: #AEF1AE'>              path.asInstanceOf[MapData]
 </span>129 <span style=''></span><span style='background: #AEF1AE'>            else
 </span>130 <span style=''></span><span style='background: #AEF1AE'>              path.asInstanceOf[SpecializedGetters].getMap(i)
 </span>131 <span style=''></span><span style='background: #AEF1AE'>
@@ -393,13 +393,13 @@
 </span>369 <span style=''>  // NOTE -1 must be provided for top level as we don't know the index the data is taken from
 </span>370 <span style=''>
 </span>371 <span style=''>  def mapProvider(mapType: MapType, path: DMNContextPath, expr: Expression, stillSetWhenNull: Boolean, dmnConfiguration: Map[String,String]): DMNContextProvider[util.Map[String, Object]] = {
-</span>372 <span style=''>    val ma = </span><span style='background: #F0ADAD'>forType(mapType, dmnConfiguration)</span><span style=''>
-</span>373 <span style=''>    </span><span style='background: #F0ADAD'>ComplexContextProvider[util.Map[String, Object]](mapType, dmnConfiguration, ma, path, stillSetWhenNull, expr)</span><span style=''>
+</span>372 <span style=''>    val ma = </span><span style='background: #AEF1AE'>forType(mapType, dmnConfiguration)</span><span style=''>
+</span>373 <span style=''>    </span><span style='background: #AEF1AE'>ComplexContextProvider[util.Map[String, Object]](mapType, dmnConfiguration, ma, path, stillSetWhenNull, expr)</span><span style=''>
 </span>374 <span style=''>  }
 </span>375 <span style=''>
 </span>376 <span style=''>  def arrayProvider(arrayType: ArrayType, path: DMNContextPath, expr: Expression, stillSetWhenNull: Boolean, dmnConfiguration: Map[String,String]): DMNContextProvider[util.List[Object]] = {
-</span>377 <span style=''>    val aa = </span><span style='background: #F0ADAD'>forType(arrayType, dmnConfiguration)</span><span style=''>
-</span>378 <span style=''>    </span><span style='background: #F0ADAD'>ComplexContextProvider[util.List[Object]](arrayType, dmnConfiguration, aa, path, stillSetWhenNull, expr)</span><span style=''>
+</span>377 <span style=''>    val aa = </span><span style='background: #AEF1AE'>forType(arrayType, dmnConfiguration)</span><span style=''>
+</span>378 <span style=''>    </span><span style='background: #AEF1AE'>ComplexContextProvider[util.List[Object]](arrayType, dmnConfiguration, aa, path, stillSetWhenNull, expr)</span><span style=''>
 </span>379 <span style=''>  }
 </span>380 <span style=''>
 </span>381 <span style=''>  /**
@@ -2764,7 +2764,7 @@ else
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           path.asInstanceOf[org.apache.spark.sql.catalyst.util.ArrayData]
         </td>
       </tr><tr>
@@ -2788,7 +2788,7 @@ else
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           path.asInstanceOf[org.apache.spark.sql.catalyst.util.ArrayData]
         </td>
       </tr><tr>
@@ -2884,7 +2884,7 @@ else
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           null
         </td>
       </tr><tr>
@@ -2908,7 +2908,7 @@ else
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           null
         </td>
       </tr><tr>
@@ -3229,7 +3229,7 @@ else
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           path.asInstanceOf[org.apache.spark.sql.catalyst.util.MapData]
         </td>
       </tr><tr>
@@ -3253,7 +3253,7 @@ else
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           path.asInstanceOf[org.apache.spark.sql.catalyst.util.MapData]
         </td>
       </tr><tr>
@@ -9617,7 +9617,7 @@ else
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           ContextInterfaces.this.forType(mapType, dmnConfiguration)
         </td>
       </tr><tr>
@@ -9641,7 +9641,7 @@ else
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           ContextInterfaces.this.ComplexContextProvider.apply[java.util.Map[String,Object]](mapType, dmnConfiguration, ma, path, stillSetWhenNull, expr)((ClassTag.apply[java.util.Map[String,Object]](classOf[java.util.Map]): scala.reflect.ClassTag[java.util.Map[String,Object]]))
         </td>
       </tr><tr>
@@ -9665,7 +9665,7 @@ else
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           ContextInterfaces.this.forType(arrayType, dmnConfiguration)
         </td>
       </tr><tr>
@@ -9689,7 +9689,7 @@ else
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           ContextInterfaces.this.ComplexContextProvider.apply[java.util.List[Object]](arrayType, dmnConfiguration, aa, path, stillSetWhenNull, expr)((ClassTag.apply[java.util.List[Object]](classOf[java.util.List]): scala.reflect.ClassTag[java.util.List[Object]]))
         </td>
       </tr><tr>

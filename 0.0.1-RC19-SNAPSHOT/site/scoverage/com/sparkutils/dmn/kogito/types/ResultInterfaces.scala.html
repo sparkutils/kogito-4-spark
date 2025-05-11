@@ -93,7 +93,7 @@
 </span>69 <span style=''>    case ArrayType(typ, _) </span><span style='background: #AEF1AE'>=&gt;
 </span>70 <span style=''></span><span style='background: #AEF1AE'>      val g = forType(typ)
 </span>71 <span style=''></span><span style='background: #AEF1AE'>      (path: Any) =&gt; {
-</span>72 <span style=''></span><span style='background: #AEF1AE'>        if (path == null) </span><span style='background: #F0ADAD'>null</span><span style='background: #AEF1AE'> else {
+</span>72 <span style=''></span><span style='background: #AEF1AE'>        if (path == null) null else {
 </span>73 <span style=''></span><span style='background: #AEF1AE'>          val a = path.asInstanceOf[util.List[_]].toArray.map(g.get(_))
 </span>74 <span style=''></span><span style='background: #AEF1AE'>          new GenericArrayData(a)
 </span>75 <span style=''></span><span style='background: #AEF1AE'>        }
@@ -102,7 +102,7 @@
 </span>78 <span style=''></span><span style='background: #AEF1AE'>      val kG = forType(k)
 </span>79 <span style=''></span><span style='background: #AEF1AE'>      val vG = forType(v)
 </span>80 <span style=''></span><span style='background: #AEF1AE'>      (path: Any) =&gt; {
-</span>81 <span style=''></span><span style='background: #AEF1AE'>        if (path == null) </span><span style='background: #F0ADAD'>null</span><span style='background: #AEF1AE'> else {
+</span>81 <span style=''></span><span style='background: #AEF1AE'>        if (path == null) null else {
 </span>82 <span style=''></span><span style='background: #AEF1AE'>          val m = path.asInstanceOf[util.Map[Object, Object]].asScala.toMap.map(e =&gt; kG.get(e._1) -&gt; vG.get(e._2))
 </span>83 <span style=''></span><span style='background: #AEF1AE'>          new ArrayBasedMapData(new GenericArrayData(m.keys.toArray), new GenericArrayData(m.values.toArray))
 </span>84 <span style=''></span><span style='background: #AEF1AE'>        }
@@ -3207,7 +3207,7 @@ else
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           null
         </td>
       </tr><tr>
@@ -3231,7 +3231,7 @@ else
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           null
         </td>
       </tr><tr>
@@ -3508,7 +3508,7 @@ else
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           null
         </td>
       </tr><tr>
@@ -3532,7 +3532,7 @@ else
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           null
         </td>
       </tr><tr>
