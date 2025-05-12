@@ -6,7 +6,8 @@ import org.junit.internal.TextListener;
 import com.sparkutils.dmn.kogito.DeepTest;
 import com.sparkutils.dmn.kogito.EvalAllResultsTest;
 import com.sparkutils.dmn.kogito.SimpleTest;
-import com.sparkutils.dmn.kogito.Exceptions;
+import com.sparkutils.dmn.kogito.ExceptionsTest;
+import com.sparkutils.dmn.kogito.ContextTest;
 
 /**
  * The test suite
@@ -21,7 +22,8 @@ public class TestSuite {
                 DeepTest.class,
                 EvalAllResultsTest.class,
                 SimpleTest.class,
-                Exceptions.class
+                ExceptionsTest.class,
+                ContextTest.class
         );
 
         resultReport(result);
