@@ -120,8 +120,13 @@ case class KogitoDMNContext(ctx: org.kie.dmn.api.core.DMNContext) extends DMNCon
           return
       }
 
-    // top is the root context, bottom is the place we'd store things
-    bits.drop(1).dropRight(1).foldLeft(starter){
+    val remaining =
+      if (data.isInstanceOf[MAP])
+        bits.drop(1)
+      else
+        bits.drop(1).dropRight(1)
+
+    remaining.foldLeft(starter){
       (map, pathBit) =>
         map match {
           case t: MAP =>
@@ -143,8 +148,11 @@ case class KogitoDMNContext(ctx: org.kie.dmn.api.core.DMNContext) extends DMNCon
         map
       } else
         updateContext(bits.drop(1), map.get(bits.head).asInstanceOf[MAP])
+    updateContext(bits.drop(1).toVector, starter)
 
-    ctx.set(bits.head, updateContext(bits.drop(1).toVector, starter)) // drop the 1st as that's for the root context
+    //ctx.set(bits.head, updateContext(bits.drop(1).toVector, starter)) // drop the 1st as that's for the root context
+
+//    ctx.set(path.asInstanceOf[KogitoDMNContextPath].path, data)
   }
 }
 

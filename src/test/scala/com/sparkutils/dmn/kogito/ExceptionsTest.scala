@@ -16,12 +16,12 @@ class ExceptionsTest extends FunSuite with Matchers with TestUtils {
   val testData =   TestData("US", "a", 1, 1, "sales")
 
   val badImportDmnFiles = scala.collection.immutable.Seq(
-    DMNFile("commonfdssfda.dmn",
-      this.getClass.getClassLoader.getResourceAsStream("common.dmn").readAllBytes()
-    ),
     DMNFile("decisions.dmn",
       this.getClass.getClassLoader.getResourceAsStream("decisions.dmn").readAllBytes()
-    )
+    ),
+    DMNFile("",
+      this.getClass.getClassLoader.getResourceAsStream("common.dmn").readAllBytes()
+    ),
   )
   val badDmnModel = DMNModelService(bns, bns, Some("DQService"), "struct<evaluate: array<boolean>>")
   val dmnModel = DMNModelService(ns, ns, Some("DQService"), "struct<evaluate: array<boolean>>")
@@ -88,7 +88,7 @@ class ExceptionsTest extends FunSuite with Matchers with TestUtils {
     e.message should include("Could not load model from Kogito runtime with namespace decisionsooo")
   }
 
-  // doesn't actually throw
+  // doesn't actually throw - kogito doesn't seem to care about uri but uses the qname instead
   /*
   test("bad imports should throw"){
     implicit val spark = sparkSession
