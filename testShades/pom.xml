@@ -5,7 +5,7 @@
     <groupId>com.sparkutils</groupId>
     <artifactId>kogito-4-spark_testshade_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
 
-    <version>0.0.1-RC21</version>
+    <version>0.0.1-RC22-SNAPSHOT</version>
     <name>kogito-4-spark Test Pack</name>
     <description>Packaged tests and shaded jar for deploying in Databricks, or similar to verify builds still run</description>
     <url>https://sparkutils.github.io/kogito-4-spark/</url>

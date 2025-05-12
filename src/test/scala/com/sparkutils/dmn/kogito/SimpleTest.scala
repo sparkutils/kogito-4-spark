@@ -315,7 +315,7 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
       this.getClass.getClassLoader.getResourceAsStream("onetoone.dmn").readAllBytes()
     )
   )
-  def odmnModel(resDDL: String) = DMNModelService(ons, ons, None, s"struct<evaluate: $resDDL>")
+  def odmnModel(resDDL: String) = DMNModelService(ons, ons, None, s"struct<`evaluate a thing_dmnEvalStatus`: Byte, `evaluate a thing`: $resDDL>")
 
   def testOneToOne[A: TypedEncoder](data: A, fields: scala.collection.immutable.Seq[DMNInputField], resDDL: String = Others.ddl, extraPath: String = ".*"): Unit = evalCodeGens {
     implicit val spark = sparkSession
@@ -324,7 +324,7 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
 
     val exec = DMNExecution(odmnFiles, odmnModel(resDDL), fields, configuration = DMNConfiguration(options = "useTreeMap=nottrue")) // triggers the case of a bad boolean parse
     val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec))
-    val asSeqs = dres.select(s"quality.evaluate$extraPath").as[A](TypedExpressionEncoder[A]).collect()
+    val asSeqs = dres.select(s"quality.`evaluate a thing`$extraPath").as[A](TypedExpressionEncoder[A]).collect()
     asSeqs.length shouldBe 1
     asSeqs.head shouldBe data
   }

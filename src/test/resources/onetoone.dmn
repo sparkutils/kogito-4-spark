@@ -3,8 +3,8 @@
   <decisionService name="ds" id="_8D3CCCC3-6D8D-4D1E-A036-F388E3CED12A">
     <variable name="ds" id="_E208DF9A-E366-420E-BD89-53FA20F7E6A9" />
   </decisionService>
-  <decision name="evaluate" id="_6D3E2EE9-FAC4-4789-8CC1-3B0EB760749C">
-    <variable name="evaluate" id="_88E7CD24-193C-4918-BBA1-DEB556290B40" typeRef="Any" />
+  <decision name="evaluate a thing" id="_6D3E2EE9-FAC4-4789-8CC1-3B0EB760749C">
+    <variable name="evaluate a thing" id="_88E7CD24-193C-4918-BBA1-DEB556290B40" typeRef="Any" />
     <informationRequirement id="_D2893E02-5B20-48F4-BBB2-62A0523E111F">
       <requiredInput href="#_E7610566-16F3-4EA2-B2EE-5ABE8C39FBCB" />
     </informationRequirement>
