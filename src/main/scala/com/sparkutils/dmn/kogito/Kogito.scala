@@ -107,17 +107,16 @@ case class KogitoDMNContext(ctx: org.kie.dmn.api.core.DMNContext) extends DMNCon
     val starter =
       ctx.get(bits(0)) match {
         case _ if bits.length == 1 =>
+          // top level direct entries only (map or otherwise)
           ctx.set(bits.head, data)
           return
-        case null if bits.length > 1 =>
-          val n = new util.HashMap[String, Object]()
-          ctx.set(bits.head, n)
-          n
         case t: MAP =>
           t
         case _ =>
-          ctx.set(bits.head, data)
-          return
+          // any other top level field must be overwritten
+          val n = new util.HashMap[String, Object]()
+          ctx.set(bits.head, n)
+          n
       }
 
     val remaining =

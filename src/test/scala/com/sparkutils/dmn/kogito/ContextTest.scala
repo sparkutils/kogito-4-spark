@@ -84,4 +84,16 @@ class ContextTest extends FunSuite with Matchers with TestUtils {
     get(ctx, "entry") shouldBe "another"
   }
 
+  test("top level fields but nested set"){
+    val ctx = runtime.context().asInstanceOf[KogitoDMNContext]
+    ctx.set(KogitoDMNContextPath("entry"), "value")
+
+    get(ctx, "entry") shouldBe "value"
+
+    // should wipe it out
+    ctx.set(KogitoDMNContextPath("entry.nested"), "another")
+
+    get(ctx, "entry.nested") shouldBe "another"
+  }
+
 }
