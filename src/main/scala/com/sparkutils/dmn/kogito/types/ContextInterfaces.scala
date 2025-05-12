@@ -22,38 +22,24 @@ object ContextInterfaces {
 
   def nullAtOr(f: (SpecializedGetters, Int) => Any): Accessor[Any] =
     (path: Any, i: Int) =>
-      if (path == null) null else {
-        if (path.asInstanceOf[SpecializedGetters].isNullAt(i))
-          null
-        else
-          f( path.asInstanceOf[SpecializedGetters], i)
-      }
+      if (path.asInstanceOf[SpecializedGetters].isNullAt(i))
+        null
+      else
+        f( path.asInstanceOf[SpecializedGetters], i)
 
   // -1 as top level field, only for struct/map/array
   def forType(dataType: DataType, dmnConfiguration: Map[String, String]): Accessor[_] = dataType match {
     case structType: StructType =>
       val s = struct(structType.fields.zipWithIndex.map { case (f, i) => (f.name, (i, forType(f.dataType, dmnConfiguration))) }.toMap)
-      /* nullAtOr {
-        (r: SpecializedGetters, i: Int) =>
-          val input =
-            if (i == -1)
-              r
-            else
-              r.getStruct(i, structType.fields.length)
-          s.forPath(input, i)
-      } */
-      new Accessor[util.Map[String, Object]] {
-        override def forPath(path: Any, i: Int): util.Map[String, Object] = {
-          if (path == null) null else {
-            val r = path.asInstanceOf[SpecializedGetters]
-            val input =
-              if (i == -1)
-                r
-              else
-                r.getStruct(i, structType.fields.length)
-            s.forPath(input, i)
-          }
-        }
+
+      (path: Any, i: Int) => {
+        val r = path.asInstanceOf[SpecializedGetters]
+        val input =
+          if (i == -1)
+            r
+          else
+            r.getStruct(i, structType.fields.length)
+        s.forPath(input, i)
       }
     case StringType => nullAtOr {
       (path: SpecializedGetters, i: Int) =>
@@ -108,32 +94,28 @@ object ContextInterfaces {
     case ArrayType(typ, _) =>
       val entryAccessor = forType(typ, dmnConfiguration)
       (path: Any, i: Int) => {
-        if (path == null) null else {
-          val ar = {
-            if (i == -1)
-              path.asInstanceOf[ArrayData]
-            else
-              path.asInstanceOf[SpecializedGetters].getArray(i)
-          }
-          if (ar == null) null else arrayOfType(entryAccessor, ar).asJava
+        val ar = {
+          if (i == -1)
+            path.asInstanceOf[ArrayData]
+          else
+            path.asInstanceOf[SpecializedGetters].getArray(i)
         }
+        if (ar == null) null else arrayOfType(entryAccessor, ar).asJava
       }
     case MapType(k, v, _) => {
       val kAccessor = forType(k, dmnConfiguration)
       val vAccessor = forType(v, dmnConfiguration)
       (path: Any, i: Int) => {
-        if (path == null) null else {
-          val m =
-            if (i == -1)
-              path.asInstanceOf[MapData]
-            else
-              path.asInstanceOf[SpecializedGetters].getMap(i)
+        val m =
+          if (i == -1)
+            path.asInstanceOf[MapData]
+          else
+            path.asInstanceOf[SpecializedGetters].getMap(i)
 
-          if (m == null) null else {
-            val ka = arrayOfType(kAccessor, m.keyArray())
-            val va = arrayOfType(vAccessor, m.valueArray())
-            (ka zip va).toMap.asJava
-          }
+        if (m == null) null else {
+          val ka = arrayOfType(kAccessor, m.keyArray())
+          val va = arrayOfType(vAccessor, m.valueArray())
+          (ka zip va).toMap.asJava
         }
       }
     }
@@ -278,7 +260,10 @@ object ContextInterfaces {
               }
               """)
       }
+    // cannot be called in current spark, Eval will be type checked first
+    // $COVERAGE-OFF$
     case _ => throw new DMNException(s"Could not load Kogito Context Accessor for dataType $dataType")
+    // $COVERAGE-ON$
   }
 
   private def genFieldLookup(structType: StructType, funName: String, resultType: String, success: String, failure: String): String = {

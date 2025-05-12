@@ -3,6 +3,7 @@ package com.sparkutils.dmn.kogito
 import com.sparkutils.dmn.kogito.Errors.CONTEXT_PROVIDER_PARSE
 import com.sparkutils.dmn.{DMNException, DMNExecution, DMNFile, DMNInputField, DMNModelService}
 import frameless.{TypedDataset, TypedEncoder, TypedExpressionEncoder}
+import org.apache.spark.sql.SaveMode
 import org.junit.runner.RunWith
 import org.scalatest.{FunSuite, Matchers}
 import org.scalatestplus.junit.JUnitRunner
@@ -76,7 +77,10 @@ class ExceptionsTest extends FunSuite with Matchers with TestUtils {
     evalCodeGens {
       implicit val spark = sparkSession
       val tds = TypedDataset.create(Seq(testData)).dataset
-      val ds = if (inCodegen) tds.repartition(4) else tds
+      val ds = if (inCodegen)
+        tds.repartition(4)
+      else
+        tds
 
       val exec = DMNExecution(badImportDmnFiles, badDmnModel, scala.collection.immutable.Seq(
         DMNInputField("named_struct('i',location)", "struct<i: interval>", "")
