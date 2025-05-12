@@ -26,6 +26,7 @@ case class MissingInStruct(outstring: String, outstring_dmnEvalStatus: Byte,
                    wrongOutputType: String, wrongOutputType_dmnEvalStatus: Byte,
                    badExpr: String, badExpr_dmnEvalStatus: Byte
                   )
+
 @RunWith(classOf[JUnitRunner])
 class EvalAllResultsTest extends FunSuite with Matchers with TestUtils {
 

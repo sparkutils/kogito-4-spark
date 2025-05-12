@@ -8,7 +8,7 @@ import org.scalatest.{FunSuite, Matchers}
 import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class Exceptions extends FunSuite with Matchers with TestUtils {
+class ExceptionsTest extends FunSuite with Matchers with TestUtils {
 
   val bns = "decisionsooo"
   val ns = "decisions"
