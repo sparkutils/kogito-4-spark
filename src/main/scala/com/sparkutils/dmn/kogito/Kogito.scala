@@ -115,7 +115,7 @@ case class KogitoDMNContext(ctx: org.kie.dmn.api.core.DMNContext) extends DMNCon
           n
         case t: MAP =>
           t
-        case _ => // TODO log warn
+        case _ =>
           ctx.set(bits.head, data)
           return
       }
@@ -128,18 +128,13 @@ case class KogitoDMNContext(ctx: org.kie.dmn.api.core.DMNContext) extends DMNCon
 
     remaining.foldLeft(starter){
       (map, pathBit) =>
-        map match {
-          case t: MAP =>
-            val n =
-              t.get(pathBit) match {
-                case null => new util.HashMap[String, Object]()
-                case t: MAP => t
-                case _ => new util.HashMap[String, Object]()
-              }
-            t.put(pathBit, n)
-            n
-          case _ => map
-        }
+        val n =
+          map.get(pathBit) match {
+            case null => new util.HashMap[String, Object]()
+            case t: MAP => t
+          }
+        map.put(pathBit, n)
+        n
     }
 
     def updateContext(bits: Seq[String], map: MAP): MAP =
@@ -148,11 +143,8 @@ case class KogitoDMNContext(ctx: org.kie.dmn.api.core.DMNContext) extends DMNCon
         map
       } else
         updateContext(bits.drop(1), map.get(bits.head).asInstanceOf[MAP])
+
     updateContext(bits.drop(1).toVector, starter)
-
-    //ctx.set(bits.head, updateContext(bits.drop(1).toVector, starter)) // drop the 1st as that's for the root context
-
-//    ctx.set(path.asInstanceOf[KogitoDMNContextPath].path, data)
   }
 }
 

@@ -57,6 +57,38 @@ class ExceptionsTest extends FunSuite with Matchers with TestUtils {
     e.message should include("Could not loadUnaryContextProvider fred")
   }
 
+  test("unsupported ddl input type should throw"){
+    implicit val spark = sparkSession
+    val tds = TypedDataset.create(Seq(testData)).dataset
+    val ds = if (inCodegen) tds.repartition(4) else tds
+
+    val exec = DMNExecution(badImportDmnFiles, badDmnModel, scala.collection.immutable.Seq(
+      DMNInputField("location","interval","")
+    ))
+    val e = intercept[DMNException] {
+      val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec))
+      dres.select("quality.evaluate.*").as[Seq[Boolean]](TypedExpressionEncoder[Seq[Boolean]]).collect()
+    }
+    e.message should include("Provider type CalendarIntervalType is not supported")
+  }
+
+  test("unsupported nested ddl input type should throw"){
+    evalCodeGens {
+      implicit val spark = sparkSession
+      val tds = TypedDataset.create(Seq(testData)).dataset
+      val ds = if (inCodegen) tds.repartition(4) else tds
+
+      val exec = DMNExecution(badImportDmnFiles, badDmnModel, scala.collection.immutable.Seq(
+        DMNInputField("named_struct('i',location)", "struct<i: interval>", "")
+      ))
+      val e = intercept[DMNException] {
+        val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec))
+        dres.select("quality.evaluate.*").as[Seq[Boolean]](TypedExpressionEncoder[Seq[Boolean]]).collect()
+      }
+      e.message should include("Could not load Kogito Context Accessor for dataType CalendarIntervalType")
+    }
+  }
+
   test("incompatible ddl should throw"){
     implicit val spark = sparkSession
     val tds = TypedDataset.create(Seq(testData)).dataset
@@ -71,6 +103,25 @@ class ExceptionsTest extends FunSuite with Matchers with TestUtils {
       dres.select("quality.evaluate.*").as[Seq[Boolean]](TypedExpressionEncoder[Seq[Boolean]]).collect()
     }
     e.message should include("ResultProvider type string is not supported,")
+  }
+
+
+  test("incompatible nested ddl should throw"){
+    evalCodeGens {
+      implicit val spark = sparkSession
+      val tds = TypedDataset.create(Seq(testData)).dataset
+      val ds = if (inCodegen) tds.repartition(4) else tds
+
+      val exec = DMNExecution(badImportDmnFiles, dmnModel.copy(resultProvider = "struct<evaluate: interval>"),
+        scala.collection.immutable.Seq(
+          DMNInputField("location", "", "")
+        ))
+      val e = intercept[DMNException] {
+        val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec))
+        dres.select("quality.evaluate").as[Seq[Boolean]](TypedExpressionEncoder[Seq[Boolean]]).collect()
+      }
+      e.message should include("Could not load Kogito Result Provider for dataType CalendarIntervalType")
+    }
   }
 
   test("bad model should throw"){

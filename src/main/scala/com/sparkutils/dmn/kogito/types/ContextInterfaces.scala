@@ -278,7 +278,7 @@ object ContextInterfaces {
               }
               """)
       }
-    case _ => throw new DMNException(s"Could not load Kogito Context AccessorCodeGen for dataType $dataType")
+    case _ => throw new DMNException(s"Could not load Kogito Context Accessor for dataType $dataType")
   }
 
   private def genFieldLookup(structType: StructType, funName: String, resultType: String, success: String, failure: String): String = {

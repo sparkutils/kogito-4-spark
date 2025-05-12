@@ -315,16 +315,16 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
       this.getClass.getClassLoader.getResourceAsStream("onetoone.dmn").readAllBytes()
     )
   )
-  val odmnModel = DMNModelService(ons, ons, None, s"struct<evaluate: ${Others.ddl}>")
+  def odmnModel(resDDL: String) = DMNModelService(ons, ons, None, s"struct<evaluate: $resDDL>")
 
-  def testOneToOne[A: TypedEncoder](data: A, fields: scala.collection.immutable.Seq[DMNInputField]): Unit = evalCodeGens {
+  def testOneToOne[A: TypedEncoder](data: A, fields: scala.collection.immutable.Seq[DMNInputField], resDDL: String = Others.ddl, extraPath: String = ".*"): Unit = evalCodeGens {
     implicit val spark = sparkSession
     val tds = TypedDataset.create(Seq(data)).dataset
     val ds = if (inCodegen) tds.repartition(4) else tds
 
-    val exec = DMNExecution(odmnFiles, odmnModel, fields)
+    val exec = DMNExecution(odmnFiles, odmnModel(resDDL), fields)
     val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec))
-    val asSeqs = dres.select("quality.evaluate.*").as[A](TypedExpressionEncoder[A]).collect()
+    val asSeqs = dres.select(s"quality.evaluate$extraPath").as[A](TypedExpressionEncoder[A]).collect()
     asSeqs.length shouldBe 1
     asSeqs.head shouldBe data
   }
@@ -343,6 +343,14 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
 
   test("top struct others - straight through") {
     testOneToOne(Others.vals, Others.struct)
+  }
+
+  test("top field - straight through") {
+    testOneToOne("field", scala.collection.immutable.Seq(DMNInputField("value","","inputData")), "string", "")
+  }
+
+  test("top field null - straight through") {
+    testOneToOne(null: String, scala.collection.immutable.Seq(DMNInputField("value","","inputData")), "string", "")
   }
 
 }
