@@ -1,7 +1,7 @@
 package com.sparkutils.dmn.kogito
 
 import com.sparkutils.dmn.kogito.types.ResultInterfaces.{SUCCEEDED, evalStatusEnding}
-import com.sparkutils.dmn.{DMNExecution, DMNFile, DMNInputField, DMNModelService}
+import com.sparkutils.dmn.{DMNConfiguration, DMNExecution, DMNFile, DMNInputField, DMNModelService}
 import frameless.{TypedDataset, TypedEncoder, TypedExpressionEncoder}
 import org.apache.spark.sql.{DataFrame, SaveMode}
 import org.junit.runner.RunWith
@@ -322,7 +322,7 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
     val tds = TypedDataset.create(Seq(data)).dataset
     val ds = if (inCodegen) tds.repartition(4) else tds
 
-    val exec = DMNExecution(odmnFiles, odmnModel(resDDL), fields)
+    val exec = DMNExecution(odmnFiles, odmnModel(resDDL), fields, configuration = DMNConfiguration(options = "useTreeMap=nottrue")) // triggers the case of a bad boolean parse
     val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec))
     val asSeqs = dres.select(s"quality.evaluate$extraPath").as[A](TypedExpressionEncoder[A]).collect()
     asSeqs.length shouldBe 1
