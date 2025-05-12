@@ -139,7 +139,7 @@
 </span>115 <span style=''></span><span style='background: #AEF1AE'>          n</span><span style=''>
 </span>116 <span style=''>        case t: MAP =&gt;
 </span>117 <span style=''>          </span><span style='background: #AEF1AE'>t</span><span style=''>
-</span>118 <span style=''>        case _ </span><span style='background: #F0ADAD'>=&gt; // TODO log warn
+</span>118 <span style=''>        case _ </span><span style='background: #F0ADAD'>=&gt;
 </span>119 <span style=''></span><span style='background: #F0ADAD'>          ctx.set(bits.head, data)
 </span>120 <span style=''></span><span style='background: #F0ADAD'>          return</span><span style=''>
 </span>121 <span style=''>      }
@@ -152,63 +152,55 @@
 </span>128 <span style=''>
 </span>129 <span style=''>    </span><span style='background: #AEF1AE'>remaining.foldLeft(starter){
 </span>130 <span style=''></span><span style='background: #AEF1AE'>      (map, pathBit) =&gt;
-</span>131 <span style=''></span><span style='background: #AEF1AE'>        map match {
-</span>132 <span style=''></span><span style='background: #AEF1AE'>          case t: MAP =&gt;
-</span>133 <span style=''></span><span style='background: #AEF1AE'>            val n =
-</span>134 <span style=''></span><span style='background: #AEF1AE'>              t.get(pathBit) match {
-</span>135 <span style=''></span><span style='background: #AEF1AE'>                case null =&gt; new util.HashMap[String, Object]()
-</span>136 <span style=''></span><span style='background: #AEF1AE'>                case t: MAP =&gt; t
-</span>137 <span style=''></span><span style='background: #AEF1AE'>                case _ =&gt; </span><span style='background: #F0ADAD'>new util.HashMap[String, Object]()</span><span style='background: #AEF1AE'>
-</span>138 <span style=''></span><span style='background: #AEF1AE'>              }
-</span>139 <span style=''></span><span style='background: #AEF1AE'>            t.put(pathBit, n)
-</span>140 <span style=''></span><span style='background: #AEF1AE'>            n
-</span>141 <span style=''></span><span style='background: #AEF1AE'>          case _ =&gt; </span><span style='background: #F0ADAD'>map</span><span style='background: #AEF1AE'>
-</span>142 <span style=''></span><span style='background: #AEF1AE'>        }
-</span>143 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
-</span>144 <span style=''>
-</span>145 <span style=''>    def updateContext(bits: Seq[String], map: MAP): MAP =
-</span>146 <span style=''>      if (</span><span style='background: #AEF1AE'>bits.size == 1</span><span style=''>) </span><span style='background: #AEF1AE'>{
-</span>147 <span style=''></span><span style='background: #AEF1AE'>        map.put(bits.head, data.asInstanceOf[Object])
-</span>148 <span style=''></span><span style='background: #AEF1AE'>        map
-</span>149 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''> else
-</span>150 <span style=''>        </span><span style='background: #AEF1AE'>updateContext(bits.drop(1), map.get(bits.head).asInstanceOf[MAP])</span><span style=''>
-</span>151 <span style=''>    </span><span style='background: #AEF1AE'>updateContext(bits.drop(1).toVector, starter)</span><span style=''>
+</span>131 <span style=''></span><span style='background: #AEF1AE'>        val n =
+</span>132 <span style=''></span><span style='background: #AEF1AE'>          map.get(pathBit) match {
+</span>133 <span style=''></span><span style='background: #AEF1AE'>            case null =&gt; new util.HashMap[String, Object]()
+</span>134 <span style=''></span><span style='background: #AEF1AE'>            case t: MAP =&gt; t
+</span>135 <span style=''></span><span style='background: #AEF1AE'>          }
+</span>136 <span style=''></span><span style='background: #AEF1AE'>        map.put(pathBit, n)
+</span>137 <span style=''></span><span style='background: #AEF1AE'>        n
+</span>138 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>139 <span style=''>
+</span>140 <span style=''>    def updateContext(bits: Seq[String], map: MAP): MAP =
+</span>141 <span style=''>      if (</span><span style='background: #AEF1AE'>bits.size == 1</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>142 <span style=''></span><span style='background: #AEF1AE'>        map.put(bits.head, data.asInstanceOf[Object])
+</span>143 <span style=''></span><span style='background: #AEF1AE'>        map
+</span>144 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''> else
+</span>145 <span style=''>        </span><span style='background: #AEF1AE'>updateContext(bits.drop(1), map.get(bits.head).asInstanceOf[MAP])</span><span style=''>
+</span>146 <span style=''>
+</span>147 <span style=''>    </span><span style='background: #AEF1AE'>updateContext(bits.drop(1).toVector, starter)</span><span style=''>
+</span>148 <span style=''>  }
+</span>149 <span style=''>}
+</span>150 <span style=''>
+</span>151 <span style=''>case class KogitoDMNRuntime(runtime: org.kie.dmn.api.core.DMNRuntime) extends DMNRuntime {
 </span>152 <span style=''>
-</span>153 <span style=''>    //ctx.set(bits.head, updateContext(bits.drop(1).toVector, starter)) // drop the 1st as that's for the root context
-</span>154 <span style=''>
-</span>155 <span style=''>//    ctx.set(path.asInstanceOf[KogitoDMNContextPath].path, data)
-</span>156 <span style=''>  }
-</span>157 <span style=''>}
-</span>158 <span style=''>
-</span>159 <span style=''>case class KogitoDMNRuntime(runtime: org.kie.dmn.api.core.DMNRuntime) extends DMNRuntime {
+</span>153 <span style=''>  def getModel(name: String, namespace: String): DMNModel = {
+</span>154 <span style=''>    val model = </span><span style='background: #AEF1AE'>runtime.getModel(namespace, name)</span><span style=''>
+</span>155 <span style=''>    if (</span><span style='background: #AEF1AE'>model eq null</span><span style=''>) {
+</span>156 <span style=''>      </span><span style='background: #AEF1AE'>throw new DMNException(s&quot;Could not load model from Kogito runtime with namespace $namespace and name $name - {$namespace}$name&quot;)</span><span style=''>
+</span>157 <span style=''>    }
+</span>158 <span style=''>    </span><span style='background: #AEF1AE'>KogitoDMNModel(model, runtime)</span><span style=''>
+</span>159 <span style=''>  }
 </span>160 <span style=''>
-</span>161 <span style=''>  def getModel(name: String, namespace: String): DMNModel = {
-</span>162 <span style=''>    val model = </span><span style='background: #AEF1AE'>runtime.getModel(namespace, name)</span><span style=''>
-</span>163 <span style=''>    if (</span><span style='background: #AEF1AE'>model eq null</span><span style=''>) {
-</span>164 <span style=''>      </span><span style='background: #AEF1AE'>throw new DMNException(s&quot;Could not load model from Kogito runtime with namespace $namespace and name $name - {$namespace}$name&quot;)</span><span style=''>
-</span>165 <span style=''>    }
-</span>166 <span style=''>    </span><span style='background: #AEF1AE'>KogitoDMNModel(model, runtime)</span><span style=''>
-</span>167 <span style=''>  }
-</span>168 <span style=''>
-</span>169 <span style=''>  def context(): DMNContext = </span><span style='background: #AEF1AE'>KogitoDMNContext(runtime.newContext())</span><span style=''>
-</span>170 <span style=''>}
-</span>171 <span style=''>
-</span>172 <span style=''>case class KogitoFeelEvent(severity: String, message: String, line: Int, column: Int, sourceException: String, offendingSymbol: String) extends Serializable
-</span>173 <span style=''>
-</span>174 <span style=''>case class KogitoMessage(sourceId: String, sourceReference: String, exception: String, feelEvent: KogitoFeelEvent) extends Serializable
-</span>175 <span style=''>
-</span>176 <span style=''>/**
-</span>177 <span style=''> * Represents the DDL provider output type for debugMode
-</span>178 <span style=''> * @param decisionId
-</span>179 <span style=''> * @param decisionName
-</span>180 <span style=''> * @param hasErrors
-</span>181 <span style=''> * @param messages
-</span>182 <span style=''> */
-</span>183 <span style=''>case class KogitoResult(decisionId: String, decisionName: String, hasErrors: Boolean, messages: Seq[KogitoMessage], evaluationStatus: String) extends Serializable
-</span>184 <span style=''>
-</span>185 <span style=''>object Errors {
-</span>186 <span style=''>  val CONTEXT_PROVIDER_PARSE = </span><span style='background: #AEF1AE'>&quot;FieldExpression is invalid SQL&quot;</span><span style=''>
-</span>187 <span style=''>}
+</span>161 <span style=''>  def context(): DMNContext = </span><span style='background: #AEF1AE'>KogitoDMNContext(runtime.newContext())</span><span style=''>
+</span>162 <span style=''>}
+</span>163 <span style=''>
+</span>164 <span style=''>case class KogitoFeelEvent(severity: String, message: String, line: Int, column: Int, sourceException: String, offendingSymbol: String) extends Serializable
+</span>165 <span style=''>
+</span>166 <span style=''>case class KogitoMessage(sourceId: String, sourceReference: String, exception: String, feelEvent: KogitoFeelEvent) extends Serializable
+</span>167 <span style=''>
+</span>168 <span style=''>/**
+</span>169 <span style=''> * Represents the DDL provider output type for debugMode
+</span>170 <span style=''> * @param decisionId
+</span>171 <span style=''> * @param decisionName
+</span>172 <span style=''> * @param hasErrors
+</span>173 <span style=''> * @param messages
+</span>174 <span style=''> */
+</span>175 <span style=''>case class KogitoResult(decisionId: String, decisionName: String, hasErrors: Boolean, messages: Seq[KogitoMessage], evaluationStatus: String) extends Serializable
+</span>176 <span style=''>
+</span>177 <span style=''>object Errors {
+</span>178 <span style=''>  val CONTEXT_PROVIDER_PARSE = </span><span style='background: #AEF1AE'>&quot;FieldExpression is invalid SQL&quot;</span><span style=''>
+</span>179 <span style=''>}
 </span></pre>
           </div>
           <div class="tab-pane" id="statementlist">
@@ -1978,7 +1970,7 @@
         <td>
           4462
           -
-          4533
+          4516
         </td>
         <td>
           Block
@@ -2003,9 +1995,9 @@
           165
         </td>
         <td>
-          4500
+          4483
           -
-          4509
+          4492
         </td>
         <td>
           Select
@@ -2027,9 +2019,9 @@
           166
         </td>
         <td>
-          4492
+          4475
           -
-          4516
+          4499
         </td>
         <td>
           Apply
@@ -2051,9 +2043,9 @@
           167
         </td>
         <td>
-          4527
+          4510
           -
-          4533
+          4516
         </td>
         <td>
           Literal
@@ -2075,9 +2067,9 @@
           169
         </td>
         <td>
-          4573
+          4556
           -
-          4595
+          4578
         </td>
         <td>
           TypeApply
@@ -2099,9 +2091,9 @@
           170
         </td>
         <td>
-          4605
+          4588
           -
-          4617
+          4600
         </td>
         <td>
           Apply
@@ -2123,9 +2115,9 @@
           171
         </td>
         <td>
-          4605
+          4588
           -
-          4617
+          4600
         </td>
         <td>
           Block
@@ -2147,9 +2139,9 @@
           172
         </td>
         <td>
-          4637
+          4620
           -
-          4662
+          4645
         </td>
         <td>
           Apply
@@ -2171,9 +2163,9 @@
           173
         </td>
         <td>
-          4637
+          4620
           -
-          4662
+          4645
         </td>
         <td>
           Block
@@ -2192,12 +2184,12 @@
           129
         </td>
         <td>
-          183
+          179
         </td>
         <td>
-          4668
+          4651
           -
-          5080
+          4899
         </td>
         <td>
           Apply
@@ -2209,17 +2201,13 @@
           
         </td>
         <td style="background: #AEF1AE">
-          scala.Predef.refArrayOps[String](remaining).foldLeft[com.sparkutils.dmn.kogito.Types.MAP](starter)(((map: com.sparkutils.dmn.kogito.Types.MAP, pathBit: String) =&gt; map match {
-  case (t @ (_: com.sparkutils.dmn.kogito.Types.MAP)) =&gt; {
-    val n: com.sparkutils.dmn.kogito.Types.MAP = t.get(pathBit) match {
-      case null =&gt; new java.util.HashMap[String,Object]()
-      case (t @ (_: com.sparkutils.dmn.kogito.Types.MAP)) =&gt; t
-      case _ =&gt; new java.util.HashMap[String,Object]()
-    };
-    t.put(pathBit, n);
-    n
-  }
-  case _ =&gt; map
+          scala.Predef.refArrayOps[String](remaining).foldLeft[com.sparkutils.dmn.kogito.Types.MAP](starter)(((map: com.sparkutils.dmn.kogito.Types.MAP, pathBit: String) =&gt; {
+  val n: com.sparkutils.dmn.kogito.Types.MAP = map.get(pathBit) match {
+    case null =&gt; new java.util.HashMap[String,Object]()
+    case (t @ (_: com.sparkutils.dmn.kogito.Types.MAP)) =&gt; t
+  };
+  map.put(pathBit, n);
+  n
 }))
         </td>
       </tr><tr>
@@ -2227,44 +2215,12 @@
           132
         </td>
         <td>
-          181
-        </td>
-        <td>
-          4763
-          -
-          5040
-        </td>
-        <td>
-          Block
-        </td>
-        <td>
-          &lt;nosymbol&gt;
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          {
-  val n: com.sparkutils.dmn.kogito.Types.MAP = t.get(pathBit) match {
-    case null =&gt; new java.util.HashMap[String,Object]()
-    case (t @ (_: com.sparkutils.dmn.kogito.Types.MAP)) =&gt; t
-    case _ =&gt; new java.util.HashMap[String,Object]()
-  };
-  t.put(pathBit, n);
-  n
-}
-        </td>
-      </tr><tr>
-        <td>
-          134
-        </td>
-        <td>
           174
         </td>
         <td>
-          4800
+          4730
           -
-          4814
+          4746
         </td>
         <td>
           Apply
@@ -2276,19 +2232,19 @@
           
         </td>
         <td style="background: #AEF1AE">
-          t.get(pathBit)
+          map.get(pathBit)
         </td>
       </tr><tr>
         <td>
-          135
+          133
         </td>
         <td>
           175
         </td>
         <td>
-          4852
+          4780
           -
-          4886
+          4814
         </td>
         <td>
           Apply
@@ -2304,15 +2260,15 @@
         </td>
       </tr><tr>
         <td>
-          135
+          133
         </td>
         <td>
           176
         </td>
         <td>
-          4852
+          4780
           -
-          4886
+          4814
         </td>
         <td>
           Block
@@ -2328,15 +2284,15 @@
         </td>
       </tr><tr>
         <td>
-          136
+          134
         </td>
         <td>
           177
         </td>
         <td>
-          4918
+          4842
           -
-          4919
+          4843
         </td>
         <td>
           Ident
@@ -2352,63 +2308,15 @@
         </td>
       </tr><tr>
         <td>
-          137
+          136
         </td>
         <td>
           178
         </td>
         <td>
-          4946
+          4864
           -
-          4980
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          java.util.HashMap.&lt;init&gt;
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          new java.util.HashMap[String,Object]()
-        </td>
-      </tr><tr>
-        <td>
-          137
-        </td>
-        <td>
-          179
-        </td>
-        <td>
-          4946
-          -
-          4980
-        </td>
-        <td>
-          Block
-        </td>
-        <td>
-          java.util.HashMap.&lt;init&gt;
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          new java.util.HashMap[String,Object]()
-        </td>
-      </tr><tr>
-        <td>
-          139
-        </td>
-        <td>
-          180
-        </td>
-        <td>
-          5009
-          -
-          5026
+          4883
         </td>
         <td>
           Apply
@@ -2420,43 +2328,19 @@
           
         </td>
         <td style="background: #AEF1AE">
-          t.put(pathBit, n)
+          map.put(pathBit, n)
         </td>
       </tr><tr>
         <td>
           141
         </td>
         <td>
-          182
+          180
         </td>
         <td>
-          5061
+          4969
           -
-          5064
-        </td>
-        <td>
-          Ident
-        </td>
-        <td>
-          com.sparkutils.dmn.kogito.KogitoDMNContext.map
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          map
-        </td>
-      </tr><tr>
-        <td>
-          146
-        </td>
-        <td>
-          184
-        </td>
-        <td>
-          5150
-          -
-          5164
+          4983
         </td>
         <td>
           Apply
@@ -2472,15 +2356,15 @@
         </td>
       </tr><tr>
         <td>
-          146
+          141
         </td>
         <td>
-          188
+          184
         </td>
         <td>
-          5166
+          4985
           -
-          5241
+          5060
         </td>
         <td>
           Block
@@ -2499,15 +2383,15 @@
         </td>
       </tr><tr>
         <td>
-          147
+          142
         </td>
         <td>
-          185
+          181
         </td>
         <td>
-          5184
+          5003
           -
-          5193
+          5012
         </td>
         <td>
           Select
@@ -2523,15 +2407,15 @@
         </td>
       </tr><tr>
         <td>
-          147
+          142
         </td>
         <td>
-          186
+          182
         </td>
         <td>
-          5195
+          5014
           -
-          5220
+          5039
         </td>
         <td>
           TypeApply
@@ -2547,15 +2431,15 @@
         </td>
       </tr><tr>
         <td>
-          147
+          142
         </td>
         <td>
-          187
+          183
         </td>
         <td>
-          5176
+          4995
           -
-          5221
+          5040
         </td>
         <td>
           Apply
@@ -2571,15 +2455,15 @@
         </td>
       </tr><tr>
         <td>
-          150
+          145
         </td>
         <td>
-          189
+          185
         </td>
         <td>
-          5269
+          5088
           -
-          5281
+          5100
         </td>
         <td>
           Apply
@@ -2595,15 +2479,15 @@
         </td>
       </tr><tr>
         <td>
-          150
+          145
         </td>
         <td>
-          190
+          186
         </td>
         <td>
-          5291
+          5110
           -
-          5300
+          5119
         </td>
         <td>
           Select
@@ -2619,15 +2503,15 @@
         </td>
       </tr><tr>
         <td>
-          150
+          145
         </td>
         <td>
-          191
+          187
         </td>
         <td>
-          5283
+          5102
           -
-          5319
+          5138
         </td>
         <td>
           TypeApply
@@ -2643,15 +2527,15 @@
         </td>
       </tr><tr>
         <td>
-          150
+          145
         </td>
         <td>
-          192
+          188
         </td>
         <td>
-          5255
+          5074
           -
-          5320
+          5139
         </td>
         <td>
           Apply
@@ -2667,15 +2551,15 @@
         </td>
       </tr><tr>
         <td>
-          150
+          145
         </td>
         <td>
-          193
+          189
         </td>
         <td>
-          5255
+          5074
           -
-          5320
+          5139
         </td>
         <td>
           Block
@@ -2691,15 +2575,15 @@
         </td>
       </tr><tr>
         <td>
-          151
+          147
         </td>
         <td>
-          194
+          190
         </td>
         <td>
-          5339
+          5159
           -
-          5351
+          5171
         </td>
         <td>
           Apply
@@ -2715,15 +2599,15 @@
         </td>
       </tr><tr>
         <td>
-          151
+          147
         </td>
         <td>
-          195
+          191
         </td>
         <td>
-          5339
+          5159
           -
-          5360
+          5180
         </td>
         <td>
           Select
@@ -2739,15 +2623,15 @@
         </td>
       </tr><tr>
         <td>
-          151
+          147
         </td>
         <td>
-          196
+          192
         </td>
         <td>
-          5325
+          5145
           -
-          5370
+          5190
         </td>
         <td>
           Apply
@@ -2763,15 +2647,15 @@
         </td>
       </tr><tr>
         <td>
-          151
+          147
         </td>
         <td>
-          197
+          193
         </td>
         <td>
-          5338
+          5158
           -
-          5338
+          5158
         </td>
         <td>
           Literal
@@ -2787,15 +2671,15 @@
         </td>
       </tr><tr>
         <td>
-          162
+          154
         </td>
         <td>
-          198
+          194
         </td>
         <td>
-          5735
+          5368
           -
-          5768
+          5401
         </td>
         <td>
           Apply
@@ -2811,15 +2695,15 @@
         </td>
       </tr><tr>
         <td>
-          163
+          155
         </td>
         <td>
-          199
+          195
         </td>
         <td>
-          5777
+          5410
           -
-          5790
+          5423
         </td>
         <td>
           Apply
@@ -2835,15 +2719,15 @@
         </td>
       </tr><tr>
         <td>
-          163
+          155
         </td>
         <td>
-          202
+          198
         </td>
         <td>
-          5773
+          5406
           -
-          5773
+          5406
         </td>
         <td>
           Literal
@@ -2859,15 +2743,15 @@
         </td>
       </tr><tr>
         <td>
-          163
+          155
         </td>
         <td>
-          203
+          199
         </td>
         <td>
-          5773
+          5406
           -
-          5773
+          5406
         </td>
         <td>
           Block
@@ -2883,15 +2767,15 @@
         </td>
       </tr><tr>
         <td>
-          164
+          156
         </td>
         <td>
-          200
+          196
         </td>
         <td>
-          5800
+          5433
           -
-          5928
+          5561
         </td>
         <td>
           Throw
@@ -2907,15 +2791,15 @@
         </td>
       </tr><tr>
         <td>
-          164
+          156
         </td>
         <td>
-          201
+          197
         </td>
         <td>
-          5800
+          5433
           -
-          5928
+          5561
         </td>
         <td>
           Block
@@ -2931,15 +2815,15 @@
         </td>
       </tr><tr>
         <td>
-          166
+          158
         </td>
         <td>
-          204
+          200
         </td>
         <td>
-          5961
+          5594
           -
-          5968
+          5601
         </td>
         <td>
           Select
@@ -2955,15 +2839,15 @@
         </td>
       </tr><tr>
         <td>
-          166
+          158
         </td>
         <td>
-          205
+          201
         </td>
         <td>
-          5939
+          5572
           -
-          5969
+          5602
         </td>
         <td>
           Apply
@@ -2979,15 +2863,15 @@
         </td>
       </tr><tr>
         <td>
-          169
+          161
         </td>
         <td>
-          206
+          202
         </td>
         <td>
-          6022
+          5655
           -
-          6042
+          5675
         </td>
         <td>
           Apply
@@ -3003,15 +2887,15 @@
         </td>
       </tr><tr>
         <td>
-          169
+          161
         </td>
         <td>
-          207
+          203
         </td>
         <td>
-          6005
+          5638
           -
-          6043
+          5676
         </td>
         <td>
           Apply
@@ -3027,15 +2911,15 @@
         </td>
       </tr><tr>
         <td>
-          186
+          178
         </td>
         <td>
-          208
+          204
         </td>
         <td>
-          6701
+          6334
           -
-          6733
+          6366
         </td>
         <td>
           Literal

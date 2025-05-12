@@ -133,7 +133,7 @@
 </span>109 <span style=''>      case mapType: MapType =&gt; </span><span style='background: #AEF1AE'>ContextInterfaces.mapProvider(mapType, path, expr, stillSetWhenNull, config)</span><span style=''>
 </span>110 <span style=''>      case arrayType: ArrayType =&gt; </span><span style='background: #AEF1AE'>ContextInterfaces.arrayProvider(arrayType, path, expr, stillSetWhenNull, config)</span><span style=''>
 </span>111 <span style=''>      // calendar interval?
-</span>112 <span style=''>      case t =&gt; </span><span style='background: #F0ADAD'>throw new DMNException(s&quot;Provider type $t is not supported&quot;)</span><span style=''>
+</span>112 <span style=''>      case t =&gt; </span><span style='background: #AEF1AE'>throw new DMNException(s&quot;Provider type $t is not supported&quot;)</span><span style=''>
 </span>113 <span style=''>    }
 </span>114 <span style=''>
 </span>115 <span style=''>}
@@ -2306,7 +2306,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           throw new com.sparkutils.dmn.DMNException(scala.StringContext.apply(&quot;Provider type &quot;, &quot; is not supported&quot;).s(t))
         </td>
       </tr><tr>
@@ -2330,7 +2330,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           throw new com.sparkutils.dmn.DMNException(scala.StringContext.apply(&quot;Provider type &quot;, &quot; is not supported&quot;).s(t))
         </td>
       </tr>
