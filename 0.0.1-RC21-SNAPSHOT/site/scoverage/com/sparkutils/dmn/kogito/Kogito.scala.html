@@ -144,63 +144,71 @@
 </span>120 <span style=''></span><span style='background: #F0ADAD'>          return</span><span style=''>
 </span>121 <span style=''>      }
 </span>122 <span style=''>
-</span>123 <span style=''>    // top is the root context, bottom is the place we'd store things
-</span>124 <span style=''>    </span><span style='background: #AEF1AE'>bits.drop(1).dropRight(1).foldLeft(starter){
-</span>125 <span style=''></span><span style='background: #AEF1AE'>      (map, pathBit) =&gt;
-</span>126 <span style=''></span><span style='background: #AEF1AE'>        map match {
-</span>127 <span style=''></span><span style='background: #AEF1AE'>          case t: MAP </span><span style='background: #F0ADAD'>=&gt;
-</span>128 <span style=''></span><span style='background: #F0ADAD'>            val n =
-</span>129 <span style=''></span><span style='background: #F0ADAD'>              t.get(pathBit) match {
-</span>130 <span style=''></span><span style='background: #F0ADAD'>                case null =&gt; new util.HashMap[String, Object]()
-</span>131 <span style=''></span><span style='background: #F0ADAD'>                case t: MAP =&gt; t
-</span>132 <span style=''></span><span style='background: #F0ADAD'>                case _ =&gt; new util.HashMap[String, Object]()
-</span>133 <span style=''></span><span style='background: #F0ADAD'>              }
-</span>134 <span style=''></span><span style='background: #F0ADAD'>            t.put(pathBit, n)
-</span>135 <span style=''></span><span style='background: #F0ADAD'>            n</span><span style='background: #AEF1AE'>
-</span>136 <span style=''></span><span style='background: #AEF1AE'>          case _ =&gt; </span><span style='background: #F0ADAD'>map</span><span style='background: #AEF1AE'>
-</span>137 <span style=''></span><span style='background: #AEF1AE'>        }
-</span>138 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
-</span>139 <span style=''>
-</span>140 <span style=''>    def updateContext(bits: Seq[String], map: MAP): MAP =
-</span>141 <span style=''>      if (</span><span style='background: #AEF1AE'>bits.size == 1</span><span style=''>) </span><span style='background: #AEF1AE'>{
-</span>142 <span style=''></span><span style='background: #AEF1AE'>        map.put(bits.head, data.asInstanceOf[Object])
-</span>143 <span style=''></span><span style='background: #AEF1AE'>        map
-</span>144 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''> else
-</span>145 <span style=''>        </span><span style='background: #F0ADAD'>updateContext(bits.drop(1), map.get(bits.head).asInstanceOf[MAP])</span><span style=''>
-</span>146 <span style=''>
-</span>147 <span style=''>    </span><span style='background: #AEF1AE'>ctx.set(bits.head, updateContext(bits.drop(1).toVector, starter))</span><span style=''> // drop the 1st as that's for the root context
-</span>148 <span style=''>  }
-</span>149 <span style=''>}
-</span>150 <span style=''>
-</span>151 <span style=''>case class KogitoDMNRuntime(runtime: org.kie.dmn.api.core.DMNRuntime) extends DMNRuntime {
+</span>123 <span style=''>    val remaining =
+</span>124 <span style=''>      if (</span><span style='background: #AEF1AE'>data.isInstanceOf[MAP]</span><span style=''>)
+</span>125 <span style=''>        </span><span style='background: #AEF1AE'>bits.drop(1)</span><span style=''>
+</span>126 <span style=''>      else
+</span>127 <span style=''>        </span><span style='background: #AEF1AE'>bits.drop(1).dropRight(1)</span><span style=''>
+</span>128 <span style=''>
+</span>129 <span style=''>    </span><span style='background: #AEF1AE'>remaining.foldLeft(starter){
+</span>130 <span style=''></span><span style='background: #AEF1AE'>      (map, pathBit) =&gt;
+</span>131 <span style=''></span><span style='background: #AEF1AE'>        map match {
+</span>132 <span style=''></span><span style='background: #AEF1AE'>          case t: MAP =&gt;
+</span>133 <span style=''></span><span style='background: #AEF1AE'>            val n =
+</span>134 <span style=''></span><span style='background: #AEF1AE'>              t.get(pathBit) match {
+</span>135 <span style=''></span><span style='background: #AEF1AE'>                case null =&gt; new util.HashMap[String, Object]()
+</span>136 <span style=''></span><span style='background: #AEF1AE'>                case t: MAP =&gt; t
+</span>137 <span style=''></span><span style='background: #AEF1AE'>                case _ =&gt; </span><span style='background: #F0ADAD'>new util.HashMap[String, Object]()</span><span style='background: #AEF1AE'>
+</span>138 <span style=''></span><span style='background: #AEF1AE'>              }
+</span>139 <span style=''></span><span style='background: #AEF1AE'>            t.put(pathBit, n)
+</span>140 <span style=''></span><span style='background: #AEF1AE'>            n
+</span>141 <span style=''></span><span style='background: #AEF1AE'>          case _ =&gt; </span><span style='background: #F0ADAD'>map</span><span style='background: #AEF1AE'>
+</span>142 <span style=''></span><span style='background: #AEF1AE'>        }
+</span>143 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>144 <span style=''>
+</span>145 <span style=''>    def updateContext(bits: Seq[String], map: MAP): MAP =
+</span>146 <span style=''>      if (</span><span style='background: #AEF1AE'>bits.size == 1</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>147 <span style=''></span><span style='background: #AEF1AE'>        map.put(bits.head, data.asInstanceOf[Object])
+</span>148 <span style=''></span><span style='background: #AEF1AE'>        map
+</span>149 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''> else
+</span>150 <span style=''>        </span><span style='background: #AEF1AE'>updateContext(bits.drop(1), map.get(bits.head).asInstanceOf[MAP])</span><span style=''>
+</span>151 <span style=''>    </span><span style='background: #AEF1AE'>updateContext(bits.drop(1).toVector, starter)</span><span style=''>
 </span>152 <span style=''>
-</span>153 <span style=''>  def getModel(name: String, namespace: String): DMNModel = {
-</span>154 <span style=''>    val model = </span><span style='background: #AEF1AE'>runtime.getModel(namespace, name)</span><span style=''>
-</span>155 <span style=''>    if (</span><span style='background: #AEF1AE'>model eq null</span><span style=''>) {
-</span>156 <span style=''>      </span><span style='background: #AEF1AE'>throw new DMNException(s&quot;Could not load model from Kogito runtime with namespace $namespace and name $name - {$namespace}$name&quot;)</span><span style=''>
-</span>157 <span style=''>    }
-</span>158 <span style=''>    </span><span style='background: #AEF1AE'>KogitoDMNModel(model, runtime)</span><span style=''>
-</span>159 <span style=''>  }
+</span>153 <span style=''>    //ctx.set(bits.head, updateContext(bits.drop(1).toVector, starter)) // drop the 1st as that's for the root context
+</span>154 <span style=''>
+</span>155 <span style=''>//    ctx.set(path.asInstanceOf[KogitoDMNContextPath].path, data)
+</span>156 <span style=''>  }
+</span>157 <span style=''>}
+</span>158 <span style=''>
+</span>159 <span style=''>case class KogitoDMNRuntime(runtime: org.kie.dmn.api.core.DMNRuntime) extends DMNRuntime {
 </span>160 <span style=''>
-</span>161 <span style=''>  def context(): DMNContext = </span><span style='background: #AEF1AE'>KogitoDMNContext(runtime.newContext())</span><span style=''>
-</span>162 <span style=''>}
-</span>163 <span style=''>
-</span>164 <span style=''>case class KogitoFeelEvent(severity: String, message: String, line: Int, column: Int, sourceException: String, offendingSymbol: String) extends Serializable
-</span>165 <span style=''>
-</span>166 <span style=''>case class KogitoMessage(sourceId: String, sourceReference: String, exception: String, feelEvent: KogitoFeelEvent) extends Serializable
-</span>167 <span style=''>
-</span>168 <span style=''>/**
-</span>169 <span style=''> * Represents the DDL provider output type for debugMode
-</span>170 <span style=''> * @param decisionId
-</span>171 <span style=''> * @param decisionName
-</span>172 <span style=''> * @param hasErrors
-</span>173 <span style=''> * @param messages
-</span>174 <span style=''> */
-</span>175 <span style=''>case class KogitoResult(decisionId: String, decisionName: String, hasErrors: Boolean, messages: Seq[KogitoMessage], evaluationStatus: String) extends Serializable
-</span>176 <span style=''>
-</span>177 <span style=''>object Errors {
-</span>178 <span style=''>  val CONTEXT_PROVIDER_PARSE = </span><span style='background: #AEF1AE'>&quot;FieldExpression is invalid SQL&quot;</span><span style=''>
-</span>179 <span style=''>}
+</span>161 <span style=''>  def getModel(name: String, namespace: String): DMNModel = {
+</span>162 <span style=''>    val model = </span><span style='background: #AEF1AE'>runtime.getModel(namespace, name)</span><span style=''>
+</span>163 <span style=''>    if (</span><span style='background: #AEF1AE'>model eq null</span><span style=''>) {
+</span>164 <span style=''>      </span><span style='background: #AEF1AE'>throw new DMNException(s&quot;Could not load model from Kogito runtime with namespace $namespace and name $name - {$namespace}$name&quot;)</span><span style=''>
+</span>165 <span style=''>    }
+</span>166 <span style=''>    </span><span style='background: #AEF1AE'>KogitoDMNModel(model, runtime)</span><span style=''>
+</span>167 <span style=''>  }
+</span>168 <span style=''>
+</span>169 <span style=''>  def context(): DMNContext = </span><span style='background: #AEF1AE'>KogitoDMNContext(runtime.newContext())</span><span style=''>
+</span>170 <span style=''>}
+</span>171 <span style=''>
+</span>172 <span style=''>case class KogitoFeelEvent(severity: String, message: String, line: Int, column: Int, sourceException: String, offendingSymbol: String) extends Serializable
+</span>173 <span style=''>
+</span>174 <span style=''>case class KogitoMessage(sourceId: String, sourceReference: String, exception: String, feelEvent: KogitoFeelEvent) extends Serializable
+</span>175 <span style=''>
+</span>176 <span style=''>/**
+</span>177 <span style=''> * Represents the DDL provider output type for debugMode
+</span>178 <span style=''> * @param decisionId
+</span>179 <span style=''> * @param decisionName
+</span>180 <span style=''> * @param hasErrors
+</span>181 <span style=''> * @param messages
+</span>182 <span style=''> */
+</span>183 <span style=''>case class KogitoResult(decisionId: String, decisionName: String, hasErrors: Boolean, messages: Seq[KogitoMessage], evaluationStatus: String) extends Serializable
+</span>184 <span style=''>
+</span>185 <span style=''>object Errors {
+</span>186 <span style=''>  val CONTEXT_PROVIDER_PARSE = </span><span style='background: #AEF1AE'>&quot;FieldExpression is invalid SQL&quot;</span><span style=''>
+</span>187 <span style=''>}
 </span></pre>
           </div>
           <div class="tab-pane" id="statementlist">
@@ -2067,9 +2075,81 @@
           169
         </td>
         <td>
-          4617
+          4573
           -
-          4642
+          4595
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.isInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          data.isInstanceOf[com.sparkutils.dmn.kogito.Types.MAP]
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          170
+        </td>
+        <td>
+          4605
+          -
+          4617
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.IndexedSeqOptimized.drop
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.refArrayOps[String](bits).drop(1)
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          171
+        </td>
+        <td>
+          4605
+          -
+          4617
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.collection.IndexedSeqOptimized.drop
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.refArrayOps[String](bits).drop(1)
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          172
+        </td>
+        <td>
+          4637
+          -
+          4662
         </td>
         <td>
           Apply
@@ -2085,15 +2165,39 @@
         </td>
       </tr><tr>
         <td>
-          124
+          127
         </td>
         <td>
-          179
+          173
         </td>
         <td>
-          4617
+          4637
           -
-          5045
+          4662
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.collection.IndexedSeqOptimized.dropRight
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.refArrayOps[String](scala.Predef.refArrayOps[String](bits).drop(1)).dropRight(1)
+        </td>
+      </tr><tr>
+        <td>
+          129
+        </td>
+        <td>
+          183
+        </td>
+        <td>
+          4668
+          -
+          5080
         </td>
         <td>
           Apply
@@ -2105,7 +2209,7 @@
           
         </td>
         <td style="background: #AEF1AE">
-          scala.Predef.refArrayOps[String](scala.Predef.refArrayOps[String](scala.Predef.refArrayOps[String](bits).drop(1)).dropRight(1)).foldLeft[com.sparkutils.dmn.kogito.Types.MAP](starter)(((map: com.sparkutils.dmn.kogito.Types.MAP, pathBit: String) =&gt; map match {
+          scala.Predef.refArrayOps[String](remaining).foldLeft[com.sparkutils.dmn.kogito.Types.MAP](starter)(((map: com.sparkutils.dmn.kogito.Types.MAP, pathBit: String) =&gt; map match {
   case (t @ (_: com.sparkutils.dmn.kogito.Types.MAP)) =&gt; {
     val n: com.sparkutils.dmn.kogito.Types.MAP = t.get(pathBit) match {
       case null =&gt; new java.util.HashMap[String,Object]()
@@ -2120,15 +2224,15 @@
         </td>
       </tr><tr>
         <td>
-          127
+          132
         </td>
         <td>
-          177
+          181
         </td>
         <td>
-          4728
+          4763
           -
-          5005
+          5040
         </td>
         <td>
           Block
@@ -2139,7 +2243,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           {
   val n: com.sparkutils.dmn.kogito.Types.MAP = t.get(pathBit) match {
     case null =&gt; new java.util.HashMap[String,Object]()
@@ -2152,15 +2256,15 @@
         </td>
       </tr><tr>
         <td>
-          129
+          134
         </td>
         <td>
-          170
+          174
         </td>
         <td>
-          4765
+          4800
           -
-          4779
+          4814
         </td>
         <td>
           Apply
@@ -2171,20 +2275,20 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           t.get(pathBit)
         </td>
       </tr><tr>
         <td>
-          130
+          135
         </td>
         <td>
-          171
+          175
         </td>
         <td>
-          4817
+          4852
           -
-          4851
+          4886
         </td>
         <td>
           Apply
@@ -2195,20 +2299,20 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           new java.util.HashMap[String,Object]()
         </td>
       </tr><tr>
         <td>
-          130
+          135
         </td>
         <td>
-          172
+          176
         </td>
         <td>
-          4817
+          4852
           -
-          4851
+          4886
         </td>
         <td>
           Block
@@ -2219,20 +2323,20 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           new java.util.HashMap[String,Object]()
         </td>
       </tr><tr>
         <td>
-          131
+          136
         </td>
         <td>
-          173
+          177
         </td>
         <td>
-          4883
+          4918
           -
-          4884
+          4919
         </td>
         <td>
           Ident
@@ -2243,20 +2347,20 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           t
         </td>
       </tr><tr>
         <td>
-          132
+          137
         </td>
         <td>
-          174
+          178
         </td>
         <td>
-          4911
+          4946
           -
-          4945
+          4980
         </td>
         <td>
           Apply
@@ -2272,15 +2376,15 @@
         </td>
       </tr><tr>
         <td>
-          132
+          137
         </td>
         <td>
-          175
+          179
         </td>
         <td>
-          4911
+          4946
           -
-          4945
+          4980
         </td>
         <td>
           Block
@@ -2296,15 +2400,15 @@
         </td>
       </tr><tr>
         <td>
-          134
+          139
         </td>
         <td>
-          176
+          180
         </td>
         <td>
-          4974
+          5009
           -
-          4991
+          5026
         </td>
         <td>
           Apply
@@ -2315,20 +2419,20 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           t.put(pathBit, n)
         </td>
       </tr><tr>
         <td>
-          136
+          141
         </td>
         <td>
-          178
+          182
         </td>
         <td>
-          5026
+          5061
           -
-          5029
+          5064
         </td>
         <td>
           Ident
@@ -2344,15 +2448,15 @@
         </td>
       </tr><tr>
         <td>
-          141
+          146
         </td>
         <td>
-          180
+          184
         </td>
         <td>
-          5115
+          5150
           -
-          5129
+          5164
         </td>
         <td>
           Apply
@@ -2368,15 +2472,15 @@
         </td>
       </tr><tr>
         <td>
-          141
+          146
         </td>
         <td>
-          184
+          188
         </td>
         <td>
-          5131
+          5166
           -
-          5206
+          5241
         </td>
         <td>
           Block
@@ -2395,15 +2499,15 @@
         </td>
       </tr><tr>
         <td>
-          142
+          147
         </td>
         <td>
-          181
+          185
         </td>
         <td>
-          5149
+          5184
           -
-          5158
+          5193
         </td>
         <td>
           Select
@@ -2419,15 +2523,15 @@
         </td>
       </tr><tr>
         <td>
-          142
+          147
         </td>
         <td>
-          182
+          186
         </td>
         <td>
-          5160
+          5195
           -
-          5185
+          5220
         </td>
         <td>
           TypeApply
@@ -2443,15 +2547,15 @@
         </td>
       </tr><tr>
         <td>
-          142
+          147
         </td>
         <td>
-          183
+          187
         </td>
         <td>
-          5141
+          5176
           -
-          5186
+          5221
         </td>
         <td>
           Apply
@@ -2467,15 +2571,15 @@
         </td>
       </tr><tr>
         <td>
-          145
+          150
         </td>
         <td>
-          185
+          189
         </td>
         <td>
-          5234
+          5269
           -
-          5246
+          5281
         </td>
         <td>
           Apply
@@ -2486,20 +2590,20 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           bits.drop(1)
         </td>
       </tr><tr>
         <td>
-          145
+          150
         </td>
         <td>
-          186
+          190
         </td>
         <td>
-          5256
+          5291
           -
-          5265
+          5300
         </td>
         <td>
           Select
@@ -2510,20 +2614,20 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           bits.head
         </td>
       </tr><tr>
         <td>
-          145
+          150
         </td>
         <td>
-          187
+          191
         </td>
         <td>
-          5248
+          5283
           -
-          5284
+          5319
         </td>
         <td>
           TypeApply
@@ -2534,20 +2638,20 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           map.get(bits.head).asInstanceOf[com.sparkutils.dmn.kogito.Types.MAP]
         </td>
       </tr><tr>
         <td>
-          145
+          150
         </td>
         <td>
-          188
+          192
         </td>
         <td>
-          5220
+          5255
           -
-          5285
+          5320
         </td>
         <td>
           Apply
@@ -2558,20 +2662,20 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           updateContext(bits.drop(1), map.get(bits.head).asInstanceOf[com.sparkutils.dmn.kogito.Types.MAP])
         </td>
       </tr><tr>
         <td>
-          145
+          150
         </td>
         <td>
-          189
+          193
         </td>
         <td>
-          5220
+          5255
           -
-          5285
+          5320
         </td>
         <td>
           Block
@@ -2582,44 +2686,20 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           updateContext(bits.drop(1), map.get(bits.head).asInstanceOf[com.sparkutils.dmn.kogito.Types.MAP])
         </td>
       </tr><tr>
         <td>
-          147
+          151
         </td>
         <td>
-          190
+          194
         </td>
         <td>
-          5299
+          5339
           -
-          5308
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          scala.collection.IndexedSeqOptimized.head
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          scala.Predef.refArrayOps[String](bits).head
-        </td>
-      </tr><tr>
-        <td>
-          147
-        </td>
-        <td>
-          191
-        </td>
-        <td>
-          5324
-          -
-          5336
+          5351
         </td>
         <td>
           Apply
@@ -2635,15 +2715,15 @@
         </td>
       </tr><tr>
         <td>
-          147
+          151
         </td>
         <td>
-          192
+          195
         </td>
         <td>
-          5324
+          5339
           -
-          5345
+          5360
         </td>
         <td>
           Select
@@ -2659,15 +2739,15 @@
         </td>
       </tr><tr>
         <td>
-          147
+          151
         </td>
         <td>
-          193
+          196
         </td>
         <td>
-          5310
+          5325
           -
-          5355
+          5370
         </td>
         <td>
           Apply
@@ -2683,39 +2763,15 @@
         </td>
       </tr><tr>
         <td>
-          147
+          151
         </td>
         <td>
-          194
+          197
         </td>
         <td>
-          5291
+          5338
           -
-          5356
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          org.kie.dmn.api.core.DMNContext.set
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          KogitoDMNContext.this.ctx.set(scala.Predef.refArrayOps[String](bits).head, updateContext(scala.Predef.refArrayOps[String](scala.Predef.refArrayOps[String](bits).drop(1)).toVector, starter))
-        </td>
-      </tr><tr>
-        <td>
-          147
-        </td>
-        <td>
-          195
-        </td>
-        <td>
-          5298
-          -
-          5298
+          5338
         </td>
         <td>
           Literal
@@ -2731,15 +2787,15 @@
         </td>
       </tr><tr>
         <td>
-          154
+          162
         </td>
         <td>
-          196
+          198
         </td>
         <td>
-          5581
+          5735
           -
-          5614
+          5768
         </td>
         <td>
           Apply
@@ -2755,15 +2811,15 @@
         </td>
       </tr><tr>
         <td>
-          155
+          163
         </td>
         <td>
-          197
+          199
         </td>
         <td>
-          5623
+          5777
           -
-          5636
+          5790
         </td>
         <td>
           Apply
@@ -2779,15 +2835,15 @@
         </td>
       </tr><tr>
         <td>
-          155
+          163
         </td>
         <td>
-          200
+          202
         </td>
         <td>
-          5619
+          5773
           -
-          5619
+          5773
         </td>
         <td>
           Literal
@@ -2803,15 +2859,15 @@
         </td>
       </tr><tr>
         <td>
-          155
+          163
         </td>
         <td>
-          201
+          203
         </td>
         <td>
-          5619
+          5773
           -
-          5619
+          5773
         </td>
         <td>
           Block
@@ -2827,15 +2883,15 @@
         </td>
       </tr><tr>
         <td>
-          156
+          164
         </td>
         <td>
-          198
+          200
         </td>
         <td>
-          5646
+          5800
           -
-          5774
+          5928
         </td>
         <td>
           Throw
@@ -2851,15 +2907,15 @@
         </td>
       </tr><tr>
         <td>
-          156
+          164
         </td>
         <td>
-          199
+          201
         </td>
         <td>
-          5646
+          5800
           -
-          5774
+          5928
         </td>
         <td>
           Block
@@ -2875,15 +2931,15 @@
         </td>
       </tr><tr>
         <td>
-          158
+          166
         </td>
         <td>
-          202
+          204
         </td>
         <td>
-          5807
+          5961
           -
-          5814
+          5968
         </td>
         <td>
           Select
@@ -2899,15 +2955,15 @@
         </td>
       </tr><tr>
         <td>
-          158
+          166
         </td>
         <td>
-          203
+          205
         </td>
         <td>
-          5785
+          5939
           -
-          5815
+          5969
         </td>
         <td>
           Apply
@@ -2923,15 +2979,15 @@
         </td>
       </tr><tr>
         <td>
-          161
+          169
         </td>
         <td>
-          204
+          206
         </td>
         <td>
-          5868
+          6022
           -
-          5888
+          6042
         </td>
         <td>
           Apply
@@ -2947,15 +3003,15 @@
         </td>
       </tr><tr>
         <td>
-          161
+          169
         </td>
         <td>
-          205
+          207
         </td>
         <td>
-          5851
+          6005
           -
-          5889
+          6043
         </td>
         <td>
           Apply
@@ -2971,15 +3027,15 @@
         </td>
       </tr><tr>
         <td>
-          178
+          186
         </td>
         <td>
-          206
+          208
         </td>
         <td>
-          6547
+          6701
           -
-          6579
+          6733
         </td>
         <td>
           Literal
