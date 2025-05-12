@@ -59,22 +59,7 @@ object Utils {
           }
           """)
   }
-/*
-  def exprCode(boxed: Class[_], ctx: CodegenContext, code: Block, cast: Boolean = true): ExprCode = {
-    val isNull = ctx.freshName("isNull")
-    val value = ctx.freshName("value")
 
-    val expr = ExprCode(
-      JavaCode.isNullVariable(isNull),
-      JavaCode.variable(value, classOf[Object])
-    )
-    expr.copy(code =
-      code"""
-        Object ${expr.value} = ${doCast(boxed, cast)} $code
-        boolean ${expr.isNull} = (${expr.value} == null);
-          """)
-  }
-*/
   /**
    * compares two options where normal equality doesn't work.
    * useful for nullability tests.  If either a or b are undefined the function f
