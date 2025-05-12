@@ -99,7 +99,7 @@
 </span>75 <span style=''></span><span style='background: #AEF1AE'>        val dataType = DataType.fromDDL(t)
 </span>76 <span style=''></span><span style='background: #AEF1AE'>        contextProviderFromDDL(inputField.stillSetWhenNull, path, expr, config, dataType)</span><span style=''>
 </span>77 <span style=''>      case _ =&gt;
-</span>78 <span style=''>        </span><span style='background: #F0ADAD'>utils.loadUnaryContextProvider(inputField.providerType, path, expr)</span><span style=''>
+</span>78 <span style=''>        </span><span style='background: #AEF1AE'>utils.loadUnaryContextProvider(inputField.providerType, path, expr)</span><span style=''>
 </span>79 <span style=''>    }
 </span>80 <span style=''>
 </span>81 <span style=''>  }
@@ -113,10 +113,10 @@
 </span>89 <span style=''></span><span style='background: #AEF1AE'>        dataType match {
 </span>90 <span style=''></span><span style='background: #AEF1AE'>          case s: StructType =&gt;
 </span>91 <span style=''></span><span style='background: #AEF1AE'>            KogitoDDLResult(debug = debug, underlyingType = s, configMap(dmnConfiguration))
-</span>92 <span style=''></span><span style='background: #AEF1AE'>          case _ =&gt; </span><span style='background: #F0ADAD'>throw new DMNException(s&quot;ResultProvider type $t is not supported, only JSON and Struct is&quot;)</span><span style='background: #AEF1AE'>
+</span>92 <span style=''></span><span style='background: #AEF1AE'>          case _ =&gt; throw new DMNException(s&quot;ResultProvider type $t is not supported, only JSON and Struct is&quot;)
 </span>93 <span style=''></span><span style='background: #AEF1AE'>        }</span><span style=''>
 </span>94 <span style=''>      case _ =&gt;
-</span>95 <span style=''>        </span><span style='background: #F0ADAD'>utils.loadResultProvider(resultProviderType, debug)</span><span style=''>
+</span>95 <span style=''>        </span><span style='background: #AEF1AE'>utils.loadResultProvider(resultProviderType, debug)</span><span style=''>
 </span>96 <span style=''>    }
 </span>97 <span style=''>}
 </span>98 <span style=''>
@@ -177,7 +177,7 @@
 </span>153 <span style=''>  def getModel(name: String, namespace: String): DMNModel = {
 </span>154 <span style=''>    val model = </span><span style='background: #AEF1AE'>runtime.getModel(namespace, name)</span><span style=''>
 </span>155 <span style=''>    if (</span><span style='background: #AEF1AE'>model eq null</span><span style=''>) {
-</span>156 <span style=''>      </span><span style='background: #F0ADAD'>throw new DMNException(s&quot;Could not load model from Kogito runtime with namespace $namespace and name $name - {$namespace}$name&quot;)</span><span style=''>
+</span>156 <span style=''>      </span><span style='background: #AEF1AE'>throw new DMNException(s&quot;Could not load model from Kogito runtime with namespace $namespace and name $name - {$namespace}$name&quot;)</span><span style=''>
 </span>157 <span style=''>    }
 </span>158 <span style=''>    </span><span style='background: #AEF1AE'>KogitoDMNModel(model, runtime)</span><span style=''>
 </span>159 <span style=''>  }
@@ -199,7 +199,7 @@
 </span>175 <span style=''>case class KogitoResult(decisionId: String, decisionName: String, hasErrors: Boolean, messages: Seq[KogitoMessage], evaluationStatus: String) extends Serializable
 </span>176 <span style=''>
 </span>177 <span style=''>object Errors {
-</span>178 <span style=''>  val CONTEXT_PROVIDER_PARSE = </span><span style='background: #F0ADAD'>&quot;FieldExpression is invalid SQL&quot;</span><span style=''>
+</span>178 <span style=''>  val CONTEXT_PROVIDER_PARSE = </span><span style='background: #AEF1AE'>&quot;FieldExpression is invalid SQL&quot;</span><span style=''>
 </span>179 <span style=''>}
 </span></pre>
           </div>
@@ -1200,7 +1200,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           inputField.providerType
         </td>
       </tr><tr>
@@ -1224,7 +1224,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.utils.loadUnaryContextProvider(inputField.providerType, path, expr)
         </td>
       </tr><tr>
@@ -1248,7 +1248,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.utils.loadUnaryContextProvider(inputField.providerType, path, expr)
         </td>
       </tr><tr>
@@ -1542,7 +1542,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           throw new com.sparkutils.dmn.DMNException(scala.StringContext.apply(&quot;ResultProvider type &quot;, &quot; is not supported, only JSON and Struct is&quot;).s(t))
         </td>
       </tr><tr>
@@ -1566,7 +1566,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           throw new com.sparkutils.dmn.DMNException(scala.StringContext.apply(&quot;ResultProvider type &quot;, &quot; is not supported, only JSON and Struct is&quot;).s(t))
         </td>
       </tr><tr>
@@ -1590,7 +1590,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.utils.loadResultProvider(resultProviderType, debug)
         </td>
       </tr><tr>
@@ -1614,7 +1614,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           com.sparkutils.dmn.impl.utils.loadResultProvider(resultProviderType, debug)
         </td>
       </tr><tr>
@@ -2846,7 +2846,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           throw new com.sparkutils.dmn.DMNException(scala.StringContext.apply(&quot;Could not load model from Kogito runtime with namespace &quot;, &quot; and name &quot;, &quot; - {&quot;, &quot;}&quot;, &quot;&quot;).s(namespace, name, namespace, name))
         </td>
       </tr><tr>
@@ -2870,7 +2870,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           throw new com.sparkutils.dmn.DMNException(scala.StringContext.apply(&quot;Could not load model from Kogito runtime with namespace &quot;, &quot; and name &quot;, &quot; - {&quot;, &quot;}&quot;, &quot;&quot;).s(namespace, name, namespace, name))
         </td>
       </tr><tr>
@@ -2990,7 +2990,7 @@
         <td>
           
         </td>
-        <td style="background: #F0ADAD">
+        <td style="background: #AEF1AE">
           &quot;FieldExpression is invalid SQL&quot;
         </td>
       </tr>
