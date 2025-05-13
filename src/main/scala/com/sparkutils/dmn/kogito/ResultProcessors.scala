@@ -3,7 +3,7 @@ package com.sparkutils.dmn.kogito
 import com.sparkutils.dmn
 import com.sparkutils.dmn.DMNResultProvider
 import com.sparkutils.dmn.impl.DMNExpression
-import com.sparkutils.dmn.kogito.types.Utils.exprCode
+import com.sparkutils.dmn.kogito.types.Utils.{exprCode, nullOr}
 import com.sparkutils.dmn.kogito.types.ResultInterfaces
 import com.sparkutils.dmn.kogito.types.ResultInterfaces.{EVALUATING, FAILED, NOT_EVALUATED, NOT_FOUND, SKIPPED_ERROR, SKIPPED_WARN, SUCCEEDED, evalStatusEnding, forTypeCodeGen}
 import org.apache.spark.sql.catalyst.InternalRow
@@ -16,6 +16,7 @@ import org.apache.spark.unsafe.types.UTF8String
 import org.kie.dmn.api.core
 import org.kie.dmn.api.core.DMNDecisionResult.DecisionEvaluationStatus
 import org.kie.dmn.api.core.{DMNMessage, DMNResult}
+import org.kie.dmn.api.feel.runtime.events.FEELEvent
 import org.kie.dmn.feel.lang.types.impl.ComparablePeriod
 import org.kie.dmn.model.api.LiteralExpression
 import org.kie.kogito.dmn.rest.DMNFEELComparablePeriodSerializer
@@ -146,33 +147,27 @@ case class KogitoDDLResult(debug: Boolean, underlyingType: StructType, config: M
         ires
   }
 
-  def nullOr[A, R >: AnyRef](what: A)(f: A => R): R =
-    if (what == null)
-      null
-    else
-      f(what)
-
   def withMessages(messages: java.util.List[DMNMessage]): GenericArrayData =
     new GenericArrayData(
       messages.asScala.map {
         m =>
           InternalRow(
-            nullOr(m.getSourceId)(a => UTF8String.fromString(a)),
-            nullOr(m.getSourceReference){
+            nullOr(a => UTF8String.fromString(a))(m.getSourceId),
+            nullOr{(_: Object) match {
               case feel: LiteralExpression => UTF8String.fromString(feel.getText)
               case a => UTF8String.fromString(a.toString)
-            },
-            nullOr(m.getException)(a => UTF8String.fromString(a.getMessage)),
-            nullOr(m.getFeelEvent) { ev =>
+            }}(m.getSourceReference),
+            nullOr((a: Throwable) => UTF8String.fromString(a.getMessage))(m.getException),
+            nullOr{ (ev: FEELEvent) =>
               InternalRow(
-                nullOr(ev.getSeverity)(a => UTF8String.fromString(a.toString)),
+                nullOr((a: FEELEvent.Severity) => UTF8String.fromString(a.toString))(ev.getSeverity),
                 UTF8String.fromString(ev.getMessage),
                 ev.getLine,
                 ev.getColumn,
-                nullOr(ev.getSourceException)(a => UTF8String.fromString(a.getMessage)),
-                nullOr(ev.getOffendingSymbol)(a => UTF8String.fromString(a.toString))
+                nullOr((a: Throwable) => UTF8String.fromString(a.getMessage))(ev.getSourceException),
+                nullOr((a: Object) => UTF8String.fromString(a.toString))(ev.getOffendingSymbol)
               )
-            }
+            }(m.getFeelEvent)
           )
       }
     )

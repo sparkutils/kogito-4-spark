@@ -71,6 +71,14 @@ object Utils {
     ((a.isDefined && b.isDefined && (f(a.get, b.get))) ||
       a.isEmpty && b.isEmpty)
 
+
+  def nullOr[A, R >: AnyRef](f: A => R): A => R =
+    what =>
+      if (what == null)
+        null
+      else
+        f(what)
+
 }
 
 class BaseKogitoMap(path: Any, pairs: scala.collection.Map[String, (Int, Accessor[_])]) extends SimpleMap {
