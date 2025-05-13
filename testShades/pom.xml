@@ -25,7 +25,7 @@
         <developerConnection>scm:git:ssh://github.com:sparkutils/kogito-4-spark.git</developerConnection>
         <url>http://github.com/sparkutils/kogito-4-spark/tree/master</url>
     </scm>
-<!-- not tied to a parent pom as it should not be built first and may be split out into a separate project -->
+<!-- not tied to a parent pom as it should  not be built first and may be split out into a separate project -->
     <profiles>
         <profile>
             <id>scala_2.12.18</id> <!-- 4 was built against this, seemingly dropped since Sep 23 -->
