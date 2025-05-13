@@ -1,5 +1,6 @@
 package com.sparkutils.dmn.kogito
 
+import com.sparkutils.dmn.kogito.Types.OSEQ
 import com.sparkutils.dmn.kogito.types.Utils.optEqual
 import com.sparkutils.dmn.{DMNConfiguration, DMNExecution, DMNFile, DMNInputField, DMNModelService}
 import frameless.{RecordFieldEncoder, TypedEncoder, TypedExpressionEncoder}
@@ -28,7 +29,7 @@ case class Result[A,B](eval: Top[A,B]) extends Serializable
 
 case class Quality[A,B](quality: Result[A,B]) extends Serializable
 
-case class DebugResult[A,B](eval: Top[A,B], debugMode: Seq[KogitoResult]) extends Serializable
+case class DebugResult[A,B](eval: Top[A,B], dmnDebugMode: OSEQ[KogitoResult], messages: OSEQ[KogitoMessage]) extends Serializable
 
 case class DebugQuality[A,B](quality: DebugResult[A,B]) extends Serializable
 
@@ -333,7 +334,7 @@ class DeepTest extends FunSuite with Matchers with TestUtils {
   def testDebugStructs[A: RecordFieldEncoder, B: RecordFieldEncoder](extra: String, maps: Seq[Map[A, B]], deriveContextTypes: Boolean = false, fullProxyDS: Boolean = true): Unit = evalCodeGens {
     val data = dataBasis(maps)
     val res = testResults[A, B, DebugQuality[A, B]]( maps, extra, s"struct<eval: ${theType(extra)}>", deep_struct, debug = true, fullProxyDS = fullProxyDS, deriveContextTypes = deriveContextTypes)
-    res.sorted shouldBe data.map(t => DebugQuality(DebugResult(t.top.copy(top1 = t.top.top1 +"a", strings = t.top.strings.map(_+"i") ), Seq(testDebug))))
+    res.sorted shouldBe data.map(t => DebugQuality(DebugResult(t.top.copy(top1 = t.top.top1 +"a", strings = t.top.strings.map(_+"i") ), Seq(testDebug), List())))
   }
 
   val testDebug = KogitoResult("_5BD6B443-5DB7-4CA4-84E2-AC86D643FB15", "eval", false, List(), "SUCCEEDED")

@@ -40,9 +40,9 @@ Ideally at the end of your runs you'll see - after 2 minutes or so and some stdo
 .......................................................
 Time: 95.255
 
-OK (78 tests)
+OK (79 tests)
 
-Finished. Result: Failures: 0. Ignored: 0. Tests run: 78. Time: 95255ms.
+Finished. Result: Failures: 0. Ignored: 0. Tests run: 79. Time: 95255ms.
 import com.sparkutils.dmn.kogito.tests.TestSuite
 import com.sparkutils.dmn.kogito.TestUtils
 fileLoc: String = /Workspace/Users/name@domain/kogito-4-spark-testdir

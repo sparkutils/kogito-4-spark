@@ -1,6 +1,7 @@
 package com.sparkutils.dmn.kogito
 
 import com.sparkutils.dmn.kogito.Errors.CONTEXT_PROVIDER_PARSE
+import com.sparkutils.dmn.kogito.Types.OSEQ
 import com.sparkutils.dmn.{DMNException, DMNExecution, DMNFile, DMNInputField, DMNModelService}
 import frameless.{TypedDataset, TypedEncoder, TypedExpressionEncoder}
 import org.apache.spark.sql.SaveMode
@@ -182,4 +183,28 @@ class ExceptionsTest extends FunSuite with Matchers with TestUtils {
     }
     e.message should include("Could not loadResultProvider fred")
   }
+
+  test("sqrt string should throw"){
+    implicit val spark = sparkSession
+    import sparkSession.implicits._
+
+    val tds = TypedDataset.create(Seq("testData")).dataset
+    val ds = if (inCodegen) tds.repartition(4) else tds
+
+    val exec = DMNExecution(scala.collection.immutable.Seq(
+      DMNFile("sqrt_name.dmn",
+        this.getClass.getClassLoader.getResourceAsStream("sqrt_name.dmn").readAllBytes()
+      )
+    ), DMNModelService("throws","throws", None, resultProvider = "struct<evaluate: double>"),
+      scala.collection.immutable.Seq(
+        DMNInputField("value","","inputData")
+      ))
+    val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec, debug = true))
+    dres.show
+    val messages = dres.select("quality.dmnMessages").as[OSEQ[KogitoMessage]].collect
+    messages.length shouldBe 1
+    messages.head.length shouldBe 1
+    messages.head.head shouldBe KogitoMessage("_EEA70EE7-2AD0-4466-B326-8C0514EE2E6E","sqrt(\"my name\")",null,KogitoFeelEvent("ERROR","Unable to find function 'sqrt( lass org.kie.dmn.feel.runtime.functions.SqrtFunctio )'",-1,-1,null,null))
+  }
+
 }

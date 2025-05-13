@@ -15,8 +15,9 @@ import org.apache.spark.sql.types.{ArrayType, BooleanType, DataType, IntegerType
 import org.apache.spark.unsafe.types.UTF8String
 import org.kie.dmn.api.core
 import org.kie.dmn.api.core.DMNDecisionResult.DecisionEvaluationStatus
-import org.kie.dmn.api.core.DMNResult
+import org.kie.dmn.api.core.{DMNMessage, DMNResult}
 import org.kie.dmn.feel.lang.types.impl.ComparablePeriod
+import org.kie.dmn.model.api.LiteralExpression
 import org.kie.kogito.dmn.rest.DMNFEELComparablePeriodSerializer
 import sparkutilsKogito.com.fasterxml.jackson.databind.{ObjectMapper, SerializationFeature}
 import sparkutilsKogito.com.fasterxml.jackson.databind.module.SimpleModule
@@ -32,31 +33,34 @@ trait KogitoProcess extends DMNResultProvider {
 
   def underlyingType: StructType
 
+  val messagesDDL =
+    ArrayType(StructType(Seq(
+      StructField("sourceId", StringType),
+      StructField("sourceReference", StringType), // TODO should this be structs for DMNModelInstrumentedBase ?
+      StructField("exception", StringType, nullable = true),
+      StructField("feelEvent", StructType(Seq(
+        StructField("severity", StringType),
+        StructField("message", StringType),
+        StructField("line", IntegerType),
+        StructField("column", IntegerType),
+        StructField("sourceException", StringType, nullable = true),
+        StructField("offendingSymbol", StringType)
+      )))
+    )))
+
   val debugDDL =
     ArrayType(StructType(Seq(
       StructField("decisionId", StringType),
       StructField("decisionName", StringType),
       StructField("hasErrors", BooleanType),
-      StructField("messages", ArrayType(StructType(Seq(
-        StructField("sourceId", StringType),
-        StructField("sourceReference", StringType), // TODO should this be structs for DMNModelInstrumentedBase ?
-        StructField("exception", StringType, nullable = true),
-        StructField("feelEvent", StructType(Seq(
-          StructField("severity", StringType),
-          StructField("message", StringType),
-          StructField("line", IntegerType),
-          StructField("column", IntegerType),
-          StructField("sourceException", StringType, nullable = true),
-          StructField("offendingSymbol", StringType)
-        )), nullable = true)
-      )))),
+      StructField("messages", messagesDDL, nullable = true),
       StructField("evaluationStatus", StringType),
     )))
 
   override def dataType: DataType = {
     val nullables = underlyingType.copy(fields = underlyingType.fields.map(_.copy(nullable = true)))
     if (debug)
-      nullables.copy(fields = nullables.fields :+ StructField("debugMode", debugDDL))
+      nullables.copy(fields = nullables.fields ++ Seq(StructField("dmnDebugMode", debugDDL), StructField("dmnMessages", messagesDDL)))
     else
       nullables
   }
@@ -142,38 +146,52 @@ case class KogitoDDLResult(debug: Boolean, underlyingType: StructType, config: M
         ires
   }
 
-  def withDebug(res: DMNResult, ires: GenericInternalRow) = {
-    new GenericInternalRow(ires.values :+ new GenericArrayData(
+  def nullOr[A, R >: AnyRef](what: A)(f: A => R): R =
+    if (what == null)
+      null
+    else
+      f(what)
+
+  def withMessages(messages: java.util.List[DMNMessage]): GenericArrayData =
+    new GenericArrayData(
+      messages.asScala.map {
+        m =>
+          InternalRow(
+            nullOr(m.getSourceId)(a => UTF8String.fromString(a)),
+            nullOr(m.getSourceReference){
+              case feel: LiteralExpression => UTF8String.fromString(feel.getText)
+              case a => UTF8String.fromString(a.toString)
+            },
+            nullOr(m.getException)(a => UTF8String.fromString(a.getMessage)),
+            nullOr(m.getFeelEvent) { ev =>
+              InternalRow(
+                nullOr(ev.getSeverity)(a => UTF8String.fromString(a.toString)),
+                UTF8String.fromString(ev.getMessage),
+                ev.getLine,
+                ev.getColumn,
+                nullOr(ev.getSourceException)(a => UTF8String.fromString(a.getMessage)),
+                nullOr(ev.getOffendingSymbol)(a => UTF8String.fromString(a.toString))
+              )
+            }
+          )
+      }
+    )
+
+  def withDebug(res: DMNResult, ires: GenericInternalRow) =
+    new GenericInternalRow(ires.values ++ Seq( new GenericArrayData(
       res.getDecisionResults.asScala.map {
         d =>
           InternalRow(
             UTF8String.fromString(d.getDecisionId),
             UTF8String.fromString(d.getDecisionName),
             d.hasErrors,
-            new GenericArrayData(
-              d.getMessages.asScala.map {
-                m =>
-                  InternalRow(
-                    UTF8String.fromString(m.getSourceId),
-                    UTF8String.fromString(m.getSourceReference.toString),
-                    if (m.getException eq null) null else UTF8String.fromString(m.getException.getMessage),
-                    if (m.getFeelEvent eq null) null else
-                      InternalRow(
-                        UTF8String.fromString(m.getFeelEvent.getSeverity.toString),
-                        UTF8String.fromString(m.getFeelEvent.getMessage),
-                        m.getFeelEvent.getLine,
-                        m.getFeelEvent.getColumn,
-                        if (m.getFeelEvent.getSourceException eq null) null else UTF8String.fromString(m.getFeelEvent.getSourceException.getMessage),
-                        UTF8String.fromString(m.getFeelEvent.getOffendingSymbol.toString)
-                      )
-                  )
-              }
-            ),
+            withMessages(d.getMessages),
             UTF8String.fromString(d.getEvaluationStatus.toString)
           )
       }
+      ),
+      withMessages(res.getMessages)
     ))
-  }
 
   def setStatuses(tres: GenericInternalRow, res: org.kie.dmn.api.core.DMNResult): GenericInternalRow =
     evalStatus.foldLeft(tres) {

@@ -66,7 +66,7 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
     testResults(res)
     val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec, debug = true))
     testResults(dres)
-    val debugs = dres.select("quality.debugMode").as[Seq[KogitoResult]].collect
+    val debugs = dres.select("quality.dmnDebugMode").as[Seq[KogitoResult]].collect
     debugs.forall( _ == Seq(testDebug)) shouldBe true
     if (exec.model.resultProvider.contains(evalStatusEnding)) {
       val statuses = dres.select(s"quality.evaluate$evalStatusEnding").as[Byte](TypedExpressionEncoder[Byte]).collect()

@@ -149,10 +149,10 @@ The top level decision result map is proxied for both DDL and JSON processing, s
 
 ### Debug mode
 
-Use debugMode when calling evaluate to force the full DMNResult structure (without results) to be written out into an additional debugMode field, in the case where no issues are present this is likely overkill and should be kept for debug information only.  The debugMode field has the following DDL type (also found in ResultProcessors.debugDDL):
+Use debugMode when calling evaluate to force the full DMNResult structure (without results) to be written out into additional dmnDebugMode and dmnMessages fields, in the case where no issues are present this is likely overkill and should be kept for debug information only.  The debugMode field has the following DDL type (also found in ResultProcessors.debugDDL):
 
 ```sql
-debugMode: array< struct< 
+dmnDebugMode: array< struct< 
   decisionId: String,
   decisionName: String,
   hasErrors: Boolean,
@@ -170,7 +170,20 @@ debugMode: array< struct<
     >
   > >,
   evaluationStatus: String
-> >  
+> >,
+dmnMessages: array< struct<
+    sourceId: String,
+    sourceReference: String,
+    exception: String,
+    feelEvent: struct<
+      severity: String,
+      message: String,
+      line: Integer,
+      column: Integer,
+      sourceException: String,
+      offendingSymbol: String
+    >
+> >
 ```
 
 In this mode the output DDL more closely mimics the Kogito DMNResult, the two output types are not compatible.
