@@ -1,12 +1,12 @@
 package com.sparkutils.dmn.kogito.types
 
-import com.sparkutils.dmn.kogito.types.Utils.{exprCode, exprCodeInterim, exprCodeIsNullAt}
+import com.sparkutils.dmn.kogito.types.Utils.{exprCode, exprCodeInterim, exprCodeIsNullAt, nullOr}
 import com.sparkutils.dmn.{DMNContextPath, DMNContextProvider, DMNException, UnaryDMNContextProvider}
 import org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeGenerator, CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Expression, SpecializedGetters}
 import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
-import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DataType, DateType, DecimalType, DoubleType, FloatType, IntegerType, LongType, MapType, ShortType, StringType, StructType, TimestampNTZType, TimestampType}
+import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DataType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, MapType, ShortType, StringType, StructType, TimestampNTZType, TimestampType}
 
 import java.time.{LocalDate, LocalDateTime}
 import scala.collection.JavaConverters._
@@ -85,38 +85,38 @@ object ContextInterfaces {
       (path: SpecializedGetters, i: Int) =>
         DateTimeUtils.microsToLocalDateTime( path.getLong(i) )
     }
-    case _: DecimalType => (path: Any, i: Int) =>
-      // max needed as Spark's past 3.4 move everything to max anyway, 1.0 comes back as 1.0 instead of 2016...
-      if (path == null) null else {
-        val t = path.asInstanceOf[SpecializedGetters].getDecimal(i, DecimalType.MAX_PRECISION, DecimalType.DEFAULT_SCALE)
-        if (t == null) null else t.toJavaBigDecimal
+    case _: DecimalType => // max needed as Spark's past 3.4 move everything to max anyway, 1.0 comes back as 1.0 instead of 2016...
+      nullAtOr{
+        (path: SpecializedGetters, i: Int) =>
+        val t = path.getDecimal(i, DecimalType.MAX_PRECISION, DecimalType.DEFAULT_SCALE)
+        nullOr((_: Decimal).toJavaBigDecimal)(t)
       }
     case ArrayType(typ, _) =>
       val entryAccessor = forType(typ, dmnConfiguration)
-      (path: Any, i: Int) => {
+      nullAtOr{ (path: Any, i: Int) =>
         val ar = {
           if (i == -1)
             path.asInstanceOf[ArrayData]
           else
             path.asInstanceOf[SpecializedGetters].getArray(i)
         }
-        if (ar == null) null else arrayOfType(entryAccessor, ar).asJava
+        nullOr((ar: ArrayData) => arrayOfType(entryAccessor, ar).asJava)(ar)
       }
     case MapType(k, v, _) => {
       val kAccessor = forType(k, dmnConfiguration)
       val vAccessor = forType(v, dmnConfiguration)
-      (path: Any, i: Int) => {
+      nullAtOr{ (path: Any, i: Int) =>
         val m =
           if (i == -1)
             path.asInstanceOf[MapData]
           else
             path.asInstanceOf[SpecializedGetters].getMap(i)
 
-        if (m == null) null else {
+        nullOr{(m: MapData) =>
           val ka = arrayOfType(kAccessor, m.keyArray())
           val va = arrayOfType(vAccessor, m.valueArray())
           (ka zip va).toMap.asJava
-        }
+        }(m)
       }
     }
     case _ => throw new DMNException(s"Could not load Kogito Context Accessor for dataType $dataType")
