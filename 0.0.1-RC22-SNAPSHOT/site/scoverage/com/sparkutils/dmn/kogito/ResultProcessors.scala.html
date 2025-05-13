@@ -27,7 +27,7 @@
 </span>3 <span style=''>import com.sparkutils.dmn
 </span>4 <span style=''>import com.sparkutils.dmn.DMNResultProvider
 </span>5 <span style=''>import com.sparkutils.dmn.impl.DMNExpression
-</span>6 <span style=''>import com.sparkutils.dmn.kogito.types.Utils.exprCode
+</span>6 <span style=''>import com.sparkutils.dmn.kogito.types.Utils.{exprCode, nullOr}
 </span>7 <span style=''>import com.sparkutils.dmn.kogito.types.ResultInterfaces
 </span>8 <span style=''>import com.sparkutils.dmn.kogito.types.ResultInterfaces.{EVALUATING, FAILED, NOT_EVALUATED, NOT_FOUND, SKIPPED_ERROR, SKIPPED_WARN, SUCCEEDED, evalStatusEnding, forTypeCodeGen}
 </span>9 <span style=''>import org.apache.spark.sql.catalyst.InternalRow
@@ -40,323 +40,318 @@
 </span>16 <span style=''>import org.kie.dmn.api.core
 </span>17 <span style=''>import org.kie.dmn.api.core.DMNDecisionResult.DecisionEvaluationStatus
 </span>18 <span style=''>import org.kie.dmn.api.core.{DMNMessage, DMNResult}
-</span>19 <span style=''>import org.kie.dmn.feel.lang.types.impl.ComparablePeriod
-</span>20 <span style=''>import org.kie.dmn.model.api.LiteralExpression
-</span>21 <span style=''>import org.kie.kogito.dmn.rest.DMNFEELComparablePeriodSerializer
-</span>22 <span style=''>import sparkutilsKogito.com.fasterxml.jackson.databind.{ObjectMapper, SerializationFeature}
-</span>23 <span style=''>import sparkutilsKogito.com.fasterxml.jackson.databind.module.SimpleModule
-</span>24 <span style=''>
-</span>25 <span style=''>import scala.collection.JavaConverters._
-</span>26 <span style=''>import scala.util.Try
-</span>27 <span style=''>
-</span>28 <span style=''>trait KogitoProcess extends DMNResultProvider {
-</span>29 <span style=''>
-</span>30 <span style=''>  def nullable = </span><span style='background: #AEF1AE'>false</span><span style=''>
-</span>31 <span style=''>
-</span>32 <span style=''>  def debug: Boolean
-</span>33 <span style=''>
-</span>34 <span style=''>  def underlyingType: StructType
-</span>35 <span style=''>
-</span>36 <span style=''>  val messagesDDL =
-</span>37 <span style=''>    </span><span style='background: #AEF1AE'>ArrayType(StructType(Seq(
-</span>38 <span style=''></span><span style='background: #AEF1AE'>      StructField(&quot;sourceId&quot;, StringType),
-</span>39 <span style=''></span><span style='background: #AEF1AE'>      StructField(&quot;sourceReference&quot;, StringType), // TODO should this be structs for DMNModelInstrumentedBase ?
-</span>40 <span style=''></span><span style='background: #AEF1AE'>      StructField(&quot;exception&quot;, StringType, nullable = true),
-</span>41 <span style=''></span><span style='background: #AEF1AE'>      StructField(&quot;feelEvent&quot;, StructType(Seq(
-</span>42 <span style=''></span><span style='background: #AEF1AE'>        StructField(&quot;severity&quot;, StringType),
-</span>43 <span style=''></span><span style='background: #AEF1AE'>        StructField(&quot;message&quot;, StringType),
-</span>44 <span style=''></span><span style='background: #AEF1AE'>        StructField(&quot;line&quot;, IntegerType),
-</span>45 <span style=''></span><span style='background: #AEF1AE'>        StructField(&quot;column&quot;, IntegerType),
-</span>46 <span style=''></span><span style='background: #AEF1AE'>        StructField(&quot;sourceException&quot;, StringType, nullable = true),
-</span>47 <span style=''></span><span style='background: #AEF1AE'>        StructField(&quot;offendingSymbol&quot;, StringType)
-</span>48 <span style=''></span><span style='background: #AEF1AE'>      )))
-</span>49 <span style=''></span><span style='background: #AEF1AE'>    )))</span><span style=''>
-</span>50 <span style=''>
-</span>51 <span style=''>  val debugDDL =
-</span>52 <span style=''>    </span><span style='background: #AEF1AE'>ArrayType(StructType(Seq(
-</span>53 <span style=''></span><span style='background: #AEF1AE'>      StructField(&quot;decisionId&quot;, StringType),
-</span>54 <span style=''></span><span style='background: #AEF1AE'>      StructField(&quot;decisionName&quot;, StringType),
-</span>55 <span style=''></span><span style='background: #AEF1AE'>      StructField(&quot;hasErrors&quot;, BooleanType),
-</span>56 <span style=''></span><span style='background: #AEF1AE'>      StructField(&quot;messages&quot;, messagesDDL, nullable = true),
-</span>57 <span style=''></span><span style='background: #AEF1AE'>      StructField(&quot;evaluationStatus&quot;, StringType),
-</span>58 <span style=''></span><span style='background: #AEF1AE'>    )))</span><span style=''>
-</span>59 <span style=''>
-</span>60 <span style=''>  override def dataType: DataType = {
-</span>61 <span style=''>    val nullables = </span><span style='background: #AEF1AE'>underlyingType.copy(fields = underlyingType.fields.map(_.copy(nullable = true)))</span><span style=''>
-</span>62 <span style=''>    if (</span><span style='background: #AEF1AE'>debug</span><span style=''>)
-</span>63 <span style=''>      </span><span style='background: #AEF1AE'>nullables.copy(fields = nullables.fields ++ Seq(StructField(&quot;dmnDebugMode&quot;, debugDDL), StructField(&quot;dmnMessages&quot;, messagesDDL)))</span><span style=''>
-</span>64 <span style=''>    else
-</span>65 <span style=''>      </span><span style='background: #AEF1AE'>nullables</span><span style=''>
-</span>66 <span style=''>  }
-</span>67 <span style=''>
-</span>68 <span style=''>  def process(result: org.kie.dmn.api.core.DMNResult): Any
-</span>69 <span style=''>  override def process(dmnResult: dmn.DMNResult): Any = {
-</span>70 <span style=''>    val res = </span><span style='background: #AEF1AE'>dmnResult.asInstanceOf[KogitoDMNResult].result</span><span style=''>
-</span>71 <span style=''>    </span><span style='background: #AEF1AE'>process(res)</span><span style=''>
-</span>72 <span style=''>  }
-</span>73 <span style=''>
-</span>74 <span style=''>  // helpful for debugging if you uncomment in the processors codegen
-</span>75 <span style=''>  // $COVERAGE-OFF$
-</span>76 <span style=''>  def checkResult(res: DMNResult): Unit = {
-</span>77 <span style=''>    println(res)
-</span>78 <span style=''>  }
-</span>79 <span style=''>  // $COVERAGE-ON$
-</span>80 <span style=''>
-</span>81 <span style=''>  def kogitoResultStr = </span><span style='background: #AEF1AE'>s&quot;((${classOf[KogitoDMNResult].getName})${DMNExpression.runtimeVar.get()}).result()&quot;</span><span style=''>
-</span>82 <span style=''>
-</span>83 <span style=''>  val config: Map[String, String]
-</span>84 <span style=''>
-</span>85 <span style=''>  def decisionMap(ctx: CodegenContext, decisionResults: String,
-</span>86 <span style=''>                  fullProxy: Boolean = Try(config.getOrElse(&quot;fullProxyDS&quot;, &quot;true&quot;).toBoolean).
-</span>87 <span style=''>                    fold(_ =&gt; true, identity)): ExprCode = {
-</span>88 <span style=''>    val ex = </span><span style='background: #AEF1AE'>exprCode(classOf[java.util.Map[_,_]], ctx)</span><span style=''>
-</span>89 <span style=''>
-</span>90 <span style=''>    // assumption there aren't tonnes of decisions, ddl only asks for specific, json uses iterator.  Scala's map asJava is lazy and proxies iterator
-</span>91 <span style=''>    if (fullProxy) </span><span style='background: #AEF1AE'>{
-</span>92 <span style=''></span><span style='background: #AEF1AE'>      val pe = ctx.addMutableState(&quot;com.sparkutils.dmn.kogito.types.DecisionResultFullProxyEntry&quot;, ctx.freshName(&quot;proxyEntryDS&quot;),
-</span>93 <span style=''></span><span style='background: #AEF1AE'>        n =&gt; s&quot;$n = new com.sparkutils.dmn.kogito.types.DecisionResultFullProxyEntry();&quot;
-</span>94 <span style=''></span><span style='background: #AEF1AE'>        , useFreshName = false)
-</span>95 <span style=''></span><span style='background: #AEF1AE'>      val pm = ctx.addMutableState(&quot;com.sparkutils.dmn.kogito.types.ProxyMap&quot;, ctx.freshName(&quot;proxyEntryDS&quot;),
-</span>96 <span style=''></span><span style='background: #AEF1AE'>        n =&gt; s&quot;$n = new com.sparkutils.dmn.kogito.types.ProxyMap(0, null, $pe);&quot;
-</span>97 <span style=''></span><span style='background: #AEF1AE'>        , useFreshName = false)
-</span>98 <span style=''></span><span style='background: #AEF1AE'>
-</span>99 <span style=''></span><span style='background: #AEF1AE'>      ex.copy(
-</span>100 <span style=''></span><span style='background: #AEF1AE'>        code&quot;&quot;&quot;
-</span>101 <span style=''></span><span style='background: #AEF1AE'>          $pm.reset(  $decisionResults.size(),  $decisionResults );
-</span>102 <span style=''></span><span style='background: #AEF1AE'>          java.util.Map ${ex.value} = $pm;
-</span>103 <span style=''></span><span style='background: #AEF1AE'>          boolean ${ex.isNull} = false;
-</span>104 <span style=''></span><span style='background: #AEF1AE'>       &quot;&quot;&quot;)
-</span>105 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''> else
-</span>106 <span style=''>      </span><span style='background: #AEF1AE'>ex.copy(
-</span>107 <span style=''></span><span style='background: #AEF1AE'>        code&quot;&quot;&quot;
-</span>108 <span style=''></span><span style='background: #AEF1AE'>          java.util.Map ${ex.value} = null;
-</span>109 <span style=''></span><span style='background: #AEF1AE'>          boolean ${ex.isNull} = false;
-</span>110 <span style=''></span><span style='background: #AEF1AE'>          ${ex.value} = new java.util.HashMap&lt;String, Object&gt;() {
-</span>111 <span style=''></span><span style='background: #AEF1AE'>              {{java.util.Iterator&lt;org.kie.dmn.api.core.DMNDecisionResult&gt; itr = $decisionResults.iterator();
-</span>112 <span style=''></span><span style='background: #AEF1AE'>                  while (itr.hasNext()){
-</span>113 <span style=''></span><span style='background: #AEF1AE'>                      org.kie.dmn.api.core.DMNDecisionResult r = (org.kie.dmn.api.core.DMNDecisionResult) itr.next();
-</span>114 <span style=''></span><span style='background: #AEF1AE'>                      put(r.getDecisionName(), r.getResult());
-</span>115 <span style=''></span><span style='background: #AEF1AE'>              }}}
-</span>116 <span style=''></span><span style='background: #AEF1AE'>          };
-</span>117 <span style=''></span><span style='background: #AEF1AE'>
-</span>118 <span style=''></span><span style='background: #AEF1AE'>       &quot;&quot;&quot;)</span><span style=''>
-</span>119 <span style=''>  }
-</span>120 <span style=''>
-</span>121 <span style=''>}
-</span>122 <span style=''>
-</span>123 <span style=''>case class KogitoDDLResult(debug: Boolean, underlyingType: StructType, config: Map[String, String]) extends LeafExpression with KogitoProcess {
-</span>124 <span style=''>
-</span>125 <span style=''>  lazy val getter = ResultInterfaces.forType(underlyingType)
-</span>126 <span style=''>
-</span>127 <span style=''>  lazy val evalStatus = underlyingType.fields.zipWithIndex.filter(_._1.name.endsWith(evalStatusEnding))
-</span>128 <span style=''>
-</span>129 <span style=''>  override def process(res: org.kie.dmn.api.core.DMNResult): Any = {
-</span>130 <span style=''>    val m = </span><span style='background: #AEF1AE'>res.getDecisionResults.asScala.map(r =&gt; r.getDecisionName -&gt; r.getResult).toMap.asJava</span><span style=''>
-</span>131 <span style=''>    val ires = {
-</span>132 <span style=''>      val tres = </span><span style='background: #AEF1AE'>getter.get(m).asInstanceOf[GenericInternalRow]</span><span style=''>
-</span>133 <span style=''>      if (</span><span style='background: #AEF1AE'>evalStatus.length == 0</span><span style=''>)
-</span>134 <span style=''>        </span><span style='background: #AEF1AE'>tres</span><span style=''>
-</span>135 <span style=''>      else
-</span>136 <span style=''>        </span><span style='background: #AEF1AE'>setStatuses(tres, res)</span><span style=''>
-</span>137 <span style=''>    }
-</span>138 <span style=''>
-</span>139 <span style=''>    // create a map over the results
-</span>140 <span style=''>    if (</span><span style='background: #AEF1AE'>res.getDecisionResults.isEmpty</span><span style=''>)
-</span>141 <span style=''>      </span><span style='background: #F0ADAD'>null</span><span style=''>
-</span>142 <span style=''>    else
-</span>143 <span style=''>      </span><span style='background: #AEF1AE'>if (debug)
-</span>144 <span style=''></span><span style='background: #AEF1AE'>        withDebug(res, ires)
-</span>145 <span style=''></span><span style='background: #AEF1AE'>      else
-</span>146 <span style=''></span><span style='background: #AEF1AE'>        ires</span><span style=''>
-</span>147 <span style=''>  }
-</span>148 <span style=''>
-</span>149 <span style=''>  def nullOr[A, R &gt;: AnyRef](what: A)(f: A =&gt; R): R =
-</span>150 <span style=''>    if (</span><span style='background: #AEF1AE'>what == null</span><span style=''>)
-</span>151 <span style=''>      </span><span style='background: #AEF1AE'>null</span><span style=''>
-</span>152 <span style=''>    else
-</span>153 <span style=''>      </span><span style='background: #AEF1AE'>f(what)</span><span style=''>
-</span>154 <span style=''>
-</span>155 <span style=''>  def withMessages(messages: java.util.List[DMNMessage]): GenericArrayData =
-</span>156 <span style=''>    </span><span style='background: #AEF1AE'>new GenericArrayData(
-</span>157 <span style=''></span><span style='background: #AEF1AE'>      messages.asScala.map {
-</span>158 <span style=''></span><span style='background: #AEF1AE'>        m =&gt;
-</span>159 <span style=''></span><span style='background: #AEF1AE'>          InternalRow(
-</span>160 <span style=''></span><span style='background: #AEF1AE'>            nullOr(m.getSourceId)(a =&gt; UTF8String.fromString(a)),
-</span>161 <span style=''></span><span style='background: #AEF1AE'>            nullOr(m.getSourceReference){
-</span>162 <span style=''></span><span style='background: #AEF1AE'>              case feel: LiteralExpression =&gt; UTF8String.fromString(feel.getText)
-</span>163 <span style=''></span><span style='background: #AEF1AE'>              case a =&gt; UTF8String.fromString(a.toString)
-</span>164 <span style=''></span><span style='background: #AEF1AE'>            },
-</span>165 <span style=''></span><span style='background: #AEF1AE'>            nullOr(m.getException)(a =&gt; </span><span style='background: #F0ADAD'>UTF8String.fromString(a.getMessage)</span><span style='background: #AEF1AE'>),
-</span>166 <span style=''></span><span style='background: #AEF1AE'>            nullOr(m.getFeelEvent) { ev =&gt;
-</span>167 <span style=''></span><span style='background: #AEF1AE'>              InternalRow(
-</span>168 <span style=''></span><span style='background: #AEF1AE'>                nullOr(ev.getSeverity)(a =&gt; UTF8String.fromString(a.toString)),
-</span>169 <span style=''></span><span style='background: #AEF1AE'>                UTF8String.fromString(ev.getMessage),
-</span>170 <span style=''></span><span style='background: #AEF1AE'>                ev.getLine,
-</span>171 <span style=''></span><span style='background: #AEF1AE'>                ev.getColumn,
-</span>172 <span style=''></span><span style='background: #AEF1AE'>                nullOr(ev.getSourceException)(a =&gt; </span><span style='background: #F0ADAD'>UTF8String.fromString(a.getMessage)</span><span style='background: #AEF1AE'>),
-</span>173 <span style=''></span><span style='background: #AEF1AE'>                nullOr(ev.getOffendingSymbol)(a =&gt; </span><span style='background: #F0ADAD'>UTF8String.fromString(a.toString)</span><span style='background: #AEF1AE'>)
-</span>174 <span style=''></span><span style='background: #AEF1AE'>              )
-</span>175 <span style=''></span><span style='background: #AEF1AE'>            }
-</span>176 <span style=''></span><span style='background: #AEF1AE'>          )
-</span>177 <span style=''></span><span style='background: #AEF1AE'>      }
-</span>178 <span style=''></span><span style='background: #AEF1AE'>    )</span><span style=''>
-</span>179 <span style=''>
-</span>180 <span style=''>  def withDebug(res: DMNResult, ires: GenericInternalRow) =
-</span>181 <span style=''>    </span><span style='background: #AEF1AE'>new GenericInternalRow(ires.values ++ Seq( new GenericArrayData(
-</span>182 <span style=''></span><span style='background: #AEF1AE'>      res.getDecisionResults.asScala.map {
-</span>183 <span style=''></span><span style='background: #AEF1AE'>        d =&gt;
-</span>184 <span style=''></span><span style='background: #AEF1AE'>          InternalRow(
-</span>185 <span style=''></span><span style='background: #AEF1AE'>            UTF8String.fromString(d.getDecisionId),
-</span>186 <span style=''></span><span style='background: #AEF1AE'>            UTF8String.fromString(d.getDecisionName),
-</span>187 <span style=''></span><span style='background: #AEF1AE'>            d.hasErrors,
-</span>188 <span style=''></span><span style='background: #AEF1AE'>            withMessages(d.getMessages),
-</span>189 <span style=''></span><span style='background: #AEF1AE'>            UTF8String.fromString(d.getEvaluationStatus.toString)
-</span>190 <span style=''></span><span style='background: #AEF1AE'>          )
-</span>191 <span style=''></span><span style='background: #AEF1AE'>      }
-</span>192 <span style=''></span><span style='background: #AEF1AE'>      ),
-</span>193 <span style=''></span><span style='background: #AEF1AE'>      withMessages(res.getMessages)
-</span>194 <span style=''></span><span style='background: #AEF1AE'>    ))</span><span style=''>
-</span>195 <span style=''>
-</span>196 <span style=''>  def setStatuses(tres: GenericInternalRow, res: org.kie.dmn.api.core.DMNResult): GenericInternalRow =
-</span>197 <span style=''>    </span><span style='background: #AEF1AE'>evalStatus.foldLeft(tres) {
-</span>198 <span style=''></span><span style='background: #AEF1AE'>      case (row, (field, i)) =&gt;
-</span>199 <span style=''></span><span style='background: #AEF1AE'>        val decisionName = field.name.dropRight(evalStatusEnding.length)
-</span>200 <span style=''></span><span style='background: #AEF1AE'>        val dr = res.getDecisionResultByName(decisionName)
-</span>201 <span style=''></span><span style='background: #AEF1AE'>        if (dr ne null) {
-</span>202 <span style=''></span><span style='background: #AEF1AE'>          row.update(i, dr.getEvaluationStatus match {
-</span>203 <span style=''></span><span style='background: #AEF1AE'>            // $COVERAGE-OFF$
-</span>204 <span style=''></span><span style='background: #AEF1AE'>            // would require throwing in the evaluation, not sure how to reproduce that
-</span>205 <span style=''></span><span style='background: #AEF1AE'>            case DecisionEvaluationStatus.NOT_EVALUATED =&gt; NOT_EVALUATED
-</span>206 <span style=''></span><span style='background: #AEF1AE'>            case DecisionEvaluationStatus.EVALUATING =&gt; EVALUATING
-</span>207 <span style=''></span><span style='background: #AEF1AE'>            // $COVERAGE-ON$
-</span>208 <span style=''></span><span style='background: #AEF1AE'>            case DecisionEvaluationStatus.SUCCEEDED =&gt; SUCCEEDED
-</span>209 <span style=''></span><span style='background: #AEF1AE'>            case DecisionEvaluationStatus.SKIPPED if dr.hasErrors =&gt; SKIPPED_ERROR
-</span>210 <span style=''></span><span style='background: #AEF1AE'>            case DecisionEvaluationStatus.SKIPPED =&gt; SKIPPED_WARN
-</span>211 <span style=''></span><span style='background: #AEF1AE'>            case DecisionEvaluationStatus.FAILED =&gt; FAILED
-</span>212 <span style=''></span><span style='background: #AEF1AE'>          })
-</span>213 <span style=''></span><span style='background: #AEF1AE'>        } else {
-</span>214 <span style=''></span><span style='background: #AEF1AE'>          row.update(i, NOT_FOUND)
-</span>215 <span style=''></span><span style='background: #AEF1AE'>        }
-</span>216 <span style=''></span><span style='background: #AEF1AE'>        row
-</span>217 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
-</span>218 <span style=''>
-</span>219 <span style=''>  // $COVERAGE-OFF$
-</span>220 <span style=''>  override def eval(input: InternalRow): Any = ???
-</span>221 <span style=''>  // $COVERAGE-ON$
-</span>222 <span style=''>
-</span>223 <span style=''>  override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
-</span>224 <span style=''>    </span><span style='background: #AEF1AE'>ctx.references += this</span><span style=''>
-</span>225 <span style=''>    val ddlResultClassName = </span><span style='background: #AEF1AE'>classOf[KogitoDDLResult].getName</span><span style=''>
-</span>226 <span style=''>
-</span>227 <span style=''>    val resultIdx = </span><span style='background: #AEF1AE'>ctx.references.size - 1</span><span style=''>
+</span>19 <span style=''>import org.kie.dmn.api.feel.runtime.events.FEELEvent
+</span>20 <span style=''>import org.kie.dmn.feel.lang.types.impl.ComparablePeriod
+</span>21 <span style=''>import org.kie.dmn.model.api.LiteralExpression
+</span>22 <span style=''>import org.kie.kogito.dmn.rest.DMNFEELComparablePeriodSerializer
+</span>23 <span style=''>import sparkutilsKogito.com.fasterxml.jackson.databind.{ObjectMapper, SerializationFeature}
+</span>24 <span style=''>import sparkutilsKogito.com.fasterxml.jackson.databind.module.SimpleModule
+</span>25 <span style=''>
+</span>26 <span style=''>import scala.collection.JavaConverters._
+</span>27 <span style=''>import scala.util.Try
+</span>28 <span style=''>
+</span>29 <span style=''>trait KogitoProcess extends DMNResultProvider {
+</span>30 <span style=''>
+</span>31 <span style=''>  def nullable = </span><span style='background: #AEF1AE'>false</span><span style=''>
+</span>32 <span style=''>
+</span>33 <span style=''>  def debug: Boolean
+</span>34 <span style=''>
+</span>35 <span style=''>  def underlyingType: StructType
+</span>36 <span style=''>
+</span>37 <span style=''>  val messagesDDL =
+</span>38 <span style=''>    </span><span style='background: #AEF1AE'>ArrayType(StructType(Seq(
+</span>39 <span style=''></span><span style='background: #AEF1AE'>      StructField(&quot;sourceId&quot;, StringType),
+</span>40 <span style=''></span><span style='background: #AEF1AE'>      StructField(&quot;sourceReference&quot;, StringType), // TODO should this be structs for DMNModelInstrumentedBase ?
+</span>41 <span style=''></span><span style='background: #AEF1AE'>      StructField(&quot;exception&quot;, StringType, nullable = true),
+</span>42 <span style=''></span><span style='background: #AEF1AE'>      StructField(&quot;feelEvent&quot;, StructType(Seq(
+</span>43 <span style=''></span><span style='background: #AEF1AE'>        StructField(&quot;severity&quot;, StringType),
+</span>44 <span style=''></span><span style='background: #AEF1AE'>        StructField(&quot;message&quot;, StringType),
+</span>45 <span style=''></span><span style='background: #AEF1AE'>        StructField(&quot;line&quot;, IntegerType),
+</span>46 <span style=''></span><span style='background: #AEF1AE'>        StructField(&quot;column&quot;, IntegerType),
+</span>47 <span style=''></span><span style='background: #AEF1AE'>        StructField(&quot;sourceException&quot;, StringType, nullable = true),
+</span>48 <span style=''></span><span style='background: #AEF1AE'>        StructField(&quot;offendingSymbol&quot;, StringType)
+</span>49 <span style=''></span><span style='background: #AEF1AE'>      )))
+</span>50 <span style=''></span><span style='background: #AEF1AE'>    )))</span><span style=''>
+</span>51 <span style=''>
+</span>52 <span style=''>  val debugDDL =
+</span>53 <span style=''>    </span><span style='background: #AEF1AE'>ArrayType(StructType(Seq(
+</span>54 <span style=''></span><span style='background: #AEF1AE'>      StructField(&quot;decisionId&quot;, StringType),
+</span>55 <span style=''></span><span style='background: #AEF1AE'>      StructField(&quot;decisionName&quot;, StringType),
+</span>56 <span style=''></span><span style='background: #AEF1AE'>      StructField(&quot;hasErrors&quot;, BooleanType),
+</span>57 <span style=''></span><span style='background: #AEF1AE'>      StructField(&quot;messages&quot;, messagesDDL, nullable = true),
+</span>58 <span style=''></span><span style='background: #AEF1AE'>      StructField(&quot;evaluationStatus&quot;, StringType),
+</span>59 <span style=''></span><span style='background: #AEF1AE'>    )))</span><span style=''>
+</span>60 <span style=''>
+</span>61 <span style=''>  override def dataType: DataType = {
+</span>62 <span style=''>    val nullables = </span><span style='background: #AEF1AE'>underlyingType.copy(fields = underlyingType.fields.map(_.copy(nullable = true)))</span><span style=''>
+</span>63 <span style=''>    if (</span><span style='background: #AEF1AE'>debug</span><span style=''>)
+</span>64 <span style=''>      </span><span style='background: #AEF1AE'>nullables.copy(fields = nullables.fields ++ Seq(StructField(&quot;dmnDebugMode&quot;, debugDDL), StructField(&quot;dmnMessages&quot;, messagesDDL)))</span><span style=''>
+</span>65 <span style=''>    else
+</span>66 <span style=''>      </span><span style='background: #AEF1AE'>nullables</span><span style=''>
+</span>67 <span style=''>  }
+</span>68 <span style=''>
+</span>69 <span style=''>  def process(result: org.kie.dmn.api.core.DMNResult): Any
+</span>70 <span style=''>  override def process(dmnResult: dmn.DMNResult): Any = {
+</span>71 <span style=''>    val res = </span><span style='background: #AEF1AE'>dmnResult.asInstanceOf[KogitoDMNResult].result</span><span style=''>
+</span>72 <span style=''>    </span><span style='background: #AEF1AE'>process(res)</span><span style=''>
+</span>73 <span style=''>  }
+</span>74 <span style=''>
+</span>75 <span style=''>  // helpful for debugging if you uncomment in the processors codegen
+</span>76 <span style=''>  // $COVERAGE-OFF$
+</span>77 <span style=''>  def checkResult(res: DMNResult): Unit = {
+</span>78 <span style=''>    println(res)
+</span>79 <span style=''>  }
+</span>80 <span style=''>  // $COVERAGE-ON$
+</span>81 <span style=''>
+</span>82 <span style=''>  def kogitoResultStr = </span><span style='background: #AEF1AE'>s&quot;((${classOf[KogitoDMNResult].getName})${DMNExpression.runtimeVar.get()}).result()&quot;</span><span style=''>
+</span>83 <span style=''>
+</span>84 <span style=''>  val config: Map[String, String]
+</span>85 <span style=''>
+</span>86 <span style=''>  def decisionMap(ctx: CodegenContext, decisionResults: String,
+</span>87 <span style=''>                  fullProxy: Boolean = Try(config.getOrElse(&quot;fullProxyDS&quot;, &quot;true&quot;).toBoolean).
+</span>88 <span style=''>                    fold(_ =&gt; true, identity)): ExprCode = {
+</span>89 <span style=''>    val ex = </span><span style='background: #AEF1AE'>exprCode(classOf[java.util.Map[_,_]], ctx)</span><span style=''>
+</span>90 <span style=''>
+</span>91 <span style=''>    // assumption there aren't tonnes of decisions, ddl only asks for specific, json uses iterator.  Scala's map asJava is lazy and proxies iterator
+</span>92 <span style=''>    if (fullProxy) </span><span style='background: #AEF1AE'>{
+</span>93 <span style=''></span><span style='background: #AEF1AE'>      val pe = ctx.addMutableState(&quot;com.sparkutils.dmn.kogito.types.DecisionResultFullProxyEntry&quot;, ctx.freshName(&quot;proxyEntryDS&quot;),
+</span>94 <span style=''></span><span style='background: #AEF1AE'>        n =&gt; s&quot;$n = new com.sparkutils.dmn.kogito.types.DecisionResultFullProxyEntry();&quot;
+</span>95 <span style=''></span><span style='background: #AEF1AE'>        , useFreshName = false)
+</span>96 <span style=''></span><span style='background: #AEF1AE'>      val pm = ctx.addMutableState(&quot;com.sparkutils.dmn.kogito.types.ProxyMap&quot;, ctx.freshName(&quot;proxyEntryDS&quot;),
+</span>97 <span style=''></span><span style='background: #AEF1AE'>        n =&gt; s&quot;$n = new com.sparkutils.dmn.kogito.types.ProxyMap(0, null, $pe);&quot;
+</span>98 <span style=''></span><span style='background: #AEF1AE'>        , useFreshName = false)
+</span>99 <span style=''></span><span style='background: #AEF1AE'>
+</span>100 <span style=''></span><span style='background: #AEF1AE'>      ex.copy(
+</span>101 <span style=''></span><span style='background: #AEF1AE'>        code&quot;&quot;&quot;
+</span>102 <span style=''></span><span style='background: #AEF1AE'>          $pm.reset(  $decisionResults.size(),  $decisionResults );
+</span>103 <span style=''></span><span style='background: #AEF1AE'>          java.util.Map ${ex.value} = $pm;
+</span>104 <span style=''></span><span style='background: #AEF1AE'>          boolean ${ex.isNull} = false;
+</span>105 <span style=''></span><span style='background: #AEF1AE'>       &quot;&quot;&quot;)
+</span>106 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''> else
+</span>107 <span style=''>      </span><span style='background: #AEF1AE'>ex.copy(
+</span>108 <span style=''></span><span style='background: #AEF1AE'>        code&quot;&quot;&quot;
+</span>109 <span style=''></span><span style='background: #AEF1AE'>          java.util.Map ${ex.value} = null;
+</span>110 <span style=''></span><span style='background: #AEF1AE'>          boolean ${ex.isNull} = false;
+</span>111 <span style=''></span><span style='background: #AEF1AE'>          ${ex.value} = new java.util.HashMap&lt;String, Object&gt;() {
+</span>112 <span style=''></span><span style='background: #AEF1AE'>              {{java.util.Iterator&lt;org.kie.dmn.api.core.DMNDecisionResult&gt; itr = $decisionResults.iterator();
+</span>113 <span style=''></span><span style='background: #AEF1AE'>                  while (itr.hasNext()){
+</span>114 <span style=''></span><span style='background: #AEF1AE'>                      org.kie.dmn.api.core.DMNDecisionResult r = (org.kie.dmn.api.core.DMNDecisionResult) itr.next();
+</span>115 <span style=''></span><span style='background: #AEF1AE'>                      put(r.getDecisionName(), r.getResult());
+</span>116 <span style=''></span><span style='background: #AEF1AE'>              }}}
+</span>117 <span style=''></span><span style='background: #AEF1AE'>          };
+</span>118 <span style=''></span><span style='background: #AEF1AE'>
+</span>119 <span style=''></span><span style='background: #AEF1AE'>       &quot;&quot;&quot;)</span><span style=''>
+</span>120 <span style=''>  }
+</span>121 <span style=''>
+</span>122 <span style=''>}
+</span>123 <span style=''>
+</span>124 <span style=''>case class KogitoDDLResult(debug: Boolean, underlyingType: StructType, config: Map[String, String]) extends LeafExpression with KogitoProcess {
+</span>125 <span style=''>
+</span>126 <span style=''>  lazy val getter = ResultInterfaces.forType(underlyingType)
+</span>127 <span style=''>
+</span>128 <span style=''>  lazy val evalStatus = underlyingType.fields.zipWithIndex.filter(_._1.name.endsWith(evalStatusEnding))
+</span>129 <span style=''>
+</span>130 <span style=''>  override def process(res: org.kie.dmn.api.core.DMNResult): Any = {
+</span>131 <span style=''>    val m = </span><span style='background: #AEF1AE'>res.getDecisionResults.asScala.map(r =&gt; r.getDecisionName -&gt; r.getResult).toMap.asJava</span><span style=''>
+</span>132 <span style=''>    val ires = {
+</span>133 <span style=''>      val tres = </span><span style='background: #AEF1AE'>getter.get(m).asInstanceOf[GenericInternalRow]</span><span style=''>
+</span>134 <span style=''>      if (</span><span style='background: #AEF1AE'>evalStatus.length == 0</span><span style=''>)
+</span>135 <span style=''>        </span><span style='background: #AEF1AE'>tres</span><span style=''>
+</span>136 <span style=''>      else
+</span>137 <span style=''>        </span><span style='background: #AEF1AE'>setStatuses(tres, res)</span><span style=''>
+</span>138 <span style=''>    }
+</span>139 <span style=''>
+</span>140 <span style=''>    // create a map over the results
+</span>141 <span style=''>    if (</span><span style='background: #AEF1AE'>res.getDecisionResults.isEmpty</span><span style=''>)
+</span>142 <span style=''>      </span><span style='background: #F0ADAD'>null</span><span style=''>
+</span>143 <span style=''>    else
+</span>144 <span style=''>      </span><span style='background: #AEF1AE'>if (debug)
+</span>145 <span style=''></span><span style='background: #AEF1AE'>        withDebug(res, ires)
+</span>146 <span style=''></span><span style='background: #AEF1AE'>      else
+</span>147 <span style=''></span><span style='background: #AEF1AE'>        ires</span><span style=''>
+</span>148 <span style=''>  }
+</span>149 <span style=''>
+</span>150 <span style=''>  def withMessages(messages: java.util.List[DMNMessage]): GenericArrayData =
+</span>151 <span style=''>    </span><span style='background: #AEF1AE'>new GenericArrayData(
+</span>152 <span style=''></span><span style='background: #AEF1AE'>      messages.asScala.map {
+</span>153 <span style=''></span><span style='background: #AEF1AE'>        m =&gt;
+</span>154 <span style=''></span><span style='background: #AEF1AE'>          InternalRow(
+</span>155 <span style=''></span><span style='background: #AEF1AE'>            nullOr(a =&gt; UTF8String.fromString(a))(m.getSourceId),
+</span>156 <span style=''></span><span style='background: #AEF1AE'>            nullOr{(_: Object) match {
+</span>157 <span style=''></span><span style='background: #AEF1AE'>              case feel: LiteralExpression =&gt; UTF8String.fromString(feel.getText)
+</span>158 <span style=''></span><span style='background: #AEF1AE'>              case a =&gt; UTF8String.fromString(a.toString)
+</span>159 <span style=''></span><span style='background: #AEF1AE'>            }}(m.getSourceReference),
+</span>160 <span style=''></span><span style='background: #AEF1AE'>            nullOr((a: Throwable) =&gt; </span><span style='background: #F0ADAD'>UTF8String.fromString(a.getMessage)</span><span style='background: #AEF1AE'>)(m.getException),
+</span>161 <span style=''></span><span style='background: #AEF1AE'>            nullOr{ (ev: FEELEvent) =&gt;
+</span>162 <span style=''></span><span style='background: #AEF1AE'>              InternalRow(
+</span>163 <span style=''></span><span style='background: #AEF1AE'>                nullOr((a: FEELEvent.Severity) =&gt; UTF8String.fromString(a.toString))(ev.getSeverity),
+</span>164 <span style=''></span><span style='background: #AEF1AE'>                UTF8String.fromString(ev.getMessage),
+</span>165 <span style=''></span><span style='background: #AEF1AE'>                ev.getLine,
+</span>166 <span style=''></span><span style='background: #AEF1AE'>                ev.getColumn,
+</span>167 <span style=''></span><span style='background: #AEF1AE'>                nullOr((a: Throwable) =&gt; </span><span style='background: #F0ADAD'>UTF8String.fromString(a.getMessage)</span><span style='background: #AEF1AE'>)(ev.getSourceException),
+</span>168 <span style=''></span><span style='background: #AEF1AE'>                nullOr((a: Object) =&gt; </span><span style='background: #F0ADAD'>UTF8String.fromString(a.toString)</span><span style='background: #AEF1AE'>)(ev.getOffendingSymbol)
+</span>169 <span style=''></span><span style='background: #AEF1AE'>              )
+</span>170 <span style=''></span><span style='background: #AEF1AE'>            }(m.getFeelEvent)
+</span>171 <span style=''></span><span style='background: #AEF1AE'>          )
+</span>172 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>173 <span style=''></span><span style='background: #AEF1AE'>    )</span><span style=''>
+</span>174 <span style=''>
+</span>175 <span style=''>  def withDebug(res: DMNResult, ires: GenericInternalRow) =
+</span>176 <span style=''>    </span><span style='background: #AEF1AE'>new GenericInternalRow(ires.values ++ Seq( new GenericArrayData(
+</span>177 <span style=''></span><span style='background: #AEF1AE'>      res.getDecisionResults.asScala.map {
+</span>178 <span style=''></span><span style='background: #AEF1AE'>        d =&gt;
+</span>179 <span style=''></span><span style='background: #AEF1AE'>          InternalRow(
+</span>180 <span style=''></span><span style='background: #AEF1AE'>            UTF8String.fromString(d.getDecisionId),
+</span>181 <span style=''></span><span style='background: #AEF1AE'>            UTF8String.fromString(d.getDecisionName),
+</span>182 <span style=''></span><span style='background: #AEF1AE'>            d.hasErrors,
+</span>183 <span style=''></span><span style='background: #AEF1AE'>            withMessages(d.getMessages),
+</span>184 <span style=''></span><span style='background: #AEF1AE'>            UTF8String.fromString(d.getEvaluationStatus.toString)
+</span>185 <span style=''></span><span style='background: #AEF1AE'>          )
+</span>186 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>187 <span style=''></span><span style='background: #AEF1AE'>      ),
+</span>188 <span style=''></span><span style='background: #AEF1AE'>      withMessages(res.getMessages)
+</span>189 <span style=''></span><span style='background: #AEF1AE'>    ))</span><span style=''>
+</span>190 <span style=''>
+</span>191 <span style=''>  def setStatuses(tres: GenericInternalRow, res: org.kie.dmn.api.core.DMNResult): GenericInternalRow =
+</span>192 <span style=''>    </span><span style='background: #AEF1AE'>evalStatus.foldLeft(tres) {
+</span>193 <span style=''></span><span style='background: #AEF1AE'>      case (row, (field, i)) =&gt;
+</span>194 <span style=''></span><span style='background: #AEF1AE'>        val decisionName = field.name.dropRight(evalStatusEnding.length)
+</span>195 <span style=''></span><span style='background: #AEF1AE'>        val dr = res.getDecisionResultByName(decisionName)
+</span>196 <span style=''></span><span style='background: #AEF1AE'>        if (dr ne null) {
+</span>197 <span style=''></span><span style='background: #AEF1AE'>          row.update(i, dr.getEvaluationStatus match {
+</span>198 <span style=''></span><span style='background: #AEF1AE'>            // $COVERAGE-OFF$
+</span>199 <span style=''></span><span style='background: #AEF1AE'>            // would require throwing in the evaluation, not sure how to reproduce that
+</span>200 <span style=''></span><span style='background: #AEF1AE'>            case DecisionEvaluationStatus.NOT_EVALUATED =&gt; NOT_EVALUATED
+</span>201 <span style=''></span><span style='background: #AEF1AE'>            case DecisionEvaluationStatus.EVALUATING =&gt; EVALUATING
+</span>202 <span style=''></span><span style='background: #AEF1AE'>            // $COVERAGE-ON$
+</span>203 <span style=''></span><span style='background: #AEF1AE'>            case DecisionEvaluationStatus.SUCCEEDED =&gt; SUCCEEDED
+</span>204 <span style=''></span><span style='background: #AEF1AE'>            case DecisionEvaluationStatus.SKIPPED if dr.hasErrors =&gt; SKIPPED_ERROR
+</span>205 <span style=''></span><span style='background: #AEF1AE'>            case DecisionEvaluationStatus.SKIPPED =&gt; SKIPPED_WARN
+</span>206 <span style=''></span><span style='background: #AEF1AE'>            case DecisionEvaluationStatus.FAILED =&gt; FAILED
+</span>207 <span style=''></span><span style='background: #AEF1AE'>          })
+</span>208 <span style=''></span><span style='background: #AEF1AE'>        } else {
+</span>209 <span style=''></span><span style='background: #AEF1AE'>          row.update(i, NOT_FOUND)
+</span>210 <span style=''></span><span style='background: #AEF1AE'>        }
+</span>211 <span style=''></span><span style='background: #AEF1AE'>        row
+</span>212 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>213 <span style=''>
+</span>214 <span style=''>  // $COVERAGE-OFF$
+</span>215 <span style=''>  override def eval(input: InternalRow): Any = ???
+</span>216 <span style=''>  // $COVERAGE-ON$
+</span>217 <span style=''>
+</span>218 <span style=''>  override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
+</span>219 <span style=''>    </span><span style='background: #AEF1AE'>ctx.references += this</span><span style=''>
+</span>220 <span style=''>    val ddlResultClassName = </span><span style='background: #AEF1AE'>classOf[KogitoDDLResult].getName</span><span style=''>
+</span>221 <span style=''>
+</span>222 <span style=''>    val resultIdx = </span><span style='background: #AEF1AE'>ctx.references.size - 1</span><span style=''>
+</span>223 <span style=''>
+</span>224 <span style=''>    val decisionResults = </span><span style='background: #AEF1AE'>ctx.freshName(&quot;decisionResults&quot;)</span><span style=''>
+</span>225 <span style=''>    val dm = </span><span style='background: #AEF1AE'>decisionMap(ctx, decisionResults)</span><span style=''>
+</span>226 <span style=''>    val decisionMapN = </span><span style='background: #AEF1AE'>dm.value</span><span style=''>
+</span>227 <span style=''>
 </span>228 <span style=''>
-</span>229 <span style=''>    val decisionResults = </span><span style='background: #AEF1AE'>ctx.freshName(&quot;decisionResults&quot;)</span><span style=''>
-</span>230 <span style=''>    val dm = </span><span style='background: #AEF1AE'>decisionMap(ctx, decisionResults)</span><span style=''>
-</span>231 <span style=''>    val decisionMapN = </span><span style='background: #AEF1AE'>dm.value</span><span style=''>
-</span>232 <span style=''>
-</span>233 <span style=''>
-</span>234 <span style=''>    val getExpr = </span><span style='background: #AEF1AE'>forTypeCodeGen(underlyingType).forPath(ctx, decisionMapN)</span><span style=''>
-</span>235 <span style=''>
-</span>236 <span style=''>    </span><span style='background: #AEF1AE'>ev.copy(code =
-</span>237 <span style=''></span><span style='background: #AEF1AE'>      code&quot;&quot;&quot;
-</span>238 <span style=''></span><span style='background: #AEF1AE'>         org.apache.spark.sql.catalyst.expressions.GenericInternalRow ${ev.value} = null;
-</span>239 <span style=''></span><span style='background: #AEF1AE'>         // uncomment to debug the result
-</span>240 <span style=''></span><span style='background: #AEF1AE'>         // (($ddlResultClassName)references[$resultIdx]).checkResult($kogitoResultStr);
-</span>241 <span style=''></span><span style='background: #AEF1AE'>         boolean ${ev.isNull} = ($kogitoResultStr == null);
-</span>242 <span style=''></span><span style='background: #AEF1AE'>         if (!${ev.isNull}) {
-</span>243 <span style=''></span><span style='background: #AEF1AE'>           final java.util.List&lt;org.kie.dmn.api.core.DMNDecisionResult&gt; $decisionResults = $kogitoResultStr.getDecisionResults();
-</span>244 <span style=''></span><span style='background: #AEF1AE'>           ${dm.code}
-</span>245 <span style=''></span><span style='background: #AEF1AE'>           ${getExpr.code}
-</span>246 <span style=''></span><span style='background: #AEF1AE'>
-</span>247 <span style=''></span><span style='background: #AEF1AE'>           ${ev.value} = ${getExpr.value};
-</span>248 <span style=''></span><span style='background: #AEF1AE'>
-</span>249 <span style=''></span><span style='background: #AEF1AE'>           ${ev.isNull} = (${ev.value} == null);
-</span>250 <span style=''></span><span style='background: #AEF1AE'>           if (!${ev.isNull}) {
-</span>251 <span style=''></span><span style='background: #AEF1AE'>             ${if (evalStatus.nonEmpty) code&quot;&quot;&quot;${ev.value} = (($ddlResultClassName)references[$resultIdx]).setStatuses(${getExpr.value}, $kogitoResultStr);&quot;&quot;&quot; else code&quot;&quot;}
-</span>252 <span style=''></span><span style='background: #AEF1AE'>
-</span>253 <span style=''></span><span style='background: #AEF1AE'>             ${if (debug) code&quot;${ev.value} = (($ddlResultClassName)references[$resultIdx]).withDebug($kogitoResultStr, ${ev.value});&quot; else code&quot;&quot;}
-</span>254 <span style=''></span><span style='background: #AEF1AE'>             ${ev.isNull} = (${ev.value} == null);
-</span>255 <span style=''></span><span style='background: #AEF1AE'>           }
-</span>256 <span style=''></span><span style='background: #AEF1AE'>         }
-</span>257 <span style=''></span><span style='background: #AEF1AE'>          &quot;&quot;&quot;)</span><span style=''>
-</span>258 <span style=''>  }
-</span>259 <span style=''>}
+</span>229 <span style=''>    val getExpr = </span><span style='background: #AEF1AE'>forTypeCodeGen(underlyingType).forPath(ctx, decisionMapN)</span><span style=''>
+</span>230 <span style=''>
+</span>231 <span style=''>    </span><span style='background: #AEF1AE'>ev.copy(code =
+</span>232 <span style=''></span><span style='background: #AEF1AE'>      code&quot;&quot;&quot;
+</span>233 <span style=''></span><span style='background: #AEF1AE'>         org.apache.spark.sql.catalyst.expressions.GenericInternalRow ${ev.value} = null;
+</span>234 <span style=''></span><span style='background: #AEF1AE'>         // uncomment to debug the result
+</span>235 <span style=''></span><span style='background: #AEF1AE'>         // (($ddlResultClassName)references[$resultIdx]).checkResult($kogitoResultStr);
+</span>236 <span style=''></span><span style='background: #AEF1AE'>         boolean ${ev.isNull} = ($kogitoResultStr == null);
+</span>237 <span style=''></span><span style='background: #AEF1AE'>         if (!${ev.isNull}) {
+</span>238 <span style=''></span><span style='background: #AEF1AE'>           final java.util.List&lt;org.kie.dmn.api.core.DMNDecisionResult&gt; $decisionResults = $kogitoResultStr.getDecisionResults();
+</span>239 <span style=''></span><span style='background: #AEF1AE'>           ${dm.code}
+</span>240 <span style=''></span><span style='background: #AEF1AE'>           ${getExpr.code}
+</span>241 <span style=''></span><span style='background: #AEF1AE'>
+</span>242 <span style=''></span><span style='background: #AEF1AE'>           ${ev.value} = ${getExpr.value};
+</span>243 <span style=''></span><span style='background: #AEF1AE'>
+</span>244 <span style=''></span><span style='background: #AEF1AE'>           ${ev.isNull} = (${ev.value} == null);
+</span>245 <span style=''></span><span style='background: #AEF1AE'>           if (!${ev.isNull}) {
+</span>246 <span style=''></span><span style='background: #AEF1AE'>             ${if (evalStatus.nonEmpty) code&quot;&quot;&quot;${ev.value} = (($ddlResultClassName)references[$resultIdx]).setStatuses(${getExpr.value}, $kogitoResultStr);&quot;&quot;&quot; else code&quot;&quot;}
+</span>247 <span style=''></span><span style='background: #AEF1AE'>
+</span>248 <span style=''></span><span style='background: #AEF1AE'>             ${if (debug) code&quot;${ev.value} = (($ddlResultClassName)references[$resultIdx]).withDebug($kogitoResultStr, ${ev.value});&quot; else code&quot;&quot;}
+</span>249 <span style=''></span><span style='background: #AEF1AE'>             ${ev.isNull} = (${ev.value} == null);
+</span>250 <span style=''></span><span style='background: #AEF1AE'>           }
+</span>251 <span style=''></span><span style='background: #AEF1AE'>         }
+</span>252 <span style=''></span><span style='background: #AEF1AE'>          &quot;&quot;&quot;)</span><span style=''>
+</span>253 <span style=''>  }
+</span>254 <span style=''>}
+</span>255 <span style=''>
+</span>256 <span style=''>/**
+</span>257 <span style=''> * @param debug
+</span>258 <span style=''> */
+</span>259 <span style=''>case class KogitoJSONResultProvider(debug: Boolean, config: Map[String, String]) extends LeafExpression with DMNResultProvider with KogitoProcess {
 </span>260 <span style=''>
-</span>261 <span style=''>/**
-</span>262 <span style=''> * @param debug
-</span>263 <span style=''> */
-</span>264 <span style=''>case class KogitoJSONResultProvider(debug: Boolean, config: Map[String, String]) extends LeafExpression with DMNResultProvider with KogitoProcess {
-</span>265 <span style=''>
-</span>266 <span style=''>  // $COVERAGE-OFF$
-</span>267 <span style=''>  override def underlyingType: StructType = ???
-</span>268 <span style=''>  // $COVERAGE-ON$
-</span>269 <span style=''>
-</span>270 <span style=''>  @transient
-</span>271 <span style=''>  lazy val mapper =
-</span>272 <span style=''>    new ObjectMapper()
-</span>273 <span style=''>      .registerModule(
-</span>274 <span style=''>        new SimpleModule()
-</span>275 <span style=''>          .addSerializer(classOf[ComparablePeriod], new DMNFEELComparablePeriodSerializer())
-</span>276 <span style=''>      )
-</span>277 <span style=''>      .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-</span>278 <span style=''>
-</span>279 <span style=''>  override def nullable: Boolean = </span><span style='background: #AEF1AE'>true</span><span style=''>
-</span>280 <span style=''>
-</span>281 <span style=''>  // $COVERAGE-OFF$
-</span>282 <span style=''>  override def eval(input: InternalRow): Any = ???
-</span>283 <span style=''>  // $COVERAGE-ON$
-</span>284 <span style=''>
-</span>285 <span style=''>  override def dataType: DataType = </span><span style='background: #AEF1AE'>StringType</span><span style=''>
-</span>286 <span style=''>
-</span>287 <span style=''>  override def process(result: core.DMNResult): Any = {
-</span>288 <span style=''>    val what =
-</span>289 <span style=''>      if (</span><span style='background: #AEF1AE'>debug</span><span style=''>)
-</span>290 <span style=''>        </span><span style='background: #AEF1AE'>result.getDecisionResults</span><span style=''>
-</span>291 <span style=''>      else
-</span>292 <span style=''>        </span><span style='background: #AEF1AE'>result.getDecisionResults.asScala.map(r =&gt; r.getDecisionName -&gt; r.getResult).toMap.asJava</span><span style=''>
+</span>261 <span style=''>  // $COVERAGE-OFF$
+</span>262 <span style=''>  override def underlyingType: StructType = ???
+</span>263 <span style=''>  // $COVERAGE-ON$
+</span>264 <span style=''>
+</span>265 <span style=''>  @transient
+</span>266 <span style=''>  lazy val mapper =
+</span>267 <span style=''>    new ObjectMapper()
+</span>268 <span style=''>      .registerModule(
+</span>269 <span style=''>        new SimpleModule()
+</span>270 <span style=''>          .addSerializer(classOf[ComparablePeriod], new DMNFEELComparablePeriodSerializer())
+</span>271 <span style=''>      )
+</span>272 <span style=''>      .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+</span>273 <span style=''>
+</span>274 <span style=''>  override def nullable: Boolean = </span><span style='background: #AEF1AE'>true</span><span style=''>
+</span>275 <span style=''>
+</span>276 <span style=''>  // $COVERAGE-OFF$
+</span>277 <span style=''>  override def eval(input: InternalRow): Any = ???
+</span>278 <span style=''>  // $COVERAGE-ON$
+</span>279 <span style=''>
+</span>280 <span style=''>  override def dataType: DataType = </span><span style='background: #AEF1AE'>StringType</span><span style=''>
+</span>281 <span style=''>
+</span>282 <span style=''>  override def process(result: core.DMNResult): Any = {
+</span>283 <span style=''>    val what =
+</span>284 <span style=''>      if (</span><span style='background: #AEF1AE'>debug</span><span style=''>)
+</span>285 <span style=''>        </span><span style='background: #AEF1AE'>result.getDecisionResults</span><span style=''>
+</span>286 <span style=''>      else
+</span>287 <span style=''>        </span><span style='background: #AEF1AE'>result.getDecisionResults.asScala.map(r =&gt; r.getDecisionName -&gt; r.getResult).toMap.asJava</span><span style=''>
+</span>288 <span style=''>
+</span>289 <span style=''>    </span><span style='background: #AEF1AE'>UTF8String.fromString(mapper.writeValueAsString(
+</span>290 <span style=''></span><span style='background: #AEF1AE'>      what
+</span>291 <span style=''></span><span style='background: #AEF1AE'>    ))</span><span style=''>
+</span>292 <span style=''>  }
 </span>293 <span style=''>
-</span>294 <span style=''>    </span><span style='background: #AEF1AE'>UTF8String.fromString(mapper.writeValueAsString(
-</span>295 <span style=''></span><span style='background: #AEF1AE'>      what
-</span>296 <span style=''></span><span style='background: #AEF1AE'>    ))</span><span style=''>
-</span>297 <span style=''>  }
-</span>298 <span style=''>
-</span>299 <span style=''>  override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
-</span>300 <span style=''>    val mapperName = </span><span style='background: #AEF1AE'>ctx.addMutableState(classOf[ObjectMapper].getName, &quot;mapper&quot;, v =&gt;
-</span>301 <span style=''></span><span style='background: #AEF1AE'>      s&quot;&quot;&quot;
-</span>302 <span style=''></span><span style='background: #AEF1AE'>         $v = new ${classOf[ObjectMapper].getName}().registerModule(
-</span>303 <span style=''></span><span style='background: #AEF1AE'>            new ${classOf[SimpleModule].getName}()
-</span>304 <span style=''></span><span style='background: #AEF1AE'>              .addSerializer(${classOf[ComparablePeriod].getName}.class, new ${classOf[DMNFEELComparablePeriodSerializer].getName}())
-</span>305 <span style=''></span><span style='background: #AEF1AE'>          )
-</span>306 <span style=''></span><span style='background: #AEF1AE'>          .disable(${classOf[SerializationFeature].getName}.FAIL_ON_EMPTY_BEANS);
-</span>307 <span style=''></span><span style='background: #AEF1AE'>         &quot;&quot;&quot;)</span><span style=''>
-</span>308 <span style=''>
-</span>309 <span style=''>    val decisionResults = </span><span style='background: #AEF1AE'>ctx.freshName(&quot;decisionResults&quot;)</span><span style=''>
-</span>310 <span style=''>    val what = </span><span style='background: #AEF1AE'>ctx.freshName(&quot;what&quot;)</span><span style=''>
-</span>311 <span style=''>    val dm = </span><span style='background: #AEF1AE'>decisionMap(ctx, decisionResults)</span><span style=''>
-</span>312 <span style=''>
-</span>313 <span style=''>    </span><span style='background: #AEF1AE'>ev.copy(code =
-</span>314 <span style=''></span><span style='background: #AEF1AE'>      code&quot;&quot;&quot;
-</span>315 <span style=''></span><span style='background: #AEF1AE'>         UTF8String ${ev.value} = null;
-</span>316 <span style=''></span><span style='background: #AEF1AE'>         boolean ${ev.isNull} = false;
-</span>317 <span style=''></span><span style='background: #AEF1AE'>         final java.util.List&lt;org.kie.dmn.api.core.DMNDecisionResult&gt; $decisionResults = $kogitoResultStr.getDecisionResults();
-</span>318 <span style=''></span><span style='background: #AEF1AE'>         ${dm.code}
-</span>319 <span style=''></span><span style='background: #AEF1AE'>         Object $what = ${
-</span>320 <span style=''></span><span style='background: #AEF1AE'>          if (debug)
-</span>321 <span style=''></span><span style='background: #AEF1AE'>            s&quot;$decisionResults;&quot;
-</span>322 <span style=''></span><span style='background: #AEF1AE'>          else
-</span>323 <span style=''></span><span style='background: #AEF1AE'>            s&quot;${dm.value};&quot;
-</span>324 <span style=''></span><span style='background: #AEF1AE'>          }
-</span>325 <span style=''></span><span style='background: #AEF1AE'>          try {
-</span>326 <span style=''></span><span style='background: #AEF1AE'>            ${ev.value} = UTF8String.fromString($mapperName.writeValueAsString(
-</span>327 <span style=''></span><span style='background: #AEF1AE'>              $what
-</span>328 <span style=''></span><span style='background: #AEF1AE'>            ));
-</span>329 <span style=''></span><span style='background: #AEF1AE'>            ${ev.isNull} = ${ev.value} == null;
-</span>330 <span style=''></span><span style='background: #AEF1AE'>          } catch (sparkutilsKogito.com.fasterxml.jackson.core.JsonProcessingException e) {
-</span>331 <span style=''></span><span style='background: #AEF1AE'>            ${ev.isNull} = true;
-</span>332 <span style=''></span><span style='background: #AEF1AE'>          }
-</span>333 <span style=''></span><span style='background: #AEF1AE'>      &quot;&quot;&quot;)</span><span style=''>
-</span>334 <span style=''>  }
-</span>335 <span style=''>}
+</span>294 <span style=''>  override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
+</span>295 <span style=''>    val mapperName = </span><span style='background: #AEF1AE'>ctx.addMutableState(classOf[ObjectMapper].getName, &quot;mapper&quot;, v =&gt;
+</span>296 <span style=''></span><span style='background: #AEF1AE'>      s&quot;&quot;&quot;
+</span>297 <span style=''></span><span style='background: #AEF1AE'>         $v = new ${classOf[ObjectMapper].getName}().registerModule(
+</span>298 <span style=''></span><span style='background: #AEF1AE'>            new ${classOf[SimpleModule].getName}()
+</span>299 <span style=''></span><span style='background: #AEF1AE'>              .addSerializer(${classOf[ComparablePeriod].getName}.class, new ${classOf[DMNFEELComparablePeriodSerializer].getName}())
+</span>300 <span style=''></span><span style='background: #AEF1AE'>          )
+</span>301 <span style=''></span><span style='background: #AEF1AE'>          .disable(${classOf[SerializationFeature].getName}.FAIL_ON_EMPTY_BEANS);
+</span>302 <span style=''></span><span style='background: #AEF1AE'>         &quot;&quot;&quot;)</span><span style=''>
+</span>303 <span style=''>
+</span>304 <span style=''>    val decisionResults = </span><span style='background: #AEF1AE'>ctx.freshName(&quot;decisionResults&quot;)</span><span style=''>
+</span>305 <span style=''>    val what = </span><span style='background: #AEF1AE'>ctx.freshName(&quot;what&quot;)</span><span style=''>
+</span>306 <span style=''>    val dm = </span><span style='background: #AEF1AE'>decisionMap(ctx, decisionResults)</span><span style=''>
+</span>307 <span style=''>
+</span>308 <span style=''>    </span><span style='background: #AEF1AE'>ev.copy(code =
+</span>309 <span style=''></span><span style='background: #AEF1AE'>      code&quot;&quot;&quot;
+</span>310 <span style=''></span><span style='background: #AEF1AE'>         UTF8String ${ev.value} = null;
+</span>311 <span style=''></span><span style='background: #AEF1AE'>         boolean ${ev.isNull} = false;
+</span>312 <span style=''></span><span style='background: #AEF1AE'>         final java.util.List&lt;org.kie.dmn.api.core.DMNDecisionResult&gt; $decisionResults = $kogitoResultStr.getDecisionResults();
+</span>313 <span style=''></span><span style='background: #AEF1AE'>         ${dm.code}
+</span>314 <span style=''></span><span style='background: #AEF1AE'>         Object $what = ${
+</span>315 <span style=''></span><span style='background: #AEF1AE'>          if (debug)
+</span>316 <span style=''></span><span style='background: #AEF1AE'>            s&quot;$decisionResults;&quot;
+</span>317 <span style=''></span><span style='background: #AEF1AE'>          else
+</span>318 <span style=''></span><span style='background: #AEF1AE'>            s&quot;${dm.value};&quot;
+</span>319 <span style=''></span><span style='background: #AEF1AE'>          }
+</span>320 <span style=''></span><span style='background: #AEF1AE'>          try {
+</span>321 <span style=''></span><span style='background: #AEF1AE'>            ${ev.value} = UTF8String.fromString($mapperName.writeValueAsString(
+</span>322 <span style=''></span><span style='background: #AEF1AE'>              $what
+</span>323 <span style=''></span><span style='background: #AEF1AE'>            ));
+</span>324 <span style=''></span><span style='background: #AEF1AE'>            ${ev.isNull} = ${ev.value} == null;
+</span>325 <span style=''></span><span style='background: #AEF1AE'>          } catch (sparkutilsKogito.com.fasterxml.jackson.core.JsonProcessingException e) {
+</span>326 <span style=''></span><span style='background: #AEF1AE'>            ${ev.isNull} = true;
+</span>327 <span style=''></span><span style='background: #AEF1AE'>          }
+</span>328 <span style=''></span><span style='background: #AEF1AE'>      &quot;&quot;&quot;)</span><span style=''>
+</span>329 <span style=''>  }
+</span>330 <span style=''>}
 </span></pre>
           </div>
           <div class="tab-pane" id="statementlist">
@@ -371,15 +366,15 @@
         <th>Code</th>
       </tr><tr>
         <td>
-          30
+          31
         </td>
         <td>
           200
         </td>
         <td>
-          1592
+          1655
           -
-          1597
+          1660
         </td>
         <td>
           Literal
@@ -395,15 +390,15 @@
         </td>
       </tr><tr>
         <td>
-          37
+          38
         </td>
         <td>
           234
         </td>
         <td>
-          1700
+          1763
           -
-          2278
+          2341
         </td>
         <td>
           Apply
@@ -419,15 +414,15 @@
         </td>
       </tr><tr>
         <td>
-          37
+          38
         </td>
         <td>
           235
         </td>
         <td>
-          1689
+          1752
           -
-          2279
+          2342
         </td>
         <td>
           Apply
@@ -443,15 +438,15 @@
         </td>
       </tr><tr>
         <td>
-          37
+          38
         </td>
         <td>
           236
         </td>
         <td>
-          1679
+          1742
           -
-          2280
+          2343
         </td>
         <td>
           Apply
@@ -467,15 +462,15 @@
         </td>
       </tr><tr>
         <td>
-          38
+          39
         </td>
         <td>
           201
         </td>
         <td>
-          1723
+          1786
           -
-          1733
+          1796
         </td>
         <td>
           Literal
@@ -491,15 +486,15 @@
         </td>
       </tr><tr>
         <td>
-          38
+          39
         </td>
         <td>
           202
         </td>
         <td>
-          1735
+          1798
           -
-          1745
+          1808
         </td>
         <td>
           Select
@@ -515,15 +510,15 @@
         </td>
       </tr><tr>
         <td>
-          38
+          39
         </td>
         <td>
           203
         </td>
         <td>
-          1711
+          1774
           -
-          1746
+          1809
         </td>
         <td>
           Apply
@@ -539,15 +534,15 @@
         </td>
       </tr><tr>
         <td>
-          39
+          40
         </td>
         <td>
           204
         </td>
         <td>
-          1766
+          1829
           -
-          1783
+          1846
         </td>
         <td>
           Literal
@@ -563,15 +558,15 @@
         </td>
       </tr><tr>
         <td>
-          39
+          40
         </td>
         <td>
           205
         </td>
         <td>
-          1785
+          1848
           -
-          1795
+          1858
         </td>
         <td>
           Select
@@ -587,15 +582,15 @@
         </td>
       </tr><tr>
         <td>
-          39
+          40
         </td>
         <td>
           206
         </td>
         <td>
-          1754
+          1817
           -
-          1796
+          1859
         </td>
         <td>
           Apply
@@ -611,15 +606,15 @@
         </td>
       </tr><tr>
         <td>
-          40
+          41
         </td>
         <td>
           207
         </td>
         <td>
-          1878
+          1941
           -
-          1889
+          1952
         </td>
         <td>
           Literal
@@ -635,15 +630,15 @@
         </td>
       </tr><tr>
         <td>
-          40
+          41
         </td>
         <td>
           208
         </td>
         <td>
-          1891
+          1954
           -
-          1901
+          1964
         </td>
         <td>
           Select
@@ -659,15 +654,15 @@
         </td>
       </tr><tr>
         <td>
-          40
+          41
         </td>
         <td>
           209
         </td>
         <td>
-          1914
+          1977
           -
-          1918
+          1981
         </td>
         <td>
           Literal
@@ -683,15 +678,15 @@
         </td>
       </tr><tr>
         <td>
-          40
+          41
         </td>
         <td>
           210
         </td>
         <td>
-          1866
+          1929
           -
-          1919
+          1982
         </td>
         <td>
           Apply
@@ -707,15 +702,15 @@
         </td>
       </tr><tr>
         <td>
-          41
+          42
         </td>
         <td>
           211
         </td>
         <td>
-          1939
+          2002
           -
-          1950
+          2013
         </td>
         <td>
           Literal
@@ -731,15 +726,15 @@
         </td>
       </tr><tr>
         <td>
-          41
+          42
         </td>
         <td>
           231
         </td>
         <td>
-          1963
+          2026
           -
-          2270
+          2333
         </td>
         <td>
           Apply
@@ -755,15 +750,15 @@
         </td>
       </tr><tr>
         <td>
-          41
+          42
         </td>
         <td>
           232
         </td>
         <td>
-          1952
+          2015
           -
-          2271
+          2334
         </td>
         <td>
           Apply
@@ -779,15 +774,15 @@
         </td>
       </tr><tr>
         <td>
-          41
+          42
         </td>
         <td>
           233
         </td>
         <td>
-          1927
+          1990
           -
-          2272
+          2335
         </td>
         <td>
           Apply
@@ -803,15 +798,15 @@
         </td>
       </tr><tr>
         <td>
-          42
+          43
         </td>
         <td>
           212
         </td>
         <td>
-          1988
+          2051
           -
-          1998
+          2061
         </td>
         <td>
           Literal
@@ -827,15 +822,15 @@
         </td>
       </tr><tr>
         <td>
-          42
+          43
         </td>
         <td>
           213
         </td>
         <td>
-          2000
+          2063
           -
-          2010
+          2073
         </td>
         <td>
           Select
@@ -851,15 +846,15 @@
         </td>
       </tr><tr>
         <td>
-          42
+          43
         </td>
         <td>
           214
         </td>
         <td>
-          1976
+          2039
           -
-          2011
+          2074
         </td>
         <td>
           Apply
@@ -875,15 +870,15 @@
         </td>
       </tr><tr>
         <td>
-          43
+          44
         </td>
         <td>
           215
         </td>
         <td>
-          2033
+          2096
           -
-          2042
+          2105
         </td>
         <td>
           Literal
@@ -899,15 +894,15 @@
         </td>
       </tr><tr>
         <td>
-          43
+          44
         </td>
         <td>
           216
         </td>
         <td>
-          2044
+          2107
           -
-          2054
+          2117
         </td>
         <td>
           Select
@@ -923,15 +918,15 @@
         </td>
       </tr><tr>
         <td>
-          43
+          44
         </td>
         <td>
           217
         </td>
         <td>
-          2021
+          2084
           -
-          2055
+          2118
         </td>
         <td>
           Apply
@@ -947,15 +942,15 @@
         </td>
       </tr><tr>
         <td>
-          44
+          45
         </td>
         <td>
           218
         </td>
         <td>
-          2077
+          2140
           -
-          2083
+          2146
         </td>
         <td>
           Literal
@@ -971,15 +966,15 @@
         </td>
       </tr><tr>
         <td>
-          44
+          45
         </td>
         <td>
           219
         </td>
         <td>
-          2085
+          2148
           -
-          2096
+          2159
         </td>
         <td>
           Select
@@ -995,15 +990,15 @@
         </td>
       </tr><tr>
         <td>
-          44
+          45
         </td>
         <td>
           220
         </td>
         <td>
-          2065
+          2128
           -
-          2097
+          2160
         </td>
         <td>
           Apply
@@ -1019,15 +1014,15 @@
         </td>
       </tr><tr>
         <td>
-          45
+          46
         </td>
         <td>
           221
         </td>
         <td>
-          2119
+          2182
           -
-          2127
+          2190
         </td>
         <td>
           Literal
@@ -1043,15 +1038,15 @@
         </td>
       </tr><tr>
         <td>
-          45
+          46
         </td>
         <td>
           222
         </td>
         <td>
-          2129
+          2192
           -
-          2140
+          2203
         </td>
         <td>
           Select
@@ -1067,15 +1062,15 @@
         </td>
       </tr><tr>
         <td>
-          45
+          46
         </td>
         <td>
           223
         </td>
         <td>
-          2107
+          2170
           -
-          2141
+          2204
         </td>
         <td>
           Apply
@@ -1091,15 +1086,15 @@
         </td>
       </tr><tr>
         <td>
-          46
+          47
         </td>
         <td>
           224
         </td>
         <td>
-          2163
+          2226
           -
-          2180
+          2243
         </td>
         <td>
           Literal
@@ -1115,15 +1110,15 @@
         </td>
       </tr><tr>
         <td>
-          46
+          47
         </td>
         <td>
           225
         </td>
         <td>
-          2182
+          2245
           -
-          2192
+          2255
         </td>
         <td>
           Select
@@ -1139,15 +1134,15 @@
         </td>
       </tr><tr>
         <td>
-          46
+          47
         </td>
         <td>
           226
         </td>
         <td>
-          2205
+          2268
           -
-          2209
+          2272
         </td>
         <td>
           Literal
@@ -1163,15 +1158,15 @@
         </td>
       </tr><tr>
         <td>
-          46
+          47
         </td>
         <td>
           227
         </td>
         <td>
-          2151
+          2214
           -
-          2210
+          2273
         </td>
         <td>
           Apply
@@ -1187,15 +1182,15 @@
         </td>
       </tr><tr>
         <td>
-          47
+          48
         </td>
         <td>
           228
         </td>
         <td>
-          2232
+          2295
           -
-          2249
+          2312
         </td>
         <td>
           Literal
@@ -1211,15 +1206,15 @@
         </td>
       </tr><tr>
         <td>
-          47
+          48
         </td>
         <td>
           229
         </td>
         <td>
-          2251
+          2314
           -
-          2261
+          2324
         </td>
         <td>
           Select
@@ -1235,15 +1230,15 @@
         </td>
       </tr><tr>
         <td>
-          47
+          48
         </td>
         <td>
           230
         </td>
         <td>
-          2220
+          2283
           -
-          2262
+          2325
         </td>
         <td>
           Apply
@@ -1259,15 +1254,15 @@
         </td>
       </tr><tr>
         <td>
-          52
+          53
         </td>
         <td>
           253
         </td>
         <td>
-          2324
+          2387
           -
-          2583
+          2646
         </td>
         <td>
           Apply
@@ -1283,15 +1278,15 @@
         </td>
       </tr><tr>
         <td>
-          52
+          53
         </td>
         <td>
           254
         </td>
         <td>
-          2313
+          2376
           -
-          2584
+          2647
         </td>
         <td>
           Apply
@@ -1307,15 +1302,15 @@
         </td>
       </tr><tr>
         <td>
-          52
+          53
         </td>
         <td>
           255
         </td>
         <td>
-          2303
+          2366
           -
-          2585
+          2648
         </td>
         <td>
           Apply
@@ -1331,15 +1326,15 @@
         </td>
       </tr><tr>
         <td>
-          53
+          54
         </td>
         <td>
           237
         </td>
         <td>
-          2347
+          2410
           -
-          2359
+          2422
         </td>
         <td>
           Literal
@@ -1355,15 +1350,15 @@
         </td>
       </tr><tr>
         <td>
-          53
+          54
         </td>
         <td>
           238
         </td>
         <td>
-          2361
+          2424
           -
-          2371
+          2434
         </td>
         <td>
           Select
@@ -1379,15 +1374,15 @@
         </td>
       </tr><tr>
         <td>
-          53
+          54
         </td>
         <td>
           239
         </td>
         <td>
-          2335
+          2398
           -
-          2372
+          2435
         </td>
         <td>
           Apply
@@ -1403,15 +1398,15 @@
         </td>
       </tr><tr>
         <td>
-          54
+          55
         </td>
         <td>
           240
         </td>
         <td>
-          2392
+          2455
           -
-          2406
+          2469
         </td>
         <td>
           Literal
@@ -1427,15 +1422,15 @@
         </td>
       </tr><tr>
         <td>
-          54
+          55
         </td>
         <td>
           241
         </td>
         <td>
-          2408
+          2471
           -
-          2418
+          2481
         </td>
         <td>
           Select
@@ -1451,15 +1446,15 @@
         </td>
       </tr><tr>
         <td>
-          54
+          55
         </td>
         <td>
           242
         </td>
         <td>
-          2380
+          2443
           -
-          2419
+          2482
         </td>
         <td>
           Apply
@@ -1475,15 +1470,15 @@
         </td>
       </tr><tr>
         <td>
-          55
+          56
         </td>
         <td>
           243
         </td>
         <td>
-          2439
+          2502
           -
-          2450
+          2513
         </td>
         <td>
           Literal
@@ -1499,15 +1494,15 @@
         </td>
       </tr><tr>
         <td>
-          55
+          56
         </td>
         <td>
           244
         </td>
         <td>
-          2452
+          2515
           -
-          2463
+          2526
         </td>
         <td>
           Select
@@ -1523,15 +1518,15 @@
         </td>
       </tr><tr>
         <td>
-          55
+          56
         </td>
         <td>
           245
         </td>
         <td>
-          2427
+          2490
           -
-          2464
+          2527
         </td>
         <td>
           Apply
@@ -1547,15 +1542,15 @@
         </td>
       </tr><tr>
         <td>
-          56
+          57
         </td>
         <td>
           246
         </td>
         <td>
-          2484
+          2547
           -
-          2494
+          2557
         </td>
         <td>
           Literal
@@ -1571,15 +1566,15 @@
         </td>
       </tr><tr>
         <td>
-          56
+          57
         </td>
         <td>
           247
         </td>
         <td>
-          2496
+          2559
           -
-          2507
+          2570
         </td>
         <td>
           Select
@@ -1595,15 +1590,15 @@
         </td>
       </tr><tr>
         <td>
-          56
+          57
         </td>
         <td>
           248
         </td>
         <td>
-          2520
+          2583
           -
-          2524
+          2587
         </td>
         <td>
           Literal
@@ -1619,15 +1614,15 @@
         </td>
       </tr><tr>
         <td>
-          56
+          57
         </td>
         <td>
           249
         </td>
         <td>
-          2472
+          2535
           -
-          2525
+          2588
         </td>
         <td>
           Apply
@@ -1643,15 +1638,15 @@
         </td>
       </tr><tr>
         <td>
-          57
+          58
         </td>
         <td>
           250
         </td>
         <td>
-          2545
+          2608
           -
-          2563
+          2626
         </td>
         <td>
           Literal
@@ -1667,15 +1662,15 @@
         </td>
       </tr><tr>
         <td>
-          57
+          58
         </td>
         <td>
           251
         </td>
         <td>
-          2565
+          2628
           -
-          2575
+          2638
         </td>
         <td>
           Select
@@ -1691,15 +1686,15 @@
         </td>
       </tr><tr>
         <td>
-          57
+          58
         </td>
         <td>
           252
         </td>
         <td>
-          2533
+          2596
           -
-          2576
+          2639
         </td>
         <td>
           Apply
@@ -1715,15 +1710,15 @@
         </td>
       </tr><tr>
         <td>
-          61
+          62
         </td>
         <td>
           256
         </td>
         <td>
-          2674
+          2737
           -
-          2695
+          2758
         </td>
         <td>
           Select
@@ -1739,15 +1734,15 @@
         </td>
       </tr><tr>
         <td>
-          61
+          62
         </td>
         <td>
           257
         </td>
         <td>
-          2718
+          2781
           -
-          2722
+          2785
         </td>
         <td>
           Literal
@@ -1763,15 +1758,15 @@
         </td>
       </tr><tr>
         <td>
-          61
+          62
         </td>
         <td>
           258
         </td>
         <td>
-          2700
+          2763
           -
-          2723
+          2786
         </td>
         <td>
           Apply
@@ -1787,15 +1782,15 @@
         </td>
       </tr><tr>
         <td>
-          61
+          62
         </td>
         <td>
           259
         </td>
         <td>
-          2699
+          2762
           -
-          2699
+          2762
         </td>
         <td>
           ApplyToImplicitArgs
@@ -1811,15 +1806,15 @@
         </td>
       </tr><tr>
         <td>
-          61
+          62
         </td>
         <td>
           260
         </td>
         <td>
-          2674
+          2737
           -
-          2724
+          2787
         </td>
         <td>
           ApplyToImplicitArgs
@@ -1841,15 +1836,15 @@
         </td>
       </tr><tr>
         <td>
-          61
+          62
         </td>
         <td>
           261
         </td>
         <td>
-          2645
+          2708
           -
-          2725
+          2788
         </td>
         <td>
           Apply
@@ -1871,15 +1866,15 @@
         </td>
       </tr><tr>
         <td>
-          62
+          63
         </td>
         <td>
           262
         </td>
         <td>
-          2734
+          2797
           -
-          2739
+          2802
         </td>
         <td>
           Select
@@ -1895,15 +1890,15 @@
         </td>
       </tr><tr>
         <td>
-          63
+          64
         </td>
         <td>
           263
         </td>
         <td>
-          2771
+          2834
           -
-          2787
+          2850
         </td>
         <td>
           Select
@@ -1919,15 +1914,15 @@
         </td>
       </tr><tr>
         <td>
-          63
+          64
         </td>
         <td>
           264
         </td>
         <td>
-          2807
+          2870
           -
-          2821
+          2884
         </td>
         <td>
           Literal
@@ -1943,15 +1938,15 @@
         </td>
       </tr><tr>
         <td>
-          63
+          64
         </td>
         <td>
           265
         </td>
         <td>
-          2823
+          2886
           -
-          2831
+          2894
         </td>
         <td>
           Select
@@ -1967,15 +1962,15 @@
         </td>
       </tr><tr>
         <td>
-          63
+          64
         </td>
         <td>
           266
         </td>
         <td>
-          2795
+          2858
           -
-          2832
+          2895
         </td>
         <td>
           Apply
@@ -1991,15 +1986,15 @@
         </td>
       </tr><tr>
         <td>
-          63
+          64
         </td>
         <td>
           267
         </td>
         <td>
-          2846
+          2909
           -
-          2859
+          2922
         </td>
         <td>
           Literal
@@ -2015,15 +2010,15 @@
         </td>
       </tr><tr>
         <td>
-          63
+          64
         </td>
         <td>
           268
         </td>
         <td>
-          2861
+          2924
           -
-          2872
+          2935
         </td>
         <td>
           Select
@@ -2039,15 +2034,15 @@
         </td>
       </tr><tr>
         <td>
-          63
+          64
         </td>
         <td>
           269
         </td>
         <td>
-          2834
+          2897
           -
-          2873
+          2936
         </td>
         <td>
           Apply
@@ -2063,15 +2058,15 @@
         </td>
       </tr><tr>
         <td>
-          63
+          64
         </td>
         <td>
           270
         </td>
         <td>
-          2791
+          2854
           -
-          2874
+          2937
         </td>
         <td>
           Apply
@@ -2087,15 +2082,15 @@
         </td>
       </tr><tr>
         <td>
-          63
+          64
         </td>
         <td>
           271
         </td>
         <td>
-          2788
+          2851
           -
-          2788
+          2851
         </td>
         <td>
           ApplyToImplicitArgs
@@ -2111,15 +2106,15 @@
         </td>
       </tr><tr>
         <td>
-          63
+          64
         </td>
         <td>
           272
         </td>
         <td>
-          2771
+          2834
           -
-          2874
+          2937
         </td>
         <td>
           ApplyToImplicitArgs
@@ -2135,15 +2130,15 @@
         </td>
       </tr><tr>
         <td>
-          63
+          64
         </td>
         <td>
           273
         </td>
         <td>
-          2747
+          2810
           -
-          2875
+          2938
         </td>
         <td>
           Apply
@@ -2159,15 +2154,15 @@
         </td>
       </tr><tr>
         <td>
-          63
+          64
         </td>
         <td>
           274
         </td>
         <td>
-          2747
+          2810
           -
-          2875
+          2938
         </td>
         <td>
           Block
@@ -2183,15 +2178,15 @@
         </td>
       </tr><tr>
         <td>
-          65
+          66
         </td>
         <td>
           275
         </td>
         <td>
-          2891
+          2954
           -
-          2900
+          2963
         </td>
         <td>
           Ident
@@ -2207,15 +2202,15 @@
         </td>
       </tr><tr>
         <td>
-          70
+          71
         </td>
         <td>
           276
         </td>
         <td>
-          3037
+          3100
           -
-          3083
+          3146
         </td>
         <td>
           Select
@@ -2231,15 +2226,15 @@
         </td>
       </tr><tr>
         <td>
-          71
+          72
         </td>
         <td>
           277
         </td>
         <td>
-          3088
+          3151
           -
-          3100
+          3163
         </td>
         <td>
           Apply
@@ -2255,15 +2250,15 @@
         </td>
       </tr><tr>
         <td>
-          81
+          82
         </td>
         <td>
           279
         </td>
         <td>
-          3307
+          3370
           -
-          3310
+          3373
         </td>
         <td>
           Literal
@@ -2279,15 +2274,15 @@
         </td>
       </tr><tr>
         <td>
-          81
+          82
         </td>
         <td>
           280
         </td>
         <td>
-          3344
+          3407
           -
-          3346
+          3409
         </td>
         <td>
           Literal
@@ -2303,15 +2298,15 @@
         </td>
       </tr><tr>
         <td>
-          81
+          82
         </td>
         <td>
           281
         </td>
         <td>
-          3378
+          3441
           -
-          3389
+          3452
         </td>
         <td>
           Literal
@@ -2327,15 +2322,15 @@
         </td>
       </tr><tr>
         <td>
-          81
+          82
         </td>
         <td>
           282
         </td>
         <td>
-          3311
+          3374
           -
-          3343
+          3406
         </td>
         <td>
           Apply
@@ -2351,15 +2346,15 @@
         </td>
       </tr><tr>
         <td>
-          81
+          82
         </td>
         <td>
           283
         </td>
         <td>
-          3347
+          3410
           -
-          3377
+          3440
         </td>
         <td>
           Apply
@@ -2375,15 +2370,15 @@
         </td>
       </tr><tr>
         <td>
-          81
+          82
         </td>
         <td>
           284
         </td>
         <td>
-          3305
+          3368
           -
-          3389
+          3452
         </td>
         <td>
           Apply
@@ -2399,15 +2394,15 @@
         </td>
       </tr><tr>
         <td>
-          88
+          89
         </td>
         <td>
           285
         </td>
         <td>
-          3659
+          3722
           -
-          3701
+          3764
         </td>
         <td>
           Apply
@@ -2423,15 +2418,15 @@
         </td>
       </tr><tr>
         <td>
-          91
+          92
         </td>
         <td>
           301
         </td>
         <td>
-          3871
+          3934
           -
-          4547
+          4610
         </td>
         <td>
           Block
@@ -2465,15 +2460,15 @@
         </td>
       </tr><tr>
         <td>
-          92
+          93
         </td>
         <td>
           286
         </td>
         <td>
-          3908
+          3971
           -
-          3970
+          4033
         </td>
         <td>
           Literal
@@ -2489,15 +2484,15 @@
         </td>
       </tr><tr>
         <td>
-          92
+          93
         </td>
         <td>
           287
         </td>
         <td>
-          3972
+          4035
           -
-          4001
+          4064
         </td>
         <td>
           Apply
@@ -2513,15 +2508,15 @@
         </td>
       </tr><tr>
         <td>
-          92
+          93
         </td>
         <td>
           290
         </td>
         <td>
-          3888
+          3951
           -
-          4123
+          4186
         </td>
         <td>
           Apply
@@ -2537,15 +2532,15 @@
         </td>
       </tr><tr>
         <td>
-          93
+          94
         </td>
         <td>
           288
         </td>
         <td>
-          4016
+          4079
           -
-          4091
+          4154
         </td>
         <td>
           Apply
@@ -2561,15 +2556,15 @@
         </td>
       </tr><tr>
         <td>
-          94
+          95
         </td>
         <td>
           289
         </td>
         <td>
-          4117
+          4180
           -
-          4122
+          4185
         </td>
         <td>
           Literal
@@ -2585,15 +2580,15 @@
         </td>
       </tr><tr>
         <td>
-          95
+          96
         </td>
         <td>
           291
         </td>
         <td>
-          4159
+          4222
           -
-          4201
+          4264
         </td>
         <td>
           Literal
@@ -2609,15 +2604,15 @@
         </td>
       </tr><tr>
         <td>
-          95
+          96
         </td>
         <td>
           292
         </td>
         <td>
-          4203
+          4266
           -
-          4232
+          4295
         </td>
         <td>
           Apply
@@ -2633,15 +2628,15 @@
         </td>
       </tr><tr>
         <td>
-          95
+          96
         </td>
         <td>
           295
         </td>
         <td>
-          4139
+          4202
           -
-          4346
+          4409
         </td>
         <td>
           Apply
@@ -2657,15 +2652,15 @@
         </td>
       </tr><tr>
         <td>
-          96
+          97
         </td>
         <td>
           293
         </td>
         <td>
-          4247
+          4310
           -
-          4314
+          4377
         </td>
         <td>
           Apply
@@ -2681,15 +2676,15 @@
         </td>
       </tr><tr>
         <td>
-          97
+          98
         </td>
         <td>
           294
         </td>
         <td>
-          4340
+          4403
           -
-          4345
+          4408
         </td>
         <td>
           Literal
@@ -2705,15 +2700,15 @@
         </td>
       </tr><tr>
         <td>
-          99
+          100
         </td>
         <td>
           300
         </td>
         <td>
-          4354
+          4417
           -
-          4541
+          4604
         </td>
         <td>
           Apply
@@ -2729,15 +2724,15 @@
         </td>
       </tr><tr>
         <td>
-          100
+          101
         </td>
         <td>
           296
         </td>
         <td>
-          4371
+          4434
           -
-          4540
+          4603
         </td>
         <td>
           Apply
@@ -2753,15 +2748,15 @@
         </td>
       </tr><tr>
         <td>
-          100
+          101
         </td>
         <td>
           299
         </td>
         <td>
-          4371
+          4434
           -
-          4540
+          4603
         </td>
         <td>
           Apply
@@ -2777,15 +2772,15 @@
         </td>
       </tr><tr>
         <td>
-          102
+          103
         </td>
         <td>
           297
         </td>
         <td>
-          4473
+          4536
           -
-          4481
+          4544
         </td>
         <td>
           Select
@@ -2801,15 +2796,15 @@
         </td>
       </tr><tr>
         <td>
-          103
+          104
         </td>
         <td>
           298
         </td>
         <td>
-          4510
+          4573
           -
-          4519
+          4582
         </td>
         <td>
           Select
@@ -2825,15 +2820,15 @@
         </td>
       </tr><tr>
         <td>
-          106
+          107
         </td>
         <td>
           307
         </td>
         <td>
-          4559
+          4622
           -
-          5109
+          5172
         </td>
         <td>
           Apply
@@ -2849,15 +2844,15 @@
         </td>
       </tr><tr>
         <td>
-          106
+          107
         </td>
         <td>
           308
         </td>
         <td>
-          4559
+          4622
           -
-          5109
+          5172
         </td>
         <td>
           Block
@@ -2873,15 +2868,15 @@
         </td>
       </tr><tr>
         <td>
-          107
+          108
         </td>
         <td>
           302
         </td>
         <td>
-          4576
+          4639
           -
-          5108
+          5171
         </td>
         <td>
           Apply
@@ -2897,15 +2892,15 @@
         </td>
       </tr><tr>
         <td>
-          107
+          108
         </td>
         <td>
           306
         </td>
         <td>
-          4576
+          4639
           -
-          5108
+          5171
         </td>
         <td>
           Apply
@@ -2921,15 +2916,15 @@
         </td>
       </tr><tr>
         <td>
-          108
+          109
         </td>
         <td>
           303
         </td>
         <td>
-          4610
+          4673
           -
-          4618
+          4681
         </td>
         <td>
           Select
@@ -2945,15 +2940,15 @@
         </td>
       </tr><tr>
         <td>
-          109
+          110
         </td>
         <td>
           304
         </td>
         <td>
-          4648
+          4711
           -
-          4657
+          4720
         </td>
         <td>
           Select
@@ -2969,15 +2964,15 @@
         </td>
       </tr><tr>
         <td>
-          110
+          111
         </td>
         <td>
           305
         </td>
         <td>
-          4680
+          4743
           -
-          4688
+          4751
         </td>
         <td>
           Select
@@ -2993,15 +2988,15 @@
         </td>
       </tr><tr>
         <td>
-          130
+          131
         </td>
         <td>
           309
         </td>
         <td>
-          5511
+          5574
           -
-          5533
+          5596
         </td>
         <td>
           Apply
@@ -3017,15 +3012,15 @@
         </td>
       </tr><tr>
         <td>
-          130
+          131
         </td>
         <td>
           310
         </td>
         <td>
-          5551
+          5614
           -
-          5568
+          5631
         </td>
         <td>
           Apply
@@ -3041,15 +3036,15 @@
         </td>
       </tr><tr>
         <td>
-          130
+          131
         </td>
         <td>
           311
         </td>
         <td>
-          5572
+          5635
           -
-          5583
+          5646
         </td>
         <td>
           Apply
@@ -3065,15 +3060,15 @@
         </td>
       </tr><tr>
         <td>
-          130
+          131
         </td>
         <td>
           312
         </td>
         <td>
-          5551
+          5614
           -
-          5583
+          5646
         </td>
         <td>
           Apply
@@ -3089,15 +3084,15 @@
         </td>
       </tr><tr>
         <td>
-          130
+          131
         </td>
         <td>
           313
         </td>
         <td>
-          5545
+          5608
           -
-          5545
+          5608
         </td>
         <td>
           TypeApply
@@ -3113,15 +3108,15 @@
         </td>
       </tr><tr>
         <td>
-          130
+          131
         </td>
         <td>
           314
         </td>
         <td>
-          5585
+          5648
           -
-          5585
+          5648
         </td>
         <td>
           TypeApply
@@ -3137,15 +3132,15 @@
         </td>
       </tr><tr>
         <td>
-          130
+          131
         </td>
         <td>
           315
         </td>
         <td>
-          5511
+          5574
           -
-          5590
+          5653
         </td>
         <td>
           ApplyToImplicitArgs
@@ -3161,15 +3156,15 @@
         </td>
       </tr><tr>
         <td>
-          130
+          131
         </td>
         <td>
           316
         </td>
         <td>
-          5511
+          5574
           -
-          5597
+          5660
         </td>
         <td>
           Select
@@ -3185,15 +3180,15 @@
         </td>
       </tr><tr>
         <td>
-          132
+          133
         </td>
         <td>
           317
         </td>
         <td>
-          5632
+          5695
           -
-          5678
+          5741
         </td>
         <td>
           TypeApply
@@ -3209,15 +3204,15 @@
         </td>
       </tr><tr>
         <td>
-          133
+          134
         </td>
         <td>
           318
         </td>
         <td>
-          5689
+          5752
           -
-          5711
+          5774
         </td>
         <td>
           Apply
@@ -3233,15 +3228,15 @@
         </td>
       </tr><tr>
         <td>
-          134
+          135
         </td>
         <td>
           319
         </td>
         <td>
-          5721
+          5784
           -
-          5725
+          5788
         </td>
         <td>
           Ident
@@ -3257,15 +3252,15 @@
         </td>
       </tr><tr>
         <td>
-          136
+          137
         </td>
         <td>
           320
         </td>
         <td>
-          5745
+          5808
           -
-          5767
+          5830
         </td>
         <td>
           Apply
@@ -3281,15 +3276,15 @@
         </td>
       </tr><tr>
         <td>
-          136
+          137
         </td>
         <td>
           321
         </td>
         <td>
-          5745
+          5808
           -
-          5767
+          5830
         </td>
         <td>
           Block
@@ -3305,15 +3300,15 @@
         </td>
       </tr><tr>
         <td>
-          140
+          141
         </td>
         <td>
           322
         </td>
         <td>
-          5820
+          5883
           -
-          5850
+          5913
         </td>
         <td>
           Apply
@@ -3329,15 +3324,15 @@
         </td>
       </tr><tr>
         <td>
-          141
+          142
         </td>
         <td>
           323
         </td>
         <td>
-          5858
+          5921
           -
-          5862
+          5925
         </td>
         <td>
           Literal
@@ -3353,15 +3348,15 @@
         </td>
       </tr><tr>
         <td>
-          141
+          142
         </td>
         <td>
           324
         </td>
         <td>
-          5858
+          5921
           -
-          5862
+          5925
         </td>
         <td>
           Block
@@ -3377,15 +3372,15 @@
         </td>
       </tr><tr>
         <td>
-          143
+          144
         </td>
         <td>
           325
         </td>
         <td>
-          5882
+          5945
           -
-          5887
+          5950
         </td>
         <td>
           Select
@@ -3401,15 +3396,15 @@
         </td>
       </tr><tr>
         <td>
-          143
+          144
         </td>
         <td>
           329
         </td>
         <td>
-          5878
-          -
           5941
+          -
+          6004
         </td>
         <td>
           If
@@ -3428,15 +3423,15 @@ else
         </td>
       </tr><tr>
         <td>
-          144
+          145
         </td>
         <td>
           326
         </td>
         <td>
-          5897
+          5960
           -
-          5917
+          5980
         </td>
         <td>
           Apply
@@ -3452,15 +3447,15 @@ else
         </td>
       </tr><tr>
         <td>
-          144
+          145
         </td>
         <td>
           327
         </td>
         <td>
-          5897
+          5960
           -
-          5917
+          5980
         </td>
         <td>
           Block
@@ -3476,15 +3471,15 @@ else
         </td>
       </tr><tr>
         <td>
-          146
+          147
         </td>
         <td>
           328
         </td>
         <td>
-          5937
+          6000
           -
-          5941
+          6004
         </td>
         <td>
           Ident
@@ -3500,135 +3495,15 @@ else
         </td>
       </tr><tr>
         <td>
-          150
-        </td>
-        <td>
-          330
-        </td>
-        <td>
-          6009
-          -
-          6021
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          scala.Any.==
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          what.==(null)
-        </td>
-      </tr><tr>
-        <td>
           151
         </td>
         <td>
-          331
+          367
         </td>
         <td>
-          6029
+          6091
           -
-          6033
-        </td>
-        <td>
-          Literal
-        </td>
-        <td>
-          &lt;nosymbol&gt;
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          null
-        </td>
-      </tr><tr>
-        <td>
-          151
-        </td>
-        <td>
-          332
-        </td>
-        <td>
-          6029
-          -
-          6033
-        </td>
-        <td>
-          Block
-        </td>
-        <td>
-          &lt;nosymbol&gt;
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          null
-        </td>
-      </tr><tr>
-        <td>
-          153
-        </td>
-        <td>
-          333
-        </td>
-        <td>
-          6049
-          -
-          6056
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          scala.Function1.apply
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          f.apply(what)
-        </td>
-      </tr><tr>
-        <td>
-          153
-        </td>
-        <td>
-          334
-        </td>
-        <td>
-          6049
-          -
-          6056
-        </td>
-        <td>
-          Block
-        </td>
-        <td>
-          scala.Function1.apply
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          f.apply(what)
-        </td>
-      </tr><tr>
-        <td>
-          156
-        </td>
-        <td>
-          372
-        </td>
-        <td>
-          6139
-          -
-          7059
+          7101
         </td>
         <td>
           Apply
@@ -3640,22 +3515,22 @@ else
           
         </td>
         <td style="background: #AEF1AE">
-          new org.apache.spark.sql.catalyst.util.GenericArrayData(scala.collection.JavaConverters.asScalaBufferConverter[org.kie.dmn.api.core.DMNMessage](messages).asScala.map[org.apache.spark.sql.catalyst.InternalRow, scala.collection.mutable.Buffer[org.apache.spark.sql.catalyst.InternalRow]](((m: org.kie.dmn.api.core.DMNMessage) =&gt; org.apache.spark.sql.catalyst.InternalRow.apply(KogitoDDLResult.this.nullOr[String, AnyRef](m.getSourceId())(((a: String) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a))), KogitoDDLResult.this.nullOr[Object, AnyRef](m.getSourceReference())(((x0$1: Object) =&gt; x0$1 match {
+          new org.apache.spark.sql.catalyst.util.GenericArrayData(scala.collection.JavaConverters.asScalaBufferConverter[org.kie.dmn.api.core.DMNMessage](messages).asScala.map[org.apache.spark.sql.catalyst.InternalRow, scala.collection.mutable.Buffer[org.apache.spark.sql.catalyst.InternalRow]](((m: org.kie.dmn.api.core.DMNMessage) =&gt; org.apache.spark.sql.catalyst.InternalRow.apply(com.sparkutils.dmn.kogito.types.Utils.nullOr[String, AnyRef](((a: String) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a))).apply(m.getSourceId()), com.sparkutils.dmn.kogito.types.Utils.nullOr[Object, AnyRef](((x$4: Object) =&gt; (x$4: Object) match {
   case (feel @ (_: org.kie.dmn.model.api.LiteralExpression)) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(feel.getText())
   case (a @ _) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString())
-})), KogitoDDLResult.this.nullOr[Throwable, AnyRef](m.getException())(((a: Throwable) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.getMessage()))), KogitoDDLResult.this.nullOr[org.kie.dmn.api.feel.runtime.events.FEELEvent, AnyRef](m.getFeelEvent())(((ev: org.kie.dmn.api.feel.runtime.events.FEELEvent) =&gt; org.apache.spark.sql.catalyst.InternalRow.apply(KogitoDDLResult.this.nullOr[org.kie.dmn.api.feel.runtime.events.FEELEvent.Severity, AnyRef](ev.getSeverity())(((a: org.kie.dmn.api.feel.runtime.events.FEELEvent.Severity) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString()))), org.apache.spark.unsafe.types.UTF8String.fromString(ev.getMessage()), ev.getLine(), ev.getColumn(), KogitoDDLResult.this.nullOr[Throwable, AnyRef](ev.getSourceException())(((a: Throwable) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.getMessage()))), KogitoDDLResult.this.nullOr[Object, AnyRef](ev.getOffendingSymbol())(((a: Object) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString())))))))))(mutable.this.Buffer.canBuildFrom[org.apache.spark.sql.catalyst.InternalRow]))
+})).apply(m.getSourceReference()), com.sparkutils.dmn.kogito.types.Utils.nullOr[Throwable, AnyRef](((a: Throwable) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.getMessage()))).apply(m.getException()), com.sparkutils.dmn.kogito.types.Utils.nullOr[org.kie.dmn.api.feel.runtime.events.FEELEvent, AnyRef](((ev: org.kie.dmn.api.feel.runtime.events.FEELEvent) =&gt; org.apache.spark.sql.catalyst.InternalRow.apply(com.sparkutils.dmn.kogito.types.Utils.nullOr[org.kie.dmn.api.feel.runtime.events.FEELEvent.Severity, AnyRef](((a: org.kie.dmn.api.feel.runtime.events.FEELEvent.Severity) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString()))).apply(ev.getSeverity()), org.apache.spark.unsafe.types.UTF8String.fromString(ev.getMessage()), ev.getLine(), ev.getColumn(), com.sparkutils.dmn.kogito.types.Utils.nullOr[Throwable, AnyRef](((a: Throwable) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.getMessage()))).apply(ev.getSourceException()), com.sparkutils.dmn.kogito.types.Utils.nullOr[Object, AnyRef](((a: Object) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString()))).apply(ev.getOffendingSymbol())))).apply(m.getFeelEvent()))))(mutable.this.Buffer.canBuildFrom[org.apache.spark.sql.catalyst.InternalRow]))
         </td>
       </tr><tr>
         <td>
-          157
+          152
         </td>
         <td>
-          370
+          365
         </td>
         <td>
-          6188
+          6140
           -
-          6188
+          6140
         </td>
         <td>
           TypeApply
@@ -3671,15 +3546,15 @@ else
         </td>
       </tr><tr>
         <td>
-          157
+          152
         </td>
         <td>
-          371
+          366
         </td>
         <td>
-          6167
+          6119
           -
-          7053
+          7095
         </td>
         <td>
           ApplyToImplicitArgs
@@ -3691,22 +3566,22 @@ else
           
         </td>
         <td style="background: #AEF1AE">
-          scala.collection.JavaConverters.asScalaBufferConverter[org.kie.dmn.api.core.DMNMessage](messages).asScala.map[org.apache.spark.sql.catalyst.InternalRow, scala.collection.mutable.Buffer[org.apache.spark.sql.catalyst.InternalRow]](((m: org.kie.dmn.api.core.DMNMessage) =&gt; org.apache.spark.sql.catalyst.InternalRow.apply(KogitoDDLResult.this.nullOr[String, AnyRef](m.getSourceId())(((a: String) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a))), KogitoDDLResult.this.nullOr[Object, AnyRef](m.getSourceReference())(((x0$1: Object) =&gt; x0$1 match {
+          scala.collection.JavaConverters.asScalaBufferConverter[org.kie.dmn.api.core.DMNMessage](messages).asScala.map[org.apache.spark.sql.catalyst.InternalRow, scala.collection.mutable.Buffer[org.apache.spark.sql.catalyst.InternalRow]](((m: org.kie.dmn.api.core.DMNMessage) =&gt; org.apache.spark.sql.catalyst.InternalRow.apply(com.sparkutils.dmn.kogito.types.Utils.nullOr[String, AnyRef](((a: String) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a))).apply(m.getSourceId()), com.sparkutils.dmn.kogito.types.Utils.nullOr[Object, AnyRef](((x$4: Object) =&gt; (x$4: Object) match {
   case (feel @ (_: org.kie.dmn.model.api.LiteralExpression)) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(feel.getText())
   case (a @ _) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString())
-})), KogitoDDLResult.this.nullOr[Throwable, AnyRef](m.getException())(((a: Throwable) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.getMessage()))), KogitoDDLResult.this.nullOr[org.kie.dmn.api.feel.runtime.events.FEELEvent, AnyRef](m.getFeelEvent())(((ev: org.kie.dmn.api.feel.runtime.events.FEELEvent) =&gt; org.apache.spark.sql.catalyst.InternalRow.apply(KogitoDDLResult.this.nullOr[org.kie.dmn.api.feel.runtime.events.FEELEvent.Severity, AnyRef](ev.getSeverity())(((a: org.kie.dmn.api.feel.runtime.events.FEELEvent.Severity) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString()))), org.apache.spark.unsafe.types.UTF8String.fromString(ev.getMessage()), ev.getLine(), ev.getColumn(), KogitoDDLResult.this.nullOr[Throwable, AnyRef](ev.getSourceException())(((a: Throwable) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.getMessage()))), KogitoDDLResult.this.nullOr[Object, AnyRef](ev.getOffendingSymbol())(((a: Object) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString())))))))))(mutable.this.Buffer.canBuildFrom[org.apache.spark.sql.catalyst.InternalRow])
+})).apply(m.getSourceReference()), com.sparkutils.dmn.kogito.types.Utils.nullOr[Throwable, AnyRef](((a: Throwable) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.getMessage()))).apply(m.getException()), com.sparkutils.dmn.kogito.types.Utils.nullOr[org.kie.dmn.api.feel.runtime.events.FEELEvent, AnyRef](((ev: org.kie.dmn.api.feel.runtime.events.FEELEvent) =&gt; org.apache.spark.sql.catalyst.InternalRow.apply(com.sparkutils.dmn.kogito.types.Utils.nullOr[org.kie.dmn.api.feel.runtime.events.FEELEvent.Severity, AnyRef](((a: org.kie.dmn.api.feel.runtime.events.FEELEvent.Severity) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString()))).apply(ev.getSeverity()), org.apache.spark.unsafe.types.UTF8String.fromString(ev.getMessage()), ev.getLine(), ev.getColumn(), com.sparkutils.dmn.kogito.types.Utils.nullOr[Throwable, AnyRef](((a: Throwable) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.getMessage()))).apply(ev.getSourceException()), com.sparkutils.dmn.kogito.types.Utils.nullOr[Object, AnyRef](((a: Object) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString()))).apply(ev.getOffendingSymbol())))).apply(m.getFeelEvent()))))(mutable.this.Buffer.canBuildFrom[org.apache.spark.sql.catalyst.InternalRow])
         </td>
       </tr><tr>
         <td>
-          159
+          154
         </td>
         <td>
-          369
+          364
         </td>
         <td>
-          6213
+          6165
           -
-          7045
+          7087
         </td>
         <td>
           Apply
@@ -3718,46 +3593,22 @@ else
           
         </td>
         <td style="background: #AEF1AE">
-          org.apache.spark.sql.catalyst.InternalRow.apply(KogitoDDLResult.this.nullOr[String, AnyRef](m.getSourceId())(((a: String) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a))), KogitoDDLResult.this.nullOr[Object, AnyRef](m.getSourceReference())(((x0$1: Object) =&gt; x0$1 match {
+          org.apache.spark.sql.catalyst.InternalRow.apply(com.sparkutils.dmn.kogito.types.Utils.nullOr[String, AnyRef](((a: String) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a))).apply(m.getSourceId()), com.sparkutils.dmn.kogito.types.Utils.nullOr[Object, AnyRef](((x$4: Object) =&gt; (x$4: Object) match {
   case (feel @ (_: org.kie.dmn.model.api.LiteralExpression)) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(feel.getText())
   case (a @ _) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString())
-})), KogitoDDLResult.this.nullOr[Throwable, AnyRef](m.getException())(((a: Throwable) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.getMessage()))), KogitoDDLResult.this.nullOr[org.kie.dmn.api.feel.runtime.events.FEELEvent, AnyRef](m.getFeelEvent())(((ev: org.kie.dmn.api.feel.runtime.events.FEELEvent) =&gt; org.apache.spark.sql.catalyst.InternalRow.apply(KogitoDDLResult.this.nullOr[org.kie.dmn.api.feel.runtime.events.FEELEvent.Severity, AnyRef](ev.getSeverity())(((a: org.kie.dmn.api.feel.runtime.events.FEELEvent.Severity) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString()))), org.apache.spark.unsafe.types.UTF8String.fromString(ev.getMessage()), ev.getLine(), ev.getColumn(), KogitoDDLResult.this.nullOr[Throwable, AnyRef](ev.getSourceException())(((a: Throwable) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.getMessage()))), KogitoDDLResult.this.nullOr[Object, AnyRef](ev.getOffendingSymbol())(((a: Object) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString())))))))
+})).apply(m.getSourceReference()), com.sparkutils.dmn.kogito.types.Utils.nullOr[Throwable, AnyRef](((a: Throwable) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.getMessage()))).apply(m.getException()), com.sparkutils.dmn.kogito.types.Utils.nullOr[org.kie.dmn.api.feel.runtime.events.FEELEvent, AnyRef](((ev: org.kie.dmn.api.feel.runtime.events.FEELEvent) =&gt; org.apache.spark.sql.catalyst.InternalRow.apply(com.sparkutils.dmn.kogito.types.Utils.nullOr[org.kie.dmn.api.feel.runtime.events.FEELEvent.Severity, AnyRef](((a: org.kie.dmn.api.feel.runtime.events.FEELEvent.Severity) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString()))).apply(ev.getSeverity()), org.apache.spark.unsafe.types.UTF8String.fromString(ev.getMessage()), ev.getLine(), ev.getColumn(), com.sparkutils.dmn.kogito.types.Utils.nullOr[Throwable, AnyRef](((a: Throwable) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.getMessage()))).apply(ev.getSourceException()), com.sparkutils.dmn.kogito.types.Utils.nullOr[Object, AnyRef](((a: Object) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString()))).apply(ev.getOffendingSymbol())))).apply(m.getFeelEvent()))
         </td>
       </tr><tr>
         <td>
-          160
+          155
         </td>
         <td>
-          335
+          330
         </td>
         <td>
-          6245
+          6202
           -
-          6258
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          org.kie.dmn.api.core.DMNMessage.getSourceId
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          m.getSourceId()
-        </td>
-      </tr><tr>
-        <td>
-          160
-        </td>
-        <td>
-          336
-        </td>
-        <td>
-          6265
-          -
-          6289
+          6226
         </td>
         <td>
           Apply
@@ -3773,90 +3624,63 @@ else
         </td>
       </tr><tr>
         <td>
-          160
+          155
         </td>
         <td>
-          337
+          331
         </td>
         <td>
-          6238
+          6228
           -
-          6290
+          6241
         </td>
         <td>
           Apply
         </td>
         <td>
-          com.sparkutils.dmn.kogito.KogitoDDLResult.nullOr
+          org.kie.dmn.api.core.DMNMessage.getSourceId
         </td>
         <td>
           
         </td>
         <td style="background: #AEF1AE">
-          KogitoDDLResult.this.nullOr[String, AnyRef](m.getSourceId())(((a: String) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a)))
+          m.getSourceId()
         </td>
       </tr><tr>
         <td>
-          161
+          155
         </td>
         <td>
-          338
+          332
         </td>
         <td>
-          6311
+          6190
           -
-          6331
+          6242
         </td>
         <td>
           Apply
         </td>
         <td>
-          org.kie.dmn.api.core.DMNMessage.getSourceReference
+          scala.Function1.apply
         </td>
         <td>
           
         </td>
         <td style="background: #AEF1AE">
-          m.getSourceReference()
+          com.sparkutils.dmn.kogito.types.Utils.nullOr[String, AnyRef](((a: String) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a))).apply(m.getSourceId())
         </td>
       </tr><tr>
         <td>
-          161
+          157
         </td>
         <td>
-          345
+          333
         </td>
         <td>
-          6304
+          6351
           -
-          6487
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          com.sparkutils.dmn.kogito.KogitoDDLResult.nullOr
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          KogitoDDLResult.this.nullOr[Object, AnyRef](m.getSourceReference())(((x0$1: Object) =&gt; x0$1 match {
-  case (feel @ (_: org.kie.dmn.model.api.LiteralExpression)) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(feel.getText())
-  case (a @ _) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString())
-}))
-        </td>
-      </tr><tr>
-        <td>
-          162
-        </td>
-        <td>
-          339
-        </td>
-        <td>
-          6402
-          -
-          6414
+          6363
         </td>
         <td>
           Apply
@@ -3872,15 +3696,15 @@ else
         </td>
       </tr><tr>
         <td>
-          162
+          157
         </td>
         <td>
-          340
+          334
         </td>
         <td>
-          6380
+          6329
           -
-          6415
+          6364
         </td>
         <td>
           Apply
@@ -3896,15 +3720,15 @@ else
         </td>
       </tr><tr>
         <td>
-          162
+          157
         </td>
         <td>
-          341
+          335
         </td>
         <td>
-          6380
+          6329
           -
-          6415
+          6364
         </td>
         <td>
           Block
@@ -3920,15 +3744,15 @@ else
         </td>
       </tr><tr>
         <td>
-          163
+          158
         </td>
         <td>
-          342
+          336
         </td>
         <td>
-          6462
+          6411
           -
-          6472
+          6421
         </td>
         <td>
           Apply
@@ -3944,15 +3768,15 @@ else
         </td>
       </tr><tr>
         <td>
-          163
+          158
         </td>
         <td>
-          343
+          337
         </td>
         <td>
-          6440
+          6389
           -
-          6473
+          6422
         </td>
         <td>
           Apply
@@ -3968,15 +3792,15 @@ else
         </td>
       </tr><tr>
         <td>
-          163
+          158
         </td>
         <td>
-          344
+          338
         </td>
         <td>
-          6440
+          6389
           -
-          6473
+          6422
         </td>
         <td>
           Block
@@ -3992,15 +3816,114 @@ else
         </td>
       </tr><tr>
         <td>
-          165
+          159
         </td>
         <td>
-          346
+          339
         </td>
         <td>
-          6508
+          6438
           -
-          6522
+          6458
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.kie.dmn.api.core.DMNMessage.getSourceReference
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          m.getSourceReference()
+        </td>
+      </tr><tr>
+        <td>
+          159
+        </td>
+        <td>
+          340
+        </td>
+        <td>
+          6256
+          -
+          6459
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.kogito.types.Utils.nullOr[Object, AnyRef](((x$4: Object) =&gt; (x$4: Object) match {
+  case (feel @ (_: org.kie.dmn.model.api.LiteralExpression)) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(feel.getText())
+  case (a @ _) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString())
+})).apply(m.getSourceReference())
+        </td>
+      </tr><tr>
+        <td>
+          160
+        </td>
+        <td>
+          341
+        </td>
+        <td>
+          6520
+          -
+          6532
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Throwable.getMessage
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          a.getMessage()
+        </td>
+      </tr><tr>
+        <td>
+          160
+        </td>
+        <td>
+          342
+        </td>
+        <td>
+          6498
+          -
+          6533
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.unsafe.types.UTF8String.fromString
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #F0ADAD">
+          org.apache.spark.unsafe.types.UTF8String.fromString(a.getMessage())
+        </td>
+      </tr><tr>
+        <td>
+          160
+        </td>
+        <td>
+          343
+        </td>
+        <td>
+          6535
+          -
+          6549
         </td>
         <td>
           Apply
@@ -4016,135 +3939,39 @@ else
         </td>
       </tr><tr>
         <td>
-          165
+          160
         </td>
         <td>
-          347
+          344
         </td>
         <td>
-          6551
+          6473
           -
-          6563
+          6550
         </td>
         <td>
           Apply
         </td>
         <td>
-          java.lang.Throwable.getMessage
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          a.getMessage()
-        </td>
-      </tr><tr>
-        <td>
-          165
-        </td>
-        <td>
-          348
-        </td>
-        <td>
-          6529
-          -
-          6564
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          org.apache.spark.unsafe.types.UTF8String.fromString
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          org.apache.spark.unsafe.types.UTF8String.fromString(a.getMessage())
-        </td>
-      </tr><tr>
-        <td>
-          165
-        </td>
-        <td>
-          349
-        </td>
-        <td>
-          6501
-          -
-          6565
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          com.sparkutils.dmn.kogito.KogitoDDLResult.nullOr
+          scala.Function1.apply
         </td>
         <td>
           
         </td>
         <td style="background: #AEF1AE">
-          KogitoDDLResult.this.nullOr[Throwable, AnyRef](m.getException())(((a: Throwable) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.getMessage())))
+          com.sparkutils.dmn.kogito.types.Utils.nullOr[Throwable, AnyRef](((a: Throwable) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.getMessage()))).apply(m.getException())
         </td>
       </tr><tr>
         <td>
-          166
+          162
         </td>
         <td>
-          350
+          361
         </td>
         <td>
-          6586
+          6605
           -
-          6600
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          org.kie.dmn.api.core.DMNMessage.getFeelEvent
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          m.getFeelEvent()
-        </td>
-      </tr><tr>
-        <td>
-          166
-        </td>
-        <td>
-          368
-        </td>
-        <td>
-          6579
-          -
-          7033
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          com.sparkutils.dmn.kogito.KogitoDDLResult.nullOr
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          KogitoDDLResult.this.nullOr[org.kie.dmn.api.feel.runtime.events.FEELEvent, AnyRef](m.getFeelEvent())(((ev: org.kie.dmn.api.feel.runtime.events.FEELEvent) =&gt; org.apache.spark.sql.catalyst.InternalRow.apply(KogitoDDLResult.this.nullOr[org.kie.dmn.api.feel.runtime.events.FEELEvent.Severity, AnyRef](ev.getSeverity())(((a: org.kie.dmn.api.feel.runtime.events.FEELEvent.Severity) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString()))), org.apache.spark.unsafe.types.UTF8String.fromString(ev.getMessage()), ev.getLine(), ev.getColumn(), KogitoDDLResult.this.nullOr[Throwable, AnyRef](ev.getSourceException())(((a: Throwable) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.getMessage()))), KogitoDDLResult.this.nullOr[Object, AnyRef](ev.getOffendingSymbol())(((a: Object) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString()))))))
-        </td>
-      </tr><tr>
-        <td>
-          167
-        </td>
-        <td>
-          367
-        </td>
-        <td>
-          6624
-          -
-          7019
+          7045
         </td>
         <td>
           Apply
@@ -4156,19 +3983,67 @@ else
           
         </td>
         <td style="background: #AEF1AE">
-          org.apache.spark.sql.catalyst.InternalRow.apply(KogitoDDLResult.this.nullOr[org.kie.dmn.api.feel.runtime.events.FEELEvent.Severity, AnyRef](ev.getSeverity())(((a: org.kie.dmn.api.feel.runtime.events.FEELEvent.Severity) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString()))), org.apache.spark.unsafe.types.UTF8String.fromString(ev.getMessage()), ev.getLine(), ev.getColumn(), KogitoDDLResult.this.nullOr[Throwable, AnyRef](ev.getSourceException())(((a: Throwable) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.getMessage()))), KogitoDDLResult.this.nullOr[Object, AnyRef](ev.getOffendingSymbol())(((a: Object) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString()))))
+          org.apache.spark.sql.catalyst.InternalRow.apply(com.sparkutils.dmn.kogito.types.Utils.nullOr[org.kie.dmn.api.feel.runtime.events.FEELEvent.Severity, AnyRef](((a: org.kie.dmn.api.feel.runtime.events.FEELEvent.Severity) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString()))).apply(ev.getSeverity()), org.apache.spark.unsafe.types.UTF8String.fromString(ev.getMessage()), ev.getLine(), ev.getColumn(), com.sparkutils.dmn.kogito.types.Utils.nullOr[Throwable, AnyRef](((a: Throwable) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.getMessage()))).apply(ev.getSourceException()), com.sparkutils.dmn.kogito.types.Utils.nullOr[Object, AnyRef](((a: Object) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString()))).apply(ev.getOffendingSymbol()))
         </td>
       </tr><tr>
         <td>
-          168
+          163
         </td>
         <td>
-          351
+          345
         </td>
         <td>
-          6660
+          6690
           -
-          6674
+          6700
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Enum.toString
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          a.toString()
+        </td>
+      </tr><tr>
+        <td>
+          163
+        </td>
+        <td>
+          346
+        </td>
+        <td>
+          6668
+          -
+          6701
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.unsafe.types.UTF8String.fromString
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.unsafe.types.UTF8String.fromString(a.toString())
+        </td>
+      </tr><tr>
+        <td>
+          163
+        </td>
+        <td>
+          347
+        </td>
+        <td>
+          6703
+          -
+          6717
         </td>
         <td>
           Apply
@@ -4184,87 +4059,39 @@ else
         </td>
       </tr><tr>
         <td>
-          168
+          163
         </td>
         <td>
-          352
+          348
         </td>
         <td>
-          6703
+          6634
           -
-          6713
+          6718
         </td>
         <td>
           Apply
         </td>
         <td>
-          java.lang.Enum.toString
+          scala.Function1.apply
         </td>
         <td>
           
         </td>
         <td style="background: #AEF1AE">
-          a.toString()
+          com.sparkutils.dmn.kogito.types.Utils.nullOr[org.kie.dmn.api.feel.runtime.events.FEELEvent.Severity, AnyRef](((a: org.kie.dmn.api.feel.runtime.events.FEELEvent.Severity) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString()))).apply(ev.getSeverity())
         </td>
       </tr><tr>
         <td>
-          168
+          164
         </td>
         <td>
-          353
+          349
         </td>
         <td>
-          6681
+          6758
           -
-          6714
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          org.apache.spark.unsafe.types.UTF8String.fromString
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          org.apache.spark.unsafe.types.UTF8String.fromString(a.toString())
-        </td>
-      </tr><tr>
-        <td>
-          168
-        </td>
-        <td>
-          354
-        </td>
-        <td>
-          6653
-          -
-          6715
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          com.sparkutils.dmn.kogito.KogitoDDLResult.nullOr
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          KogitoDDLResult.this.nullOr[org.kie.dmn.api.feel.runtime.events.FEELEvent.Severity, AnyRef](ev.getSeverity())(((a: org.kie.dmn.api.feel.runtime.events.FEELEvent.Severity) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString())))
-        </td>
-      </tr><tr>
-        <td>
-          169
-        </td>
-        <td>
-          355
-        </td>
-        <td>
-          6755
-          -
-          6768
+          6771
         </td>
         <td>
           Apply
@@ -4280,15 +4107,15 @@ else
         </td>
       </tr><tr>
         <td>
-          169
+          164
         </td>
         <td>
-          356
+          350
         </td>
         <td>
-          6733
+          6736
           -
-          6769
+          6772
         </td>
         <td>
           Apply
@@ -4304,15 +4131,15 @@ else
         </td>
       </tr><tr>
         <td>
-          170
+          165
         </td>
         <td>
-          357
+          351
         </td>
         <td>
-          6787
+          6790
           -
-          6797
+          6800
         </td>
         <td>
           Apply
@@ -4328,15 +4155,15 @@ else
         </td>
       </tr><tr>
         <td>
-          171
+          166
         </td>
         <td>
-          358
+          352
         </td>
         <td>
-          6815
+          6818
           -
-          6827
+          6830
         </td>
         <td>
           Apply
@@ -4352,39 +4179,15 @@ else
         </td>
       </tr><tr>
         <td>
-          172
+          167
         </td>
         <td>
-          359
+          353
         </td>
         <td>
-          6852
+          6895
           -
-          6873
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          org.kie.dmn.api.feel.runtime.events.FEELEvent.getSourceException
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          ev.getSourceException()
-        </td>
-      </tr><tr>
-        <td>
-          172
-        </td>
-        <td>
-          360
-        </td>
-        <td>
-          6902
-          -
-          6914
+          6907
         </td>
         <td>
           Apply
@@ -4400,15 +4203,15 @@ else
         </td>
       </tr><tr>
         <td>
-          172
+          167
         </td>
         <td>
-          361
+          354
         </td>
         <td>
-          6880
+          6873
           -
-          6915
+          6908
         </td>
         <td>
           Apply
@@ -4424,63 +4227,63 @@ else
         </td>
       </tr><tr>
         <td>
-          172
+          167
         </td>
         <td>
-          362
+          355
         </td>
         <td>
-          6845
+          6910
           -
-          6916
+          6931
         </td>
         <td>
           Apply
         </td>
         <td>
-          com.sparkutils.dmn.kogito.KogitoDDLResult.nullOr
+          org.kie.dmn.api.feel.runtime.events.FEELEvent.getSourceException
         </td>
         <td>
           
         </td>
         <td style="background: #AEF1AE">
-          KogitoDDLResult.this.nullOr[Throwable, AnyRef](ev.getSourceException())(((a: Throwable) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.getMessage())))
+          ev.getSourceException()
         </td>
       </tr><tr>
         <td>
-          173
+          167
         </td>
         <td>
-          363
+          356
         </td>
         <td>
-          6941
+          6848
           -
-          6962
+          6932
         </td>
         <td>
           Apply
         </td>
         <td>
-          org.kie.dmn.api.feel.runtime.events.FEELEvent.getOffendingSymbol
+          scala.Function1.apply
         </td>
         <td>
           
         </td>
         <td style="background: #AEF1AE">
-          ev.getOffendingSymbol()
+          com.sparkutils.dmn.kogito.types.Utils.nullOr[Throwable, AnyRef](((a: Throwable) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.getMessage()))).apply(ev.getSourceException())
         </td>
       </tr><tr>
         <td>
-          173
+          168
         </td>
         <td>
-          364
+          357
         </td>
         <td>
-          6991
+          6994
           -
-          7001
+          7004
         </td>
         <td>
           Apply
@@ -4496,15 +4299,15 @@ else
         </td>
       </tr><tr>
         <td>
-          173
+          168
         </td>
         <td>
-          365
+          358
         </td>
         <td>
-          6969
+          6972
           -
-          7002
+          7005
         </td>
         <td>
           Apply
@@ -4520,39 +4323,111 @@ else
         </td>
       </tr><tr>
         <td>
-          173
+          168
         </td>
         <td>
-          366
+          359
         </td>
         <td>
-          6934
+          7007
           -
-          7003
+          7028
         </td>
         <td>
           Apply
         </td>
         <td>
-          com.sparkutils.dmn.kogito.KogitoDDLResult.nullOr
+          org.kie.dmn.api.feel.runtime.events.FEELEvent.getOffendingSymbol
         </td>
         <td>
           
         </td>
         <td style="background: #AEF1AE">
-          KogitoDDLResult.this.nullOr[Object, AnyRef](ev.getOffendingSymbol())(((a: Object) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString())))
+          ev.getOffendingSymbol()
         </td>
       </tr><tr>
         <td>
-          181
+          168
         </td>
         <td>
-          373
+          360
         </td>
         <td>
-          7148
+          6950
           -
-          7159
+          7029
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.kogito.types.Utils.nullOr[Object, AnyRef](((a: Object) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString()))).apply(ev.getOffendingSymbol())
+        </td>
+      </tr><tr>
+        <td>
+          170
+        </td>
+        <td>
+          362
+        </td>
+        <td>
+          7060
+          -
+          7074
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.kie.dmn.api.core.DMNMessage.getFeelEvent
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          m.getFeelEvent()
+        </td>
+      </tr><tr>
+        <td>
+          170
+        </td>
+        <td>
+          363
+        </td>
+        <td>
+          6564
+          -
+          7075
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.kogito.types.Utils.nullOr[org.kie.dmn.api.feel.runtime.events.FEELEvent, AnyRef](((ev: org.kie.dmn.api.feel.runtime.events.FEELEvent) =&gt; org.apache.spark.sql.catalyst.InternalRow.apply(com.sparkutils.dmn.kogito.types.Utils.nullOr[org.kie.dmn.api.feel.runtime.events.FEELEvent.Severity, AnyRef](((a: org.kie.dmn.api.feel.runtime.events.FEELEvent.Severity) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString()))).apply(ev.getSeverity()), org.apache.spark.unsafe.types.UTF8String.fromString(ev.getMessage()), ev.getLine(), ev.getColumn(), com.sparkutils.dmn.kogito.types.Utils.nullOr[Throwable, AnyRef](((a: Throwable) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.getMessage()))).apply(ev.getSourceException()), com.sparkutils.dmn.kogito.types.Utils.nullOr[Object, AnyRef](((a: Object) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(a.toString()))).apply(ev.getOffendingSymbol())))).apply(m.getFeelEvent())
+        </td>
+      </tr><tr>
+        <td>
+          176
+        </td>
+        <td>
+          368
+        </td>
+        <td>
+          7190
+          -
+          7201
         </td>
         <td>
           Select
@@ -4568,15 +4443,15 @@ else
         </td>
       </tr><tr>
         <td>
-          181
+          176
         </td>
         <td>
-          387
+          382
         </td>
         <td>
-          7168
+          7210
           -
-          7534
+          7576
         </td>
         <td>
           Apply
@@ -4592,15 +4467,15 @@ else
         </td>
       </tr><tr>
         <td>
-          181
+          176
         </td>
         <td>
-          390
+          385
         </td>
         <td>
-          7163
+          7205
           -
-          7577
+          7619
         </td>
         <td>
           Apply
@@ -4616,15 +4491,15 @@ else
         </td>
       </tr><tr>
         <td>
-          181
+          176
         </td>
         <td>
-          391
+          386
         </td>
         <td>
-          7160
+          7202
           -
-          7160
+          7202
         </td>
         <td>
           ApplyToImplicitArgs
@@ -4640,15 +4515,15 @@ else
         </td>
       </tr><tr>
         <td>
-          181
+          176
         </td>
         <td>
-          392
+          387
         </td>
         <td>
-          7148
+          7190
           -
-          7577
+          7619
         </td>
         <td>
           ApplyToImplicitArgs
@@ -4664,15 +4539,15 @@ else
         </td>
       </tr><tr>
         <td>
-          181
+          176
         </td>
         <td>
-          393
+          388
         </td>
         <td>
-          7125
+          7167
           -
-          7578
+          7620
         </td>
         <td>
           Apply
@@ -4688,15 +4563,15 @@ else
         </td>
       </tr><tr>
         <td>
-          182
+          177
         </td>
         <td>
-          374
+          369
         </td>
         <td>
-          7196
+          7238
           -
-          7218
+          7260
         </td>
         <td>
           Apply
@@ -4712,15 +4587,15 @@ else
         </td>
       </tr><tr>
         <td>
-          182
+          177
         </td>
         <td>
-          385
+          380
         </td>
         <td>
-          7231
+          7273
           -
-          7231
+          7273
         </td>
         <td>
           TypeApply
@@ -4736,15 +4611,15 @@ else
         </td>
       </tr><tr>
         <td>
-          182
+          177
         </td>
         <td>
-          386
+          381
         </td>
         <td>
-          7196
+          7238
           -
-          7526
+          7568
         </td>
         <td>
           ApplyToImplicitArgs
@@ -4760,15 +4635,15 @@ else
         </td>
       </tr><tr>
         <td>
-          184
+          179
         </td>
         <td>
-          384
+          379
         </td>
         <td>
-          7256
+          7298
           -
-          7518
+          7560
         </td>
         <td>
           Apply
@@ -4784,15 +4659,15 @@ else
         </td>
       </tr><tr>
         <td>
-          185
+          180
         </td>
         <td>
-          375
+          370
         </td>
         <td>
-          7303
+          7345
           -
-          7318
+          7360
         </td>
         <td>
           Apply
@@ -4808,15 +4683,15 @@ else
         </td>
       </tr><tr>
         <td>
-          185
+          180
         </td>
         <td>
-          376
+          371
         </td>
         <td>
-          7281
+          7323
           -
-          7319
+          7361
         </td>
         <td>
           Apply
@@ -4832,15 +4707,15 @@ else
         </td>
       </tr><tr>
         <td>
-          186
+          181
         </td>
         <td>
-          377
+          372
         </td>
         <td>
-          7355
+          7397
           -
-          7372
+          7414
         </td>
         <td>
           Apply
@@ -4856,15 +4731,15 @@ else
         </td>
       </tr><tr>
         <td>
-          186
+          181
         </td>
         <td>
-          378
+          373
         </td>
         <td>
-          7333
+          7375
           -
-          7373
+          7415
         </td>
         <td>
           Apply
@@ -4880,15 +4755,15 @@ else
         </td>
       </tr><tr>
         <td>
-          187
+          182
         </td>
         <td>
-          379
+          374
         </td>
         <td>
-          7387
+          7429
           -
-          7398
+          7440
         </td>
         <td>
           Apply
@@ -4904,15 +4779,15 @@ else
         </td>
       </tr><tr>
         <td>
-          188
+          183
         </td>
         <td>
-          380
+          375
         </td>
         <td>
-          7425
+          7467
           -
-          7438
+          7480
         </td>
         <td>
           Apply
@@ -4928,15 +4803,15 @@ else
         </td>
       </tr><tr>
         <td>
-          188
+          183
         </td>
         <td>
-          381
+          376
         </td>
         <td>
-          7412
+          7454
           -
-          7439
+          7481
         </td>
         <td>
           Apply
@@ -4952,15 +4827,15 @@ else
         </td>
       </tr><tr>
         <td>
-          189
+          184
         </td>
         <td>
-          382
+          377
         </td>
         <td>
-          7475
+          7517
           -
-          7505
+          7547
         </td>
         <td>
           Apply
@@ -4976,15 +4851,15 @@ else
         </td>
       </tr><tr>
         <td>
-          189
+          184
         </td>
         <td>
-          383
+          378
         </td>
         <td>
-          7453
+          7495
           -
-          7506
+          7548
         </td>
         <td>
           Apply
@@ -5000,15 +4875,15 @@ else
         </td>
       </tr><tr>
         <td>
-          193
+          188
         </td>
         <td>
-          388
+          383
         </td>
         <td>
-          7555
+          7597
           -
-          7570
+          7612
         </td>
         <td>
           Apply
@@ -5024,15 +4899,15 @@ else
         </td>
       </tr><tr>
         <td>
-          193
+          188
         </td>
         <td>
-          389
+          384
         </td>
         <td>
-          7542
+          7584
           -
-          7571
+          7613
         </td>
         <td>
           Apply
@@ -5048,15 +4923,15 @@ else
         </td>
       </tr><tr>
         <td>
-          197
+          192
         </td>
         <td>
-          419
+          414
         </td>
         <td>
-          7687
+          7729
           -
-          8612
+          8654
         </td>
         <td>
           Apply
@@ -5089,15 +4964,15 @@ else
         </td>
       </tr><tr>
         <td>
-          198
+          193
         </td>
         <td>
-          418
+          413
         </td>
         <td>
-          7744
+          7786
           -
-          8606
+          8648
         </td>
         <td>
           Block
@@ -5128,15 +5003,15 @@ else
         </td>
       </tr><tr>
         <td>
-          199
+          194
         </td>
         <td>
-          394
+          389
         </td>
         <td>
-          7774
+          7816
           -
-          7784
+          7826
         </td>
         <td>
           Select
@@ -5152,15 +5027,15 @@ else
         </td>
       </tr><tr>
         <td>
-          199
+          194
         </td>
         <td>
-          395
+          390
         </td>
         <td>
-          7795
+          7837
           -
-          7818
+          7860
         </td>
         <td>
           Apply
@@ -5176,15 +5051,15 @@ else
         </td>
       </tr><tr>
         <td>
-          199
+          194
         </td>
         <td>
-          396
+          391
         </td>
         <td>
-          7774
+          7816
           -
-          7819
+          7861
         </td>
         <td>
           Apply
@@ -5200,15 +5075,15 @@ else
         </td>
       </tr><tr>
         <td>
-          200
+          195
         </td>
         <td>
-          397
+          392
         </td>
         <td>
-          7837
+          7879
           -
-          7878
+          7920
         </td>
         <td>
           Apply
@@ -5224,15 +5099,15 @@ else
         </td>
       </tr><tr>
         <td>
-          201
+          196
         </td>
         <td>
-          398
+          393
         </td>
         <td>
-          7891
+          7933
           -
-          7901
+          7943
         </td>
         <td>
           Apply
@@ -5248,15 +5123,15 @@ else
         </td>
       </tr><tr>
         <td>
-          202
+          197
         </td>
         <td>
-          399
+          394
         </td>
         <td>
-          7929
+          7971
           -
-          7951
+          7993
         </td>
         <td>
           Apply
@@ -5272,15 +5147,15 @@ else
         </td>
       </tr><tr>
         <td>
-          202
+          197
         </td>
         <td>
-          413
+          408
         </td>
         <td>
-          7915
+          7957
           -
-          8532
+          8574
         </td>
         <td>
           Apply
@@ -5303,15 +5178,15 @@ else
         </td>
       </tr><tr>
         <td>
-          202
+          197
         </td>
         <td>
-          414
+          409
         </td>
         <td>
-          7915
+          7957
           -
-          8532
+          8574
         </td>
         <td>
           Block
@@ -5334,15 +5209,15 @@ else
         </td>
       </tr><tr>
         <td>
-          208
+          203
         </td>
         <td>
-          404
+          399
         </td>
         <td>
-          8302
+          8344
           -
-          8311
+          8353
         </td>
         <td>
           Select
@@ -5358,15 +5233,15 @@ else
         </td>
       </tr><tr>
         <td>
-          208
+          203
         </td>
         <td>
-          405
+          400
         </td>
         <td>
-          8302
+          8344
           -
-          8311
+          8353
         </td>
         <td>
           Block
@@ -5382,15 +5257,15 @@ else
         </td>
       </tr><tr>
         <td>
-          209
+          204
         </td>
         <td>
-          406
+          401
         </td>
         <td>
-          8365
+          8407
           -
-          8377
+          8419
         </td>
         <td>
           Apply
@@ -5406,183 +5281,183 @@ else
         </td>
       </tr><tr>
         <td>
-          209
+          204
+        </td>
+        <td>
+          402
+        </td>
+        <td>
+          8423
+          -
+          8436
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.SKIPPED_ERROR
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.SKIPPED_ERROR
+        </td>
+      </tr><tr>
+        <td>
+          204
+        </td>
+        <td>
+          403
+        </td>
+        <td>
+          8423
+          -
+          8436
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.SKIPPED_ERROR
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.SKIPPED_ERROR
+        </td>
+      </tr><tr>
+        <td>
+          205
+        </td>
+        <td>
+          404
+        </td>
+        <td>
+          8490
+          -
+          8502
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.SKIPPED_WARN
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.SKIPPED_WARN
+        </td>
+      </tr><tr>
+        <td>
+          205
+        </td>
+        <td>
+          405
+        </td>
+        <td>
+          8490
+          -
+          8502
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.SKIPPED_WARN
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.SKIPPED_WARN
+        </td>
+      </tr><tr>
+        <td>
+          206
+        </td>
+        <td>
+          406
+        </td>
+        <td>
+          8555
+          -
+          8561
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.FAILED
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.FAILED
+        </td>
+      </tr><tr>
+        <td>
+          206
         </td>
         <td>
           407
         </td>
         <td>
-          8381
+          8555
           -
-          8394
+          8561
         </td>
         <td>
-          Select
+          Block
         </td>
         <td>
-          com.sparkutils.dmn.kogito.types.ResultInterfaces.SKIPPED_ERROR
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.FAILED
         </td>
         <td>
           
         </td>
         <td style="background: #AEF1AE">
-          com.sparkutils.dmn.kogito.types.ResultInterfaces.SKIPPED_ERROR
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.FAILED
         </td>
       </tr><tr>
         <td>
           209
         </td>
         <td>
-          408
+          410
         </td>
         <td>
-          8381
+          8616
           -
-          8394
-        </td>
-        <td>
-          Block
-        </td>
-        <td>
-          com.sparkutils.dmn.kogito.types.ResultInterfaces.SKIPPED_ERROR
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          com.sparkutils.dmn.kogito.types.ResultInterfaces.SKIPPED_ERROR
-        </td>
-      </tr><tr>
-        <td>
-          210
-        </td>
-        <td>
-          409
-        </td>
-        <td>
-          8448
-          -
-          8460
+          8625
         </td>
         <td>
           Select
         </td>
         <td>
-          com.sparkutils.dmn.kogito.types.ResultInterfaces.SKIPPED_WARN
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.NOT_FOUND
         </td>
         <td>
           
         </td>
         <td style="background: #AEF1AE">
-          com.sparkutils.dmn.kogito.types.ResultInterfaces.SKIPPED_WARN
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.NOT_FOUND
         </td>
       </tr><tr>
         <td>
-          210
-        </td>
-        <td>
-          410
-        </td>
-        <td>
-          8448
-          -
-          8460
-        </td>
-        <td>
-          Block
-        </td>
-        <td>
-          com.sparkutils.dmn.kogito.types.ResultInterfaces.SKIPPED_WARN
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          com.sparkutils.dmn.kogito.types.ResultInterfaces.SKIPPED_WARN
-        </td>
-      </tr><tr>
-        <td>
-          211
+          209
         </td>
         <td>
           411
         </td>
         <td>
-          8513
+          8602
           -
-          8519
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          com.sparkutils.dmn.kogito.types.ResultInterfaces.FAILED
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          com.sparkutils.dmn.kogito.types.ResultInterfaces.FAILED
-        </td>
-      </tr><tr>
-        <td>
-          211
-        </td>
-        <td>
-          412
-        </td>
-        <td>
-          8513
-          -
-          8519
-        </td>
-        <td>
-          Block
-        </td>
-        <td>
-          com.sparkutils.dmn.kogito.types.ResultInterfaces.FAILED
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          com.sparkutils.dmn.kogito.types.ResultInterfaces.FAILED
-        </td>
-      </tr><tr>
-        <td>
-          214
-        </td>
-        <td>
-          415
-        </td>
-        <td>
-          8574
-          -
-          8583
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          com.sparkutils.dmn.kogito.types.ResultInterfaces.NOT_FOUND
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          com.sparkutils.dmn.kogito.types.ResultInterfaces.NOT_FOUND
-        </td>
-      </tr><tr>
-        <td>
-          214
-        </td>
-        <td>
-          416
-        </td>
-        <td>
-          8560
-          -
-          8584
+          8626
         </td>
         <td>
           Apply
@@ -5598,15 +5473,15 @@ else
         </td>
       </tr><tr>
         <td>
-          214
+          209
         </td>
         <td>
-          417
+          412
         </td>
         <td>
-          8560
+          8602
           -
-          8584
+          8626
         </td>
         <td>
           Block
@@ -5622,15 +5497,15 @@ else
         </td>
       </tr><tr>
         <td>
-          224
+          219
         </td>
         <td>
-          421
+          416
         </td>
         <td>
-          8793
+          8835
           -
-          8815
+          8857
         </td>
         <td>
           Apply
@@ -5646,15 +5521,15 @@ else
         </td>
       </tr><tr>
         <td>
-          225
+          220
         </td>
         <td>
-          422
+          417
         </td>
         <td>
-          8845
+          8887
           -
-          8877
+          8919
         </td>
         <td>
           Apply
@@ -5670,15 +5545,15 @@ else
         </td>
       </tr><tr>
         <td>
-          227
+          222
         </td>
         <td>
-          423
+          418
         </td>
         <td>
-          8899
+          8941
           -
-          8922
+          8964
         </td>
         <td>
           Apply
@@ -5694,15 +5569,15 @@ else
         </td>
       </tr><tr>
         <td>
-          229
+          224
         </td>
         <td>
-          424
+          419
         </td>
         <td>
-          8950
+          8992
           -
-          8982
+          9024
         </td>
         <td>
           Apply
@@ -5718,15 +5593,15 @@ else
         </td>
       </tr><tr>
         <td>
-          230
+          225
         </td>
         <td>
-          425
+          420
         </td>
         <td>
-          8996
+          9038
           -
-          9029
+          9071
         </td>
         <td>
           Apply
@@ -5742,15 +5617,15 @@ else
         </td>
       </tr><tr>
         <td>
-          231
+          226
         </td>
         <td>
-          426
+          421
         </td>
         <td>
-          9053
+          9095
           -
-          9061
+          9103
         </td>
         <td>
           Select
@@ -5766,15 +5641,15 @@ else
         </td>
       </tr><tr>
         <td>
-          234
+          229
         </td>
         <td>
-          427
+          422
         </td>
         <td>
-          9097
+          9139
           -
-          9111
+          9153
         </td>
         <td>
           Select
@@ -5790,15 +5665,15 @@ else
         </td>
       </tr><tr>
         <td>
-          234
+          229
         </td>
         <td>
-          428
+          423
         </td>
         <td>
-          9126
+          9168
           -
-          9138
+          9180
         </td>
         <td>
           ApplyImplicitView
@@ -5814,15 +5689,15 @@ else
         </td>
       </tr><tr>
         <td>
-          234
+          229
         </td>
         <td>
-          429
+          424
         </td>
         <td>
-          9082
+          9124
           -
-          9139
+          9181
         </td>
         <td>
           Apply
@@ -5838,15 +5713,15 @@ else
         </td>
       </tr><tr>
         <td>
-          236
+          231
         </td>
         <td>
-          465
+          460
         </td>
         <td>
-          9145
+          9187
           -
-          10199
+          10241
         </td>
         <td>
           Apply
@@ -5868,15 +5743,15 @@ else
         </td>
       </tr><tr>
         <td>
-          237
+          232
         </td>
         <td>
-          430
+          425
         </td>
         <td>
-          9166
+          9208
           -
-          10198
+          10240
         </td>
         <td>
           Apply
@@ -5892,15 +5767,15 @@ else
         </td>
       </tr><tr>
         <td>
-          237
+          232
         </td>
         <td>
-          464
+          459
         </td>
         <td>
-          9166
+          9208
           -
-          10198
+          10240
         </td>
         <td>
           Apply
@@ -5922,15 +5797,15 @@ else
         </td>
       </tr><tr>
         <td>
-          238
+          233
         </td>
         <td>
-          431
+          426
         </td>
         <td>
-          9246
+          9288
           -
-          9254
+          9296
         </td>
         <td>
           Select
@@ -5946,135 +5821,135 @@ else
         </td>
       </tr><tr>
         <td>
-          240
+          235
+        </td>
+        <td>
+          427
+        </td>
+        <td>
+          9419
+          -
+          9434
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoProcess.kogitoResultStr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoDDLResult.this.kogitoResultStr
+        </td>
+      </tr><tr>
+        <td>
+          236
+        </td>
+        <td>
+          428
+        </td>
+        <td>
+          9456
+          -
+          9465
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.isNull
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ev.isNull
+        </td>
+      </tr><tr>
+        <td>
+          236
+        </td>
+        <td>
+          429
+        </td>
+        <td>
+          9471
+          -
+          9486
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoProcess.kogitoResultStr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoDDLResult.this.kogitoResultStr
+        </td>
+      </tr><tr>
+        <td>
+          237
+        </td>
+        <td>
+          430
+        </td>
+        <td>
+          9513
+          -
+          9522
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.isNull
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ev.isNull
+        </td>
+      </tr><tr>
+        <td>
+          238
+        </td>
+        <td>
+          431
+        </td>
+        <td>
+          9619
+          -
+          9634
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoProcess.kogitoResultStr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoDDLResult.this.kogitoResultStr
+        </td>
+      </tr><tr>
+        <td>
+          239
         </td>
         <td>
           432
         </td>
         <td>
-          9377
+          9670
           -
-          9392
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          com.sparkutils.dmn.kogito.KogitoProcess.kogitoResultStr
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          KogitoDDLResult.this.kogitoResultStr
-        </td>
-      </tr><tr>
-        <td>
-          241
-        </td>
-        <td>
-          433
-        </td>
-        <td>
-          9414
-          -
-          9423
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.isNull
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          ev.isNull
-        </td>
-      </tr><tr>
-        <td>
-          241
-        </td>
-        <td>
-          434
-        </td>
-        <td>
-          9429
-          -
-          9444
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          com.sparkutils.dmn.kogito.KogitoProcess.kogitoResultStr
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          KogitoDDLResult.this.kogitoResultStr
-        </td>
-      </tr><tr>
-        <td>
-          242
-        </td>
-        <td>
-          435
-        </td>
-        <td>
-          9471
-          -
-          9480
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.isNull
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          ev.isNull
-        </td>
-      </tr><tr>
-        <td>
-          243
-        </td>
-        <td>
-          436
-        </td>
-        <td>
-          9577
-          -
-          9592
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          com.sparkutils.dmn.kogito.KogitoProcess.kogitoResultStr
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          KogitoDDLResult.this.kogitoResultStr
-        </td>
-      </tr><tr>
-        <td>
-          244
-        </td>
-        <td>
-          437
-        </td>
-        <td>
-          9628
-          -
-          9635
+          9677
         </td>
         <td>
           Select
@@ -6090,15 +5965,15 @@ else
         </td>
       </tr><tr>
         <td>
-          245
+          240
         </td>
         <td>
-          438
+          433
         </td>
         <td>
-          9650
+          9692
           -
-          9662
+          9704
         </td>
         <td>
           Select
@@ -6114,15 +5989,15 @@ else
         </td>
       </tr><tr>
         <td>
-          247
+          242
         </td>
         <td>
-          439
+          434
         </td>
         <td>
-          9678
+          9720
           -
-          9686
+          9728
         </td>
         <td>
           Select
@@ -6138,15 +6013,15 @@ else
         </td>
       </tr><tr>
         <td>
-          247
+          242
         </td>
         <td>
-          440
+          435
         </td>
         <td>
-          9692
+          9734
           -
-          9705
+          9747
         </td>
         <td>
           Select
@@ -6162,15 +6037,15 @@ else
         </td>
       </tr><tr>
         <td>
-          249
+          244
         </td>
         <td>
-          441
+          436
         </td>
         <td>
-          9722
+          9764
           -
-          9731
+          9773
         </td>
         <td>
           Select
@@ -6186,15 +6061,15 @@ else
         </td>
       </tr><tr>
         <td>
-          249
+          244
         </td>
         <td>
-          442
+          437
         </td>
         <td>
-          9738
+          9780
           -
-          9746
+          9788
         </td>
         <td>
           Select
@@ -6210,15 +6085,15 @@ else
         </td>
       </tr><tr>
         <td>
-          250
+          245
         </td>
         <td>
-          443
+          438
         </td>
         <td>
-          9776
+          9818
           -
-          9785
+          9827
         </td>
         <td>
           Select
@@ -6234,15 +6109,15 @@ else
         </td>
       </tr><tr>
         <td>
-          251
+          246
         </td>
         <td>
-          444
+          439
         </td>
         <td>
-          9809
+          9851
           -
-          9828
+          9870
         </td>
         <td>
           Select
@@ -6258,15 +6133,15 @@ else
         </td>
       </tr><tr>
         <td>
-          251
+          246
         </td>
         <td>
-          445
+          440
         </td>
         <td>
-          9830
+          9872
           -
-          9948
+          9990
         </td>
         <td>
           Apply
@@ -6282,15 +6157,15 @@ else
         </td>
       </tr><tr>
         <td>
-          251
+          246
         </td>
         <td>
-          446
+          441
         </td>
         <td>
-          9839
+          9881
           -
-          9847
+          9889
         </td>
         <td>
           Select
@@ -6306,15 +6181,15 @@ else
         </td>
       </tr><tr>
         <td>
-          251
+          246
         </td>
         <td>
-          447
+          442
         </td>
         <td>
-          9911
+          9953
           -
-          9924
+          9966
         </td>
         <td>
           Select
@@ -6330,15 +6205,15 @@ else
         </td>
       </tr><tr>
         <td>
-          251
+          246
         </td>
         <td>
-          448
+          443
         </td>
         <td>
-          9928
+          9970
           -
-          9943
+          9985
         </td>
         <td>
           Select
@@ -6354,15 +6229,15 @@ else
         </td>
       </tr><tr>
         <td>
-          251
+          246
         </td>
         <td>
-          449
+          444
         </td>
         <td>
-          9830
+          9872
           -
-          9948
+          9990
         </td>
         <td>
           Apply
@@ -6378,15 +6253,15 @@ else
         </td>
       </tr><tr>
         <td>
-          251
+          246
         </td>
         <td>
-          450
+          445
         </td>
         <td>
-          9830
+          9872
           -
-          9948
+          9990
         </td>
         <td>
           Block
@@ -6402,15 +6277,15 @@ else
         </td>
       </tr><tr>
         <td>
-          251
+          246
         </td>
         <td>
-          451
+          446
         </td>
         <td>
-          9954
+          9996
           -
-          9960
+          10002
         </td>
         <td>
           Apply
@@ -6426,15 +6301,15 @@ else
         </td>
       </tr><tr>
         <td>
-          251
+          246
         </td>
         <td>
-          452
+          447
         </td>
         <td>
-          9954
+          9996
           -
-          9960
+          10002
         </td>
         <td>
           Block
@@ -6450,15 +6325,15 @@ else
         </td>
       </tr><tr>
         <td>
-          253
+          248
         </td>
         <td>
-          453
+          448
         </td>
         <td>
-          9982
+          10024
           -
-          9987
+          10029
         </td>
         <td>
           Select
@@ -6474,15 +6349,15 @@ else
         </td>
       </tr><tr>
         <td>
-          253
+          248
         </td>
         <td>
-          454
+          449
         </td>
         <td>
-          9989
+          10031
           -
-          10096
+          10138
         </td>
         <td>
           Apply
@@ -6498,15 +6373,15 @@ else
         </td>
       </tr><tr>
         <td>
-          253
+          248
         </td>
         <td>
-          455
+          450
         </td>
         <td>
-          9996
+          10038
           -
-          10004
+          10046
         </td>
         <td>
           Select
@@ -6522,15 +6397,15 @@ else
         </td>
       </tr><tr>
         <td>
-          253
+          248
         </td>
         <td>
-          456
+          451
         </td>
         <td>
-          10065
+          10107
           -
-          10080
+          10122
         </td>
         <td>
           Select
@@ -6546,15 +6421,15 @@ else
         </td>
       </tr><tr>
         <td>
-          253
+          248
         </td>
         <td>
-          457
+          452
         </td>
         <td>
-          10084
+          10126
           -
-          10092
+          10134
         </td>
         <td>
           Select
@@ -6570,15 +6445,15 @@ else
         </td>
       </tr><tr>
         <td>
-          253
+          248
         </td>
         <td>
-          458
+          453
         </td>
         <td>
-          9989
+          10031
           -
-          10096
+          10138
         </td>
         <td>
           Apply
@@ -6594,15 +6469,15 @@ else
         </td>
       </tr><tr>
         <td>
-          253
+          248
         </td>
         <td>
-          459
+          454
         </td>
         <td>
-          9989
+          10031
           -
-          10096
+          10138
         </td>
         <td>
           Block
@@ -6618,15 +6493,15 @@ else
         </td>
       </tr><tr>
         <td>
-          253
+          248
         </td>
         <td>
-          460
+          455
         </td>
         <td>
-          10102
+          10144
           -
-          10108
+          10150
         </td>
         <td>
           Apply
@@ -6642,15 +6517,15 @@ else
         </td>
       </tr><tr>
         <td>
-          253
+          248
         </td>
         <td>
-          461
+          456
         </td>
         <td>
-          10102
+          10144
           -
-          10108
+          10150
         </td>
         <td>
           Block
@@ -6666,15 +6541,15 @@ else
         </td>
       </tr><tr>
         <td>
-          254
+          249
         </td>
         <td>
-          462
+          457
         </td>
         <td>
-          10125
+          10167
           -
-          10134
+          10176
         </td>
         <td>
           Select
@@ -6690,15 +6565,15 @@ else
         </td>
       </tr><tr>
         <td>
-          254
+          249
         </td>
         <td>
-          463
+          458
         </td>
         <td>
-          10141
+          10183
           -
-          10149
+          10191
         </td>
         <td>
           Select
@@ -6714,15 +6589,15 @@ else
         </td>
       </tr><tr>
         <td>
-          279
+          274
         </td>
         <td>
-          467
+          462
         </td>
         <td>
-          10768
+          10810
           -
-          10772
+          10814
         </td>
         <td>
           Literal
@@ -6738,15 +6613,15 @@ else
         </td>
       </tr><tr>
         <td>
-          285
+          280
         </td>
         <td>
-          469
+          464
         </td>
         <td>
-          10901
+          10943
           -
-          10911
+          10953
         </td>
         <td>
           Select
@@ -6762,15 +6637,15 @@ else
         </td>
       </tr><tr>
         <td>
-          289
+          284
         </td>
         <td>
-          470
+          465
         </td>
         <td>
-          10994
+          11036
           -
-          10999
+          11041
         </td>
         <td>
           Select
@@ -6786,15 +6661,15 @@ else
         </td>
       </tr><tr>
         <td>
-          290
+          285
         </td>
         <td>
-          471
+          466
         </td>
         <td>
-          11009
+          11051
           -
-          11034
+          11076
         </td>
         <td>
           Apply
@@ -6810,15 +6685,15 @@ else
         </td>
       </tr><tr>
         <td>
-          290
+          285
         </td>
         <td>
-          472
+          467
         </td>
         <td>
-          11009
+          11051
           -
-          11034
+          11076
         </td>
         <td>
           Block
@@ -6834,15 +6709,15 @@ else
         </td>
       </tr><tr>
         <td>
-          292
+          287
         </td>
         <td>
-          473
+          468
         </td>
         <td>
-          11054
+          11096
           -
-          11079
+          11121
         </td>
         <td>
           Apply
@@ -6858,15 +6733,15 @@ else
         </td>
       </tr><tr>
         <td>
-          292
+          287
         </td>
         <td>
-          474
+          469
         </td>
         <td>
-          11097
+          11139
           -
-          11114
+          11156
         </td>
         <td>
           Apply
@@ -6882,15 +6757,15 @@ else
         </td>
       </tr><tr>
         <td>
-          292
+          287
         </td>
         <td>
-          475
+          470
         </td>
         <td>
-          11118
+          11160
           -
-          11129
+          11171
         </td>
         <td>
           Apply
@@ -6906,15 +6781,15 @@ else
         </td>
       </tr><tr>
         <td>
-          292
+          287
         </td>
         <td>
-          476
+          471
         </td>
         <td>
-          11097
+          11139
           -
-          11129
+          11171
         </td>
         <td>
           Apply
@@ -6930,15 +6805,15 @@ else
         </td>
       </tr><tr>
         <td>
-          292
+          287
         </td>
         <td>
-          477
+          472
         </td>
         <td>
-          11091
+          11133
           -
-          11091
+          11133
         </td>
         <td>
           TypeApply
@@ -6954,15 +6829,15 @@ else
         </td>
       </tr><tr>
         <td>
-          292
+          287
         </td>
         <td>
-          478
+          473
         </td>
         <td>
-          11131
+          11173
           -
-          11131
+          11173
         </td>
         <td>
           TypeApply
@@ -6978,15 +6853,15 @@ else
         </td>
       </tr><tr>
         <td>
-          292
+          287
         </td>
         <td>
-          479
+          474
         </td>
         <td>
-          11054
+          11096
           -
-          11136
+          11178
         </td>
         <td>
           ApplyToImplicitArgs
@@ -7002,15 +6877,15 @@ else
         </td>
       </tr><tr>
         <td>
-          292
+          287
         </td>
         <td>
-          480
+          475
         </td>
         <td>
-          11054
+          11096
           -
-          11143
+          11185
         </td>
         <td>
           Select
@@ -7026,15 +6901,15 @@ else
         </td>
       </tr><tr>
         <td>
-          292
+          287
         </td>
         <td>
-          481
+          476
         </td>
         <td>
-          11054
+          11096
           -
-          11143
+          11185
         </td>
         <td>
           Block
@@ -7050,15 +6925,15 @@ else
         </td>
       </tr><tr>
         <td>
-          294
+          289
         </td>
         <td>
-          482
+          477
         </td>
         <td>
-          11171
+          11213
           -
-          11214
+          11256
         </td>
         <td>
           Apply
@@ -7074,15 +6949,15 @@ else
         </td>
       </tr><tr>
         <td>
-          294
+          289
         </td>
         <td>
-          483
+          478
         </td>
         <td>
-          11149
+          11191
           -
-          11215
+          11257
         </td>
         <td>
           Apply
@@ -7098,15 +6973,15 @@ else
         </td>
       </tr><tr>
         <td>
-          300
+          295
         </td>
         <td>
-          484
+          479
         </td>
         <td>
-          11346
+          11388
           -
-          11375
+          11417
         </td>
         <td>
           Apply
@@ -7122,15 +6997,15 @@ else
         </td>
       </tr><tr>
         <td>
-          300
+          295
         </td>
         <td>
-          485
+          480
         </td>
         <td>
-          11377
+          11419
           -
-          11385
+          11427
         </td>
         <td>
           Literal
@@ -7146,15 +7021,15 @@ else
         </td>
       </tr><tr>
         <td>
-          300
+          295
         </td>
         <td>
-          499
+          494
         </td>
         <td>
-          11326
+          11368
           -
-          11764
+          11806
         </td>
         <td>
           Apply
@@ -7170,15 +7045,15 @@ else
         </td>
       </tr><tr>
         <td>
-          301
+          296
         </td>
         <td>
-          486
+          481
         </td>
         <td>
-          11402
+          11444
           -
-          11413
+          11455
         </td>
         <td>
           Literal
@@ -7194,15 +7069,15 @@ else
         </td>
       </tr><tr>
         <td>
-          301
+          296
         </td>
         <td>
-          498
+          493
         </td>
         <td>
-          11398
+          11440
           -
-          11763
+          11805
         </td>
         <td>
           Apply
@@ -7218,15 +7093,15 @@ else
         </td>
       </tr><tr>
         <td>
-          302
+          297
         </td>
         <td>
-          487
+          482
         </td>
         <td>
-          11414
+          11456
           -
-          11422
+          11464
         </td>
         <td>
           Literal
@@ -7242,15 +7117,15 @@ else
         </td>
       </tr><tr>
         <td>
-          302
+          297
         </td>
         <td>
-          488
+          483
         </td>
         <td>
-          11453
+          11495
           -
-          11489
+          11531
         </td>
         <td>
           Literal
@@ -7266,15 +7141,15 @@ else
         </td>
       </tr><tr>
         <td>
-          302
+          297
         </td>
         <td>
-          493
+          488
         </td>
         <td>
-          11423
+          11465
           -
-          11452
+          11494
         </td>
         <td>
           Apply
@@ -7290,15 +7165,15 @@ else
         </td>
       </tr><tr>
         <td>
-          303
+          298
         </td>
         <td>
-          489
+          484
         </td>
         <td>
-          11520
+          11562
           -
-          11553
+          11595
         </td>
         <td>
           Literal
@@ -7314,15 +7189,15 @@ else
         </td>
       </tr><tr>
         <td>
-          303
+          298
         </td>
         <td>
-          494
+          489
         </td>
         <td>
-          11490
+          11532
           -
-          11519
+          11561
         </td>
         <td>
           Apply
@@ -7338,15 +7213,15 @@ else
         </td>
       </tr><tr>
         <td>
-          304
+          299
         </td>
         <td>
-          490
+          485
         </td>
         <td>
-          11588
+          11630
           -
-          11601
+          11643
         </td>
         <td>
           Literal
@@ -7362,15 +7237,15 @@ else
         </td>
       </tr><tr>
         <td>
-          304
+          299
         </td>
         <td>
-          491
+          486
         </td>
         <td>
-          11653
+          11695
           -
-          11689
+          11731
         </td>
         <td>
           Literal
@@ -7386,15 +7261,15 @@ else
         </td>
       </tr><tr>
         <td>
-          304
+          299
         </td>
         <td>
-          495
+          490
         </td>
         <td>
-          11554
+          11596
           -
-          11587
+          11629
         </td>
         <td>
           Apply
@@ -7410,15 +7285,15 @@ else
         </td>
       </tr><tr>
         <td>
-          304
+          299
         </td>
         <td>
-          496
+          491
         </td>
         <td>
-          11602
+          11644
           -
-          11652
+          11694
         </td>
         <td>
           Apply
@@ -7434,15 +7309,15 @@ else
         </td>
       </tr><tr>
         <td>
-          306
+          301
         </td>
         <td>
-          492
+          487
         </td>
         <td>
-          11728
+          11770
           -
-          11763
+          11805
         </td>
         <td>
           Literal
@@ -7458,15 +7333,15 @@ else
         </td>
       </tr><tr>
         <td>
-          306
+          301
         </td>
         <td>
-          497
+          492
         </td>
         <td>
-          11690
+          11732
           -
-          11727
+          11769
         </td>
         <td>
           Apply
@@ -7482,15 +7357,15 @@ else
         </td>
       </tr><tr>
         <td>
-          309
+          304
         </td>
         <td>
-          500
+          495
         </td>
         <td>
-          11792
+          11834
           -
-          11824
+          11866
         </td>
         <td>
           Apply
@@ -7506,15 +7381,15 @@ else
         </td>
       </tr><tr>
         <td>
-          310
+          305
         </td>
         <td>
-          501
+          496
         </td>
         <td>
-          11840
+          11882
           -
-          11861
+          11903
         </td>
         <td>
           Apply
@@ -7530,15 +7405,15 @@ else
         </td>
       </tr><tr>
         <td>
-          311
+          306
         </td>
         <td>
-          502
+          497
         </td>
         <td>
-          11875
+          11917
           -
-          11908
+          11950
         </td>
         <td>
           Apply
@@ -7554,15 +7429,15 @@ else
         </td>
       </tr><tr>
         <td>
-          313
+          308
         </td>
         <td>
-          521
+          516
         </td>
         <td>
-          11914
+          11956
           -
-          12633
+          12675
         </td>
         <td>
           Apply
@@ -7581,15 +7456,15 @@ else
         </td>
       </tr><tr>
         <td>
-          314
+          309
         </td>
         <td>
-          503
+          498
         </td>
         <td>
-          11935
+          11977
           -
-          12632
+          12674
         </td>
         <td>
           Apply
@@ -7605,15 +7480,15 @@ else
         </td>
       </tr><tr>
         <td>
-          314
+          309
         </td>
         <td>
-          520
+          515
         </td>
         <td>
-          11935
+          11977
           -
-          12632
+          12674
         </td>
         <td>
           Apply
@@ -7632,15 +7507,15 @@ else
         </td>
       </tr><tr>
         <td>
-          315
+          310
         </td>
         <td>
-          504
+          499
         </td>
         <td>
-          11965
+          12007
           -
-          11973
+          12015
         </td>
         <td>
           Select
@@ -7656,15 +7531,15 @@ else
         </td>
       </tr><tr>
         <td>
-          316
+          311
         </td>
         <td>
-          505
+          500
         </td>
         <td>
-          12002
+          12044
           -
-          12011
+          12053
         </td>
         <td>
           Select
@@ -7680,15 +7555,15 @@ else
         </td>
       </tr><tr>
         <td>
-          317
+          312
         </td>
         <td>
-          506
+          501
         </td>
         <td>
-          12112
+          12154
           -
-          12127
+          12169
         </td>
         <td>
           Select
@@ -7704,15 +7579,15 @@ else
         </td>
       </tr><tr>
         <td>
-          318
+          313
         </td>
         <td>
-          507
+          502
         </td>
         <td>
-          12161
+          12203
           -
-          12168
+          12210
         </td>
         <td>
           Select
@@ -7728,15 +7603,15 @@ else
         </td>
       </tr><tr>
         <td>
-          320
+          315
         </td>
         <td>
-          508
+          503
         </td>
         <td>
-          12211
+          12253
           -
-          12216
+          12258
         </td>
         <td>
           Select
@@ -7752,15 +7627,15 @@ else
         </td>
       </tr><tr>
         <td>
-          321
+          316
         </td>
         <td>
-          509
+          504
         </td>
         <td>
-          12230
+          12272
           -
-          12250
+          12292
         </td>
         <td>
           Apply
@@ -7776,15 +7651,15 @@ else
         </td>
       </tr><tr>
         <td>
-          321
+          316
         </td>
         <td>
-          510
+          505
         </td>
         <td>
-          12230
+          12272
           -
-          12250
+          12292
         </td>
         <td>
           Block
@@ -7800,15 +7675,15 @@ else
         </td>
       </tr><tr>
         <td>
-          323
+          318
         </td>
         <td>
-          511
+          506
         </td>
         <td>
-          12280
+          12322
           -
-          12281
+          12323
         </td>
         <td>
           Literal
@@ -7824,15 +7699,15 @@ else
         </td>
       </tr><tr>
         <td>
-          323
+          318
         </td>
         <td>
-          512
+          507
         </td>
         <td>
-          12291
+          12333
           -
-          12293
+          12335
         </td>
         <td>
           Literal
@@ -7848,15 +7723,15 @@ else
         </td>
       </tr><tr>
         <td>
-          323
+          318
         </td>
         <td>
-          513
+          508
         </td>
         <td>
-          12282
+          12324
           -
-          12290
+          12332
         </td>
         <td>
           Select
@@ -7872,15 +7747,15 @@ else
         </td>
       </tr><tr>
         <td>
-          323
+          318
         </td>
         <td>
-          514
+          509
         </td>
         <td>
-          12278
+          12320
           -
-          12293
+          12335
         </td>
         <td>
           Apply
@@ -7896,15 +7771,15 @@ else
         </td>
       </tr><tr>
         <td>
-          323
+          318
         </td>
         <td>
-          515
+          510
         </td>
         <td>
-          12278
+          12320
           -
-          12293
+          12335
         </td>
         <td>
           Block
@@ -7920,15 +7795,15 @@ else
         </td>
       </tr><tr>
         <td>
-          326
+          321
         </td>
         <td>
-          516
+          511
         </td>
         <td>
-          12336
+          12378
           -
-          12344
+          12386
         </td>
         <td>
           Select
@@ -7944,15 +7819,15 @@ else
         </td>
       </tr><tr>
         <td>
-          329
+          324
         </td>
         <td>
-          517
+          512
         </td>
         <td>
-          12452
+          12494
           -
-          12461
+          12503
         </td>
         <td>
           Select
@@ -7968,15 +7843,15 @@ else
         </td>
       </tr><tr>
         <td>
-          329
+          324
         </td>
         <td>
-          518
+          513
         </td>
         <td>
-          12467
+          12509
           -
-          12475
+          12517
         </td>
         <td>
           Select
@@ -7992,15 +7867,15 @@ else
         </td>
       </tr><tr>
         <td>
-          331
+          326
         </td>
         <td>
-          519
+          514
         </td>
         <td>
-          12592
+          12634
           -
-          12601
+          12643
         </td>
         <td>
           Select

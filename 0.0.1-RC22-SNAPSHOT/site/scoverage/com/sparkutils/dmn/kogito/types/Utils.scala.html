@@ -95,240 +95,248 @@
 </span>71 <span style=''>    (</span><span style='background: #AEF1AE'>(a.isDefined &amp;&amp; b.isDefined &amp;&amp; (f(a.get, b.get))) ||
 </span>72 <span style=''></span><span style='background: #AEF1AE'>      a.isEmpty &amp;&amp; b.isEmpty</span><span style=''>)
 </span>73 <span style=''>
-</span>74 <span style=''>}
-</span>75 <span style=''>
-</span>76 <span style=''>class BaseKogitoMap(path: Any, pairs: scala.collection.Map[String, (Int, Accessor[_])]) extends SimpleMap {
-</span>77 <span style=''>
-</span>78 <span style=''>  override def containsKey(key: Any): Boolean =
-</span>79 <span style=''>    </span><span style='background: #AEF1AE'>pairs.contains(key.toString)</span><span style=''>
-</span>80 <span style=''>
-</span>81 <span style=''>  override def get(key: Any): AnyRef = {
-</span>82 <span style=''>    val (i, a) = pairs(key.toString)
-</span>83 <span style=''>    val t = </span><span style='background: #AEF1AE'>a.forPath(path, i)</span><span style=''>
-</span>84 <span style=''>    if (</span><span style='background: #AEF1AE'>t == null</span><span style=''>) </span><span style='background: #AEF1AE'>null</span><span style=''> else </span><span style='background: #AEF1AE'>t.asInstanceOf[AnyRef]</span><span style=''>
-</span>85 <span style=''>  }
-</span>86 <span style=''>
-</span>87 <span style=''>  // called by Jackson serializing
-</span>88 <span style=''>  override def entrySet(): util.Set[util.Map.Entry[String, Object]] = </span><span style='background: #AEF1AE'>pairs.map{case (key, (i, accessor)) =&gt; new util.Map.Entry[String, Object]{
-</span>89 <span style=''></span><span style='background: #AEF1AE'>    override def getKey: String = key
-</span>90 <span style=''></span><span style='background: #AEF1AE'>
-</span>91 <span style=''></span><span style='background: #AEF1AE'>    override def getValue: Object = {
-</span>92 <span style=''></span><span style='background: #AEF1AE'>      val t = accessor.forPath(path, i)
-</span>93 <span style=''></span><span style='background: #AEF1AE'>      if (t == null) null else t.asInstanceOf[AnyRef]
-</span>94 <span style=''></span><span style='background: #AEF1AE'>    }
-</span>95 <span style=''></span><span style='background: #AEF1AE'>    // $COVERAGE-OFF$
-</span>96 <span style=''></span><span style='background: #AEF1AE'>    override def setValue(value: Object): AnyRef = ???
-</span>97 <span style=''></span><span style='background: #AEF1AE'>    // $COVERAGE-ON$
-</span>98 <span style=''></span><span style='background: #AEF1AE'>  }}.toSet.asJava</span><span style=''>
-</span>99 <span style=''>
-</span>100 <span style=''>  // $COVERAGE-OFF$
-</span>101 <span style=''>  override def size(): Int = pairs.size
-</span>102 <span style=''>  // $COVERAGE-ON$
-</span>103 <span style=''>}
-</span>104 <span style=''>
-</span>105 <span style=''>trait ProxyEntry[T] {
-</span>106 <span style=''>  def get(i: Int, t: T): java.util.Map.Entry[String, Object]
-</span>107 <span style=''>}
-</span>108 <span style=''>
-</span>109 <span style=''>class DecisionResultFullProxyEntry() extends ProxyEntry[java.util.List[org.kie.dmn.api.core.DMNDecisionResult]] {
-</span>110 <span style=''>
-</span>111 <span style=''>  private var key = </span><span style='background: #AEF1AE'>&quot;&quot;</span><span style=''>
-</span>112 <span style=''>  private var res: Object = _
-</span>113 <span style=''>  private var entry = </span><span style='background: #AEF1AE'>new</span><span style=''> Map.Entry[String, Object] {
-</span>114 <span style=''>    override def getKey: String = </span><span style='background: #AEF1AE'>key</span><span style=''>
-</span>115 <span style=''>
-</span>116 <span style=''>    override def getValue: AnyRef = </span><span style='background: #AEF1AE'>res</span><span style=''>
-</span>117 <span style=''>
-</span>118 <span style=''>    // $COVERAGE-OFF$
-</span>119 <span style=''>    override def setValue(value: Object): AnyRef = ???
-</span>120 <span style=''>    // $COVERAGE-ON$
-</span>121 <span style=''>  }
-</span>122 <span style=''>
-</span>123 <span style=''>  override def get(i: Int, t: util.List[DMNDecisionResult]): Map.Entry[String, Object] = {
-</span>124 <span style=''>    val r = </span><span style='background: #AEF1AE'>t.get(i)</span><span style=''>
-</span>125 <span style=''>    </span><span style='background: #AEF1AE'>key = r.getDecisionName</span><span style=''>
-</span>126 <span style=''>    </span><span style='background: #AEF1AE'>res = r.getResult</span><span style=''>
-</span>127 <span style=''>    </span><span style='background: #AEF1AE'>entry</span><span style=''>
-</span>128 <span style=''>  }
-</span>129 <span style=''>}
+</span>74 <span style=''>
+</span>75 <span style=''>  def nullOr[A, R &gt;: AnyRef](f: A =&gt; R): A =&gt; R =
+</span>76 <span style=''>    what =&gt;
+</span>77 <span style=''>      if (</span><span style='background: #AEF1AE'>what == null</span><span style=''>)
+</span>78 <span style=''>        </span><span style='background: #AEF1AE'>null</span><span style=''>
+</span>79 <span style=''>      else
+</span>80 <span style=''>        </span><span style='background: #AEF1AE'>f(what)</span><span style=''>
+</span>81 <span style=''>
+</span>82 <span style=''>}
+</span>83 <span style=''>
+</span>84 <span style=''>class BaseKogitoMap(path: Any, pairs: scala.collection.Map[String, (Int, Accessor[_])]) extends SimpleMap {
+</span>85 <span style=''>
+</span>86 <span style=''>  override def containsKey(key: Any): Boolean =
+</span>87 <span style=''>    </span><span style='background: #AEF1AE'>pairs.contains(key.toString)</span><span style=''>
+</span>88 <span style=''>
+</span>89 <span style=''>  override def get(key: Any): AnyRef = {
+</span>90 <span style=''>    val (i, a) = pairs(key.toString)
+</span>91 <span style=''>    val t = </span><span style='background: #AEF1AE'>a.forPath(path, i)</span><span style=''>
+</span>92 <span style=''>    if (</span><span style='background: #AEF1AE'>t == null</span><span style=''>) </span><span style='background: #AEF1AE'>null</span><span style=''> else </span><span style='background: #AEF1AE'>t.asInstanceOf[AnyRef]</span><span style=''>
+</span>93 <span style=''>  }
+</span>94 <span style=''>
+</span>95 <span style=''>  // called by Jackson serializing
+</span>96 <span style=''>  override def entrySet(): util.Set[util.Map.Entry[String, Object]] = </span><span style='background: #AEF1AE'>pairs.map{case (key, (i, accessor)) =&gt; new util.Map.Entry[String, Object]{
+</span>97 <span style=''></span><span style='background: #AEF1AE'>    override def getKey: String = key
+</span>98 <span style=''></span><span style='background: #AEF1AE'>
+</span>99 <span style=''></span><span style='background: #AEF1AE'>    override def getValue: Object = {
+</span>100 <span style=''></span><span style='background: #AEF1AE'>      val t = accessor.forPath(path, i)
+</span>101 <span style=''></span><span style='background: #AEF1AE'>      if (t == null) null else t.asInstanceOf[AnyRef]
+</span>102 <span style=''></span><span style='background: #AEF1AE'>    }
+</span>103 <span style=''></span><span style='background: #AEF1AE'>    // $COVERAGE-OFF$
+</span>104 <span style=''></span><span style='background: #AEF1AE'>    override def setValue(value: Object): AnyRef = ???
+</span>105 <span style=''></span><span style='background: #AEF1AE'>    // $COVERAGE-ON$
+</span>106 <span style=''></span><span style='background: #AEF1AE'>  }}.toSet.asJava</span><span style=''>
+</span>107 <span style=''>
+</span>108 <span style=''>  // $COVERAGE-OFF$
+</span>109 <span style=''>  override def size(): Int = pairs.size
+</span>110 <span style=''>  // $COVERAGE-ON$
+</span>111 <span style=''>}
+</span>112 <span style=''>
+</span>113 <span style=''>trait ProxyEntry[T] {
+</span>114 <span style=''>  def get(i: Int, t: T): java.util.Map.Entry[String, Object]
+</span>115 <span style=''>}
+</span>116 <span style=''>
+</span>117 <span style=''>class DecisionResultFullProxyEntry() extends ProxyEntry[java.util.List[org.kie.dmn.api.core.DMNDecisionResult]] {
+</span>118 <span style=''>
+</span>119 <span style=''>  private var key = </span><span style='background: #AEF1AE'>&quot;&quot;</span><span style=''>
+</span>120 <span style=''>  private var res: Object = _
+</span>121 <span style=''>  private var entry = </span><span style='background: #AEF1AE'>new</span><span style=''> Map.Entry[String, Object] {
+</span>122 <span style=''>    override def getKey: String = </span><span style='background: #AEF1AE'>key</span><span style=''>
+</span>123 <span style=''>
+</span>124 <span style=''>    override def getValue: AnyRef = </span><span style='background: #AEF1AE'>res</span><span style=''>
+</span>125 <span style=''>
+</span>126 <span style=''>    // $COVERAGE-OFF$
+</span>127 <span style=''>    override def setValue(value: Object): AnyRef = ???
+</span>128 <span style=''>    // $COVERAGE-ON$
+</span>129 <span style=''>  }
 </span>130 <span style=''>
-</span>131 <span style=''>class ProxyMap[T](var _size: Int, var t: T, val proxyEntry: ProxyEntry[T]) extends SimpleMap {
-</span>132 <span style=''>
-</span>133 <span style=''>  // should never be called
-</span>134 <span style=''>  // $COVERAGE-OFF$
-</span>135 <span style=''>  override def containsKey(key: Any): Boolean = {
-</span>136 <span style=''>    for(i &lt;- 0 until _size) {
-</span>137 <span style=''>      val e = proxyEntry.get(i, t)
-</span>138 <span style=''>      if (e.getKey == key.toString) {
-</span>139 <span style=''>        return true
-</span>140 <span style=''>      }
-</span>141 <span style=''>    }
-</span>142 <span style=''>    false
-</span>143 <span style=''>  }
-</span>144 <span style=''>  // $COVERAGE-ON$
-</span>145 <span style=''>
-</span>146 <span style=''>  // resets the underlying data - e.g. new dmn result
-</span>147 <span style=''>  def reset(size: Int, _t: T): Unit = {
-</span>148 <span style=''>    </span><span style='background: #AEF1AE'>_size = size</span><span style=''>
-</span>149 <span style=''>    </span><span style='background: #AEF1AE'>t = _t</span><span style=''>
-</span>150 <span style=''>    </span><span style='background: #AEF1AE'>proxySet.itr.reset()</span><span style=''>
+</span>131 <span style=''>  override def get(i: Int, t: util.List[DMNDecisionResult]): Map.Entry[String, Object] = {
+</span>132 <span style=''>    val r = </span><span style='background: #AEF1AE'>t.get(i)</span><span style=''>
+</span>133 <span style=''>    </span><span style='background: #AEF1AE'>key = r.getDecisionName</span><span style=''>
+</span>134 <span style=''>    </span><span style='background: #AEF1AE'>res = r.getResult</span><span style=''>
+</span>135 <span style=''>    </span><span style='background: #AEF1AE'>entry</span><span style=''>
+</span>136 <span style=''>  }
+</span>137 <span style=''>}
+</span>138 <span style=''>
+</span>139 <span style=''>class ProxyMap[T](var _size: Int, var t: T, val proxyEntry: ProxyEntry[T]) extends SimpleMap {
+</span>140 <span style=''>
+</span>141 <span style=''>  // should never be called
+</span>142 <span style=''>  // $COVERAGE-OFF$
+</span>143 <span style=''>  override def containsKey(key: Any): Boolean = {
+</span>144 <span style=''>    for(i &lt;- 0 until _size) {
+</span>145 <span style=''>      val e = proxyEntry.get(i, t)
+</span>146 <span style=''>      if (e.getKey == key.toString) {
+</span>147 <span style=''>        return true
+</span>148 <span style=''>      }
+</span>149 <span style=''>    }
+</span>150 <span style=''>    false
 </span>151 <span style=''>  }
-</span>152 <span style=''>
-</span>153 <span style=''>  override def get(key: Any): AnyRef = {
-</span>154 <span style=''>    </span><span style='background: #AEF1AE'>for(i &lt;- 0 until _size) {
-</span>155 <span style=''></span><span style='background: #AEF1AE'>      val e = proxyEntry.get(i, t)
-</span>156 <span style=''></span><span style='background: #AEF1AE'>      if (e.getKey == key.toString) {
-</span>157 <span style=''></span><span style='background: #AEF1AE'>        return e.getValue
-</span>158 <span style=''></span><span style='background: #AEF1AE'>      }
-</span>159 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
-</span>160 <span style=''>    </span><span style='background: #AEF1AE'>null</span><span style=''>
-</span>161 <span style=''>  }
-</span>162 <span style=''>
-</span>163 <span style=''>  val proxySet = </span><span style='background: #AEF1AE'>new ProxySet[T](this)</span><span style=''>
-</span>164 <span style=''>  override def entrySet(): util.Set[util.Map.Entry[String, Object]] = </span><span style='background: #AEF1AE'>proxySet</span><span style=''>
-</span>165 <span style=''>
-</span>166 <span style=''>  override def size(): Int = </span><span style='background: #AEF1AE'>_size</span><span style=''>
-</span>167 <span style=''>}
-</span>168 <span style=''>
-</span>169 <span style=''>class ProxyIterator[E](map: ProxyMap[E]) extends util.Iterator[util.Map.Entry[String, Object]] {
-</span>170 <span style=''>  var i = </span><span style='background: #AEF1AE'>0</span><span style=''>
-</span>171 <span style=''>  def reset(): Unit = {
-</span>172 <span style=''>    </span><span style='background: #AEF1AE'>i = 0</span><span style=''>
-</span>173 <span style=''>  }
-</span>174 <span style=''>
-</span>175 <span style=''>  override def hasNext: Boolean =
-</span>176 <span style=''>    </span><span style='background: #AEF1AE'>i &lt; map.size</span><span style=''>
-</span>177 <span style=''>
-</span>178 <span style=''>  override def next(): util.Map.Entry[String, Object] = {
-</span>179 <span style=''>    val r = </span><span style='background: #AEF1AE'>map.proxyEntry.get(i, map.t)</span><span style=''>
-</span>180 <span style=''>    </span><span style='background: #AEF1AE'>i += 1</span><span style=''>
-</span>181 <span style=''>    r
-</span>182 <span style=''>  }
-</span>183 <span style=''>}
-</span>184 <span style=''>
-</span>185 <span style=''>// only provides iterator
-</span>186 <span style=''>class ProxySet[E](map: ProxyMap[E]) extends java.util.Set[util.Map.Entry[String, Object]] {
-</span>187 <span style=''>  // $COVERAGE-OFF$
-</span>188 <span style=''>  override def size(): Int = ???
-</span>189 <span style=''>
-</span>190 <span style=''>  override def isEmpty: Boolean = ???
-</span>191 <span style=''>
-</span>192 <span style=''>  override def contains(o: Any): Boolean = ???
-</span>193 <span style=''>  // $COVERAGE-ON$
-</span>194 <span style=''>
-</span>195 <span style=''>  val itr = </span><span style='background: #AEF1AE'>new ProxyIterator(map)</span><span style=''>
-</span>196 <span style=''>
-</span>197 <span style=''>  override def iterator(): util.Iterator[util.Map.Entry[String, Object]] = </span><span style='background: #AEF1AE'>itr</span><span style=''>
-</span>198 <span style=''>
-</span>199 <span style=''>  // $COVERAGE-OFF$
-</span>200 <span style=''>  override def retainAll(c: util.Collection[_]): Boolean = ???
-</span>201 <span style=''>
-</span>202 <span style=''>  override def removeAll(c: util.Collection[_]): Boolean = ???
-</span>203 <span style=''>
-</span>204 <span style=''>  override def clear(): Unit = ???
-</span>205 <span style=''>
-</span>206 <span style=''>  override def toArray: Array[AnyRef] = ???
-</span>207 <span style=''>
-</span>208 <span style=''>  // ERROR in intellij is not present in actual compiler
-</span>209 <span style=''>  override def toArray[T](a: Array[T with Object]): Array[T with Object] = ???
-</span>210 <span style=''>
-</span>211 <span style=''>  override def add(e: Map.Entry[String, Object]): Boolean = ???
-</span>212 <span style=''>
-</span>213 <span style=''>  override def remove(o: Any): Boolean = ???
-</span>214 <span style=''>
-</span>215 <span style=''>  override def containsAll(c: util.Collection[_]): Boolean = ???
-</span>216 <span style=''>
-</span>217 <span style=''>  override def addAll(c: util.Collection[_ &lt;: Map.Entry[String, Object]]): Boolean = ???
-</span>218 <span style=''>  // $COVERAGE-ON$
-</span>219 <span style=''>}
+</span>152 <span style=''>  // $COVERAGE-ON$
+</span>153 <span style=''>
+</span>154 <span style=''>  // resets the underlying data - e.g. new dmn result
+</span>155 <span style=''>  def reset(size: Int, _t: T): Unit = {
+</span>156 <span style=''>    </span><span style='background: #AEF1AE'>_size = size</span><span style=''>
+</span>157 <span style=''>    </span><span style='background: #AEF1AE'>t = _t</span><span style=''>
+</span>158 <span style=''>    </span><span style='background: #AEF1AE'>proxySet.itr.reset()</span><span style=''>
+</span>159 <span style=''>  }
+</span>160 <span style=''>
+</span>161 <span style=''>  override def get(key: Any): AnyRef = {
+</span>162 <span style=''>    </span><span style='background: #AEF1AE'>for(i &lt;- 0 until _size) {
+</span>163 <span style=''></span><span style='background: #AEF1AE'>      val e = proxyEntry.get(i, t)
+</span>164 <span style=''></span><span style='background: #AEF1AE'>      if (e.getKey == key.toString) {
+</span>165 <span style=''></span><span style='background: #AEF1AE'>        return e.getValue
+</span>166 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>167 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>168 <span style=''>    </span><span style='background: #AEF1AE'>null</span><span style=''>
+</span>169 <span style=''>  }
+</span>170 <span style=''>
+</span>171 <span style=''>  val proxySet = </span><span style='background: #AEF1AE'>new ProxySet[T](this)</span><span style=''>
+</span>172 <span style=''>  override def entrySet(): util.Set[util.Map.Entry[String, Object]] = </span><span style='background: #AEF1AE'>proxySet</span><span style=''>
+</span>173 <span style=''>
+</span>174 <span style=''>  override def size(): Int = </span><span style='background: #AEF1AE'>_size</span><span style=''>
+</span>175 <span style=''>}
+</span>176 <span style=''>
+</span>177 <span style=''>class ProxyIterator[E](map: ProxyMap[E]) extends util.Iterator[util.Map.Entry[String, Object]] {
+</span>178 <span style=''>  var i = </span><span style='background: #AEF1AE'>0</span><span style=''>
+</span>179 <span style=''>  def reset(): Unit = {
+</span>180 <span style=''>    </span><span style='background: #AEF1AE'>i = 0</span><span style=''>
+</span>181 <span style=''>  }
+</span>182 <span style=''>
+</span>183 <span style=''>  override def hasNext: Boolean =
+</span>184 <span style=''>    </span><span style='background: #AEF1AE'>i &lt; map.size</span><span style=''>
+</span>185 <span style=''>
+</span>186 <span style=''>  override def next(): util.Map.Entry[String, Object] = {
+</span>187 <span style=''>    val r = </span><span style='background: #AEF1AE'>map.proxyEntry.get(i, map.t)</span><span style=''>
+</span>188 <span style=''>    </span><span style='background: #AEF1AE'>i += 1</span><span style=''>
+</span>189 <span style=''>    r
+</span>190 <span style=''>  }
+</span>191 <span style=''>}
+</span>192 <span style=''>
+</span>193 <span style=''>// only provides iterator
+</span>194 <span style=''>class ProxySet[E](map: ProxyMap[E]) extends java.util.Set[util.Map.Entry[String, Object]] {
+</span>195 <span style=''>  // $COVERAGE-OFF$
+</span>196 <span style=''>  override def size(): Int = ???
+</span>197 <span style=''>
+</span>198 <span style=''>  override def isEmpty: Boolean = ???
+</span>199 <span style=''>
+</span>200 <span style=''>  override def contains(o: Any): Boolean = ???
+</span>201 <span style=''>  // $COVERAGE-ON$
+</span>202 <span style=''>
+</span>203 <span style=''>  val itr = </span><span style='background: #AEF1AE'>new ProxyIterator(map)</span><span style=''>
+</span>204 <span style=''>
+</span>205 <span style=''>  override def iterator(): util.Iterator[util.Map.Entry[String, Object]] = </span><span style='background: #AEF1AE'>itr</span><span style=''>
+</span>206 <span style=''>
+</span>207 <span style=''>  // $COVERAGE-OFF$
+</span>208 <span style=''>  override def retainAll(c: util.Collection[_]): Boolean = ???
+</span>209 <span style=''>
+</span>210 <span style=''>  override def removeAll(c: util.Collection[_]): Boolean = ???
+</span>211 <span style=''>
+</span>212 <span style=''>  override def clear(): Unit = ???
+</span>213 <span style=''>
+</span>214 <span style=''>  override def toArray: Array[AnyRef] = ???
+</span>215 <span style=''>
+</span>216 <span style=''>  // ERROR in intellij is not present in actual compiler
+</span>217 <span style=''>  override def toArray[T](a: Array[T with Object]): Array[T with Object] = ???
+</span>218 <span style=''>
+</span>219 <span style=''>  override def add(e: Map.Entry[String, Object]): Boolean = ???
 </span>220 <span style=''>
-</span>221 <span style=''>abstract class SimpleMap extends util.Map[String, Object] {
-</span>222 <span style=''>  // called by kogito
-</span>223 <span style=''>  //override def get(key: Any): AnyRef = ???
+</span>221 <span style=''>  override def remove(o: Any): Boolean = ???
+</span>222 <span style=''>
+</span>223 <span style=''>  override def containsAll(c: util.Collection[_]): Boolean = ???
 </span>224 <span style=''>
-</span>225 <span style=''>  // called by Jackson serializing, strictly it's just the iterator
-</span>226 <span style=''>  //override def entrySet(): util.Set[util.Map.Entry[String, Object]] = ???
-</span>227 <span style=''>
-</span>228 <span style=''>  override def isEmpty: Boolean = </span><span style='background: #AEF1AE'>size() == 0</span><span style=''>
-</span>229 <span style=''>
-</span>230 <span style=''>  // is called by kogito when get returns null
-</span>231 <span style=''>  // override def containsKey(key: Any): Boolean = ??? // pairs.contains(key.toString)
+</span>225 <span style=''>  override def addAll(c: util.Collection[_ &lt;: Map.Entry[String, Object]]): Boolean = ???
+</span>226 <span style=''>  // $COVERAGE-ON$
+</span>227 <span style=''>}
+</span>228 <span style=''>
+</span>229 <span style=''>abstract class SimpleMap extends util.Map[String, Object] {
+</span>230 <span style=''>  // called by kogito
+</span>231 <span style=''>  //override def get(key: Any): AnyRef = ???
 </span>232 <span style=''>
-</span>233 <span style=''>
-</span>234 <span style=''>  // Never called by kogito
+</span>233 <span style=''>  // called by Jackson serializing, strictly it's just the iterator
+</span>234 <span style=''>  //override def entrySet(): util.Set[util.Map.Entry[String, Object]] = ???
 </span>235 <span style=''>
-</span>236 <span style=''>  // $COVERAGE-OFF$
-</span>237 <span style=''>  override def keySet(): util.Set[String] = ??? //pairs.keySet.asJava
-</span>238 <span style=''>
-</span>239 <span style=''>  //override def size(): Int = ??? //pairs.size
+</span>236 <span style=''>  override def isEmpty: Boolean = </span><span style='background: #AEF1AE'>size() == 0</span><span style=''>
+</span>237 <span style=''>
+</span>238 <span style=''>  // is called by kogito when get returns null
+</span>239 <span style=''>  // override def containsKey(key: Any): Boolean = ??? // pairs.contains(key.toString)
 </span>240 <span style=''>
-</span>241 <span style=''>  // Never being implemented
-</span>242 <span style=''>
-</span>243 <span style=''>  override def containsValue(value: Any): Boolean = ???
-</span>244 <span style=''>
-</span>245 <span style=''>  override def values(): util.Collection[Object] = ???
+</span>241 <span style=''>
+</span>242 <span style=''>  // Never called by kogito
+</span>243 <span style=''>
+</span>244 <span style=''>  // $COVERAGE-OFF$
+</span>245 <span style=''>  override def keySet(): util.Set[String] = ??? //pairs.keySet.asJava
 </span>246 <span style=''>
-</span>247 <span style=''>  override def put(key: String, value: Object): AnyRef = ???
+</span>247 <span style=''>  //override def size(): Int = ??? //pairs.size
 </span>248 <span style=''>
-</span>249 <span style=''>  override def remove(key: Any): AnyRef = ???
+</span>249 <span style=''>  // Never being implemented
 </span>250 <span style=''>
-</span>251 <span style=''>  override def putAll(m: util.Map[_ &lt;: String, _ &lt;: Object]): Unit = ???
+</span>251 <span style=''>  override def containsValue(value: Any): Boolean = ???
 </span>252 <span style=''>
-</span>253 <span style=''>  override def clear(): Unit = ???
-</span>254 <span style=''>  // $COVERAGE-ON$
-</span>255 <span style=''>}
+</span>253 <span style=''>  override def values(): util.Collection[Object] = ???
+</span>254 <span style=''>
+</span>255 <span style=''>  override def put(key: String, value: Object): AnyRef = ???
 </span>256 <span style=''>
-</span>257 <span style=''>class ArrayEntry[K, V](keys: Array[K], values: Array[V], i: Int) extends java.util.Map.Entry[K, V] {
+</span>257 <span style=''>  override def remove(key: Any): AnyRef = ???
 </span>258 <span style=''>
-</span>259 <span style=''>  override def getKey: K = </span><span style='background: #AEF1AE'>keys(i)</span><span style=''>
+</span>259 <span style=''>  override def putAll(m: util.Map[_ &lt;: String, _ &lt;: Object]): Unit = ???
 </span>260 <span style=''>
-</span>261 <span style=''>  override def getValue: V = </span><span style='background: #AEF1AE'>values(i)</span><span style=''>
-</span>262 <span style=''>
-</span>263 <span style=''>  // $COVERAGE-OFF$
-</span>264 <span style=''>  override def setValue(value: V): V = ???
-</span>265 <span style=''>  // $COVERAGE-ON$
-</span>266 <span style=''>}
-</span>267 <span style=''>
-</span>268 <span style=''>class ArraySet[E](backed: Array[E]) extends java.util.Set[E] {
-</span>269 <span style=''>  // $COVERAGE-OFF$
-</span>270 <span style=''>  override def size(): Int = backed.length
-</span>271 <span style=''>
-</span>272 <span style=''>  override def isEmpty: Boolean = backed.isEmpty
-</span>273 <span style=''>
-</span>274 <span style=''>  override def contains(o: Any): Boolean =
-</span>275 <span style=''>    o match {
-</span>276 <span style=''>      case o: E =&gt;  backed.contains(o)
-</span>277 <span style=''>      case _ =&gt; false
-</span>278 <span style=''>    }
-</span>279 <span style=''>  // $COVERAGE-ON$
-</span>280 <span style=''>  override def iterator(): util.Iterator[E] =
-</span>281 <span style=''>    </span><span style='background: #AEF1AE'>backed.iterator.asJava</span><span style=''>
-</span>282 <span style=''>
-</span>283 <span style=''>  // $COVERAGE-OFF$
-</span>284 <span style=''>  override def toArray: Array[AnyRef] = backed.asInstanceOf[Array[AnyRef]]
-</span>285 <span style=''>
-</span>286 <span style=''>  // ERROR in intellij is not present in actual compiler
-</span>287 <span style=''>  override def toArray[T](a: Array[T with Object]): Array[T with Object] = {
-</span>288 <span style=''>    System.arraycopy(backed, 0, a, 0, backed.length)
-</span>289 <span style=''>    a
-</span>290 <span style=''>  }
-</span>291 <span style=''>
-</span>292 <span style=''>  override def add(e: E): Boolean = ???
+</span>261 <span style=''>  override def clear(): Unit = ???
+</span>262 <span style=''>  // $COVERAGE-ON$
+</span>263 <span style=''>}
+</span>264 <span style=''>
+</span>265 <span style=''>class ArrayEntry[K, V](keys: Array[K], values: Array[V], i: Int) extends java.util.Map.Entry[K, V] {
+</span>266 <span style=''>
+</span>267 <span style=''>  override def getKey: K = </span><span style='background: #AEF1AE'>keys(i)</span><span style=''>
+</span>268 <span style=''>
+</span>269 <span style=''>  override def getValue: V = </span><span style='background: #AEF1AE'>values(i)</span><span style=''>
+</span>270 <span style=''>
+</span>271 <span style=''>  // $COVERAGE-OFF$
+</span>272 <span style=''>  override def setValue(value: V): V = ???
+</span>273 <span style=''>  // $COVERAGE-ON$
+</span>274 <span style=''>}
+</span>275 <span style=''>
+</span>276 <span style=''>class ArraySet[E](backed: Array[E]) extends java.util.Set[E] {
+</span>277 <span style=''>  // $COVERAGE-OFF$
+</span>278 <span style=''>  override def size(): Int = backed.length
+</span>279 <span style=''>
+</span>280 <span style=''>  override def isEmpty: Boolean = backed.isEmpty
+</span>281 <span style=''>
+</span>282 <span style=''>  override def contains(o: Any): Boolean =
+</span>283 <span style=''>    o match {
+</span>284 <span style=''>      case o: E =&gt;  backed.contains(o)
+</span>285 <span style=''>      case _ =&gt; false
+</span>286 <span style=''>    }
+</span>287 <span style=''>  // $COVERAGE-ON$
+</span>288 <span style=''>  override def iterator(): util.Iterator[E] =
+</span>289 <span style=''>    </span><span style='background: #AEF1AE'>backed.iterator.asJava</span><span style=''>
+</span>290 <span style=''>
+</span>291 <span style=''>  // $COVERAGE-OFF$
+</span>292 <span style=''>  override def toArray: Array[AnyRef] = backed.asInstanceOf[Array[AnyRef]]
 </span>293 <span style=''>
-</span>294 <span style=''>  override def remove(o: Any): Boolean = ???
-</span>295 <span style=''>
-</span>296 <span style=''>  override def containsAll(c: util.Collection[_]): Boolean = ???
-</span>297 <span style=''>
-</span>298 <span style=''>  override def addAll(c: util.Collection[_ &lt;: E]): Boolean = ???
+</span>294 <span style=''>  // ERROR in intellij is not present in actual compiler
+</span>295 <span style=''>  override def toArray[T](a: Array[T with Object]): Array[T with Object] = {
+</span>296 <span style=''>    System.arraycopy(backed, 0, a, 0, backed.length)
+</span>297 <span style=''>    a
+</span>298 <span style=''>  }
 </span>299 <span style=''>
-</span>300 <span style=''>  override def retainAll(c: util.Collection[_]): Boolean = ???
+</span>300 <span style=''>  override def add(e: E): Boolean = ???
 </span>301 <span style=''>
-</span>302 <span style=''>  override def removeAll(c: util.Collection[_]): Boolean = ???
+</span>302 <span style=''>  override def remove(o: Any): Boolean = ???
 </span>303 <span style=''>
-</span>304 <span style=''>  override def clear(): Unit = ???
+</span>304 <span style=''>  override def containsAll(c: util.Collection[_]): Boolean = ???
 </span>305 <span style=''>
-</span>306 <span style=''>  // $COVERAGE-ON$
-</span>307 <span style=''>}
+</span>306 <span style=''>  override def addAll(c: util.Collection[_ &lt;: E]): Boolean = ???
+</span>307 <span style=''>
+</span>308 <span style=''>  override def retainAll(c: util.Collection[_]): Boolean = ???
+</span>309 <span style=''>
+</span>310 <span style=''>  override def removeAll(c: util.Collection[_]): Boolean = ???
+</span>311 <span style=''>
+</span>312 <span style=''>  override def clear(): Unit = ???
+</span>313 <span style=''>
+</span>314 <span style=''>  // $COVERAGE-ON$
+</span>315 <span style=''>}
 </span></pre>
           </div>
           <div class="tab-pane" id="statementlist">
@@ -346,7 +354,7 @@
           14
         </td>
         <td>
-          1184
+          1136
         </td>
         <td>
           556
@@ -370,7 +378,7 @@
           15
         </td>
         <td>
-          1185
+          1137
         </td>
         <td>
           596
@@ -394,7 +402,7 @@
           17
         </td>
         <td>
-          1188
+          1140
         </td>
         <td>
           635
@@ -418,7 +426,7 @@
           18
         </td>
         <td>
-          1186
+          1138
         </td>
         <td>
           651
@@ -442,7 +450,7 @@
           19
         </td>
         <td>
-          1187
+          1139
         </td>
         <td>
           690
@@ -466,7 +474,7 @@
           25
         </td>
         <td>
-          1189
+          1141
         </td>
         <td>
           903
@@ -490,7 +498,7 @@
           26
         </td>
         <td>
-          1190
+          1142
         </td>
         <td>
           942
@@ -514,7 +522,7 @@
           27
         </td>
         <td>
-          1199
+          1151
         </td>
         <td>
           971
@@ -538,7 +546,7 @@
           28
         </td>
         <td>
-          1191
+          1143
         </td>
         <td>
           992
@@ -562,7 +570,7 @@
           28
         </td>
         <td>
-          1198
+          1150
         </td>
         <td>
           992
@@ -586,7 +594,7 @@
           30
         </td>
         <td>
-          1192
+          1144
         </td>
         <td>
           1063
@@ -610,7 +618,7 @@
           31
         </td>
         <td>
-          1193
+          1145
         </td>
         <td>
           1101
@@ -634,7 +642,7 @@
           32
         </td>
         <td>
-          1194
+          1146
         </td>
         <td>
           1151
@@ -658,7 +666,7 @@
           33
         </td>
         <td>
-          1195
+          1147
         </td>
         <td>
           1179
@@ -682,7 +690,7 @@
           33
         </td>
         <td>
-          1196
+          1148
         </td>
         <td>
           1193
@@ -706,7 +714,7 @@
           33
         </td>
         <td>
-          1197
+          1149
         </td>
         <td>
           1216
@@ -730,7 +738,7 @@
           40
         </td>
         <td>
-          1200
+          1152
         </td>
         <td>
           1352
@@ -754,7 +762,7 @@
           41
         </td>
         <td>
-          1201
+          1153
         </td>
         <td>
           1377
@@ -778,7 +786,7 @@
           41
         </td>
         <td>
-          1202
+          1154
         </td>
         <td>
           1410
@@ -802,7 +810,7 @@
           41
         </td>
         <td>
-          1203
+          1155
         </td>
         <td>
           1379
@@ -826,7 +834,7 @@
           41
         </td>
         <td>
-          1204
+          1156
         </td>
         <td>
           1375
@@ -850,7 +858,7 @@
           41
         </td>
         <td>
-          1205
+          1157
         </td>
         <td>
           1375
@@ -874,7 +882,7 @@
           43
         </td>
         <td>
-          1206
+          1158
         </td>
         <td>
           1433
@@ -898,7 +906,7 @@
           43
         </td>
         <td>
-          1207
+          1159
         </td>
         <td>
           1433
@@ -922,7 +930,7 @@
           46
         </td>
         <td>
-          1208
+          1160
         </td>
         <td>
           1468
@@ -946,7 +954,7 @@
           46
         </td>
         <td>
-          1209
+          1161
         </td>
         <td>
           1468
@@ -970,7 +978,7 @@
           48
         </td>
         <td>
-          1210
+          1162
         </td>
         <td>
           1493
@@ -994,7 +1002,7 @@
           48
         </td>
         <td>
-          1211
+          1163
         </td>
         <td>
           1493
@@ -1018,7 +1026,7 @@
           52
         </td>
         <td>
-          1212
+          1164
         </td>
         <td>
           1645
@@ -1042,7 +1050,7 @@
           53
         </td>
         <td>
-          1220
+          1172
         </td>
         <td>
           1670
@@ -1066,7 +1074,7 @@
           54
         </td>
         <td>
-          1213
+          1165
         </td>
         <td>
           1691
@@ -1090,7 +1098,7 @@
           54
         </td>
         <td>
-          1219
+          1171
         </td>
         <td>
           1691
@@ -1114,7 +1122,7 @@
           55
         </td>
         <td>
-          1214
+          1166
         </td>
         <td>
           1718
@@ -1138,7 +1146,7 @@
           56
         </td>
         <td>
-          1215
+          1167
         </td>
         <td>
           1756
@@ -1162,7 +1170,7 @@
           57
         </td>
         <td>
-          1216
+          1168
         </td>
         <td>
           1798
@@ -1186,7 +1194,7 @@
           58
         </td>
         <td>
-          1217
+          1169
         </td>
         <td>
           1826
@@ -1210,7 +1218,7 @@
           58
         </td>
         <td>
-          1218
+          1170
         </td>
         <td>
           1840
@@ -1234,7 +1242,7 @@
           71
         </td>
         <td>
-          1221
+          1173
         </td>
         <td>
           2277
@@ -1258,7 +1266,7 @@
           71
         </td>
         <td>
-          1222
+          1174
         </td>
         <td>
           2295
@@ -1282,7 +1290,7 @@
           71
         </td>
         <td>
-          1223
+          1175
         </td>
         <td>
           2302
@@ -1306,7 +1314,7 @@
           71
         </td>
         <td>
-          1224
+          1176
         </td>
         <td>
           2293
@@ -1330,7 +1338,7 @@
           71
         </td>
         <td>
-          1227
+          1179
         </td>
         <td>
           2261
@@ -1354,7 +1362,7 @@
           72
         </td>
         <td>
-          1225
+          1177
         </td>
         <td>
           2333
@@ -1378,7 +1386,7 @@
           72
         </td>
         <td>
-          1226
+          1178
         </td>
         <td>
           2320
@@ -1399,159 +1407,15 @@
         </td>
       </tr><tr>
         <td>
-          79
+          77
         </td>
         <td>
-          1228
+          1180
         </td>
         <td>
-          2524
+          2418
           -
-          2536
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          scala.Any.toString
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          key.toString()
-        </td>
-      </tr><tr>
-        <td>
-          79
-        </td>
-        <td>
-          1229
-        </td>
-        <td>
-          2509
-          -
-          2537
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          scala.collection.MapLike.contains
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          BaseKogitoMap.this.pairs.contains(key.toString())
-        </td>
-      </tr><tr>
-        <td>
-          82
-        </td>
-        <td>
-          1230
-        </td>
-        <td>
-          2589
-          -
-          2589
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          scala.Tuple2._1
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          x$1._1
-        </td>
-      </tr><tr>
-        <td>
-          82
-        </td>
-        <td>
-          1231
-        </td>
-        <td>
-          2592
-          -
-          2592
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          scala.Tuple2._2
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          x$1._2
-        </td>
-      </tr><tr>
-        <td>
-          83
-        </td>
-        <td>
-          1232
-        </td>
-        <td>
-          2639
-          -
-          2643
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          com.sparkutils.dmn.kogito.types.BaseKogitoMap.path
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          BaseKogitoMap.this.path
-        </td>
-      </tr><tr>
-        <td>
-          83
-        </td>
-        <td>
-          1233
-        </td>
-        <td>
-          2629
-          -
-          2647
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          com.sparkutils.dmn.kogito.types.ContextInterfaces.Accessor.forPath
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          a.forPath(BaseKogitoMap.this.path, i)
-        </td>
-      </tr><tr>
-        <td>
-          84
-        </td>
-        <td>
-          1234
-        </td>
-        <td>
-          2656
-          -
-          2665
+          2430
         </td>
         <td>
           Apply
@@ -1563,19 +1427,19 @@
           
         </td>
         <td style="background: #AEF1AE">
-          t.==(null)
+          what.==(null)
         </td>
       </tr><tr>
         <td>
-          84
+          78
         </td>
         <td>
-          1235
+          1181
         </td>
         <td>
-          2667
+          2440
           -
-          2671
+          2444
         </td>
         <td>
           Literal
@@ -1591,15 +1455,15 @@
         </td>
       </tr><tr>
         <td>
-          84
+          78
         </td>
         <td>
-          1236
+          1182
         </td>
         <td>
-          2667
+          2440
           -
-          2671
+          2444
         </td>
         <td>
           Block
@@ -1615,15 +1479,279 @@
         </td>
       </tr><tr>
         <td>
-          84
+          80
         </td>
         <td>
-          1237
+          1183
         </td>
         <td>
-          2677
+          2464
           -
-          2699
+          2471
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          f.apply(what)
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          1184
+        </td>
+        <td>
+          2464
+          -
+          2471
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          f.apply(what)
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          1185
+        </td>
+        <td>
+          2652
+          -
+          2664
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Any.toString
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          key.toString()
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          1186
+        </td>
+        <td>
+          2637
+          -
+          2665
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.MapLike.contains
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          BaseKogitoMap.this.pairs.contains(key.toString())
+        </td>
+      </tr><tr>
+        <td>
+          90
+        </td>
+        <td>
+          1187
+        </td>
+        <td>
+          2717
+          -
+          2717
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$1._1
+        </td>
+      </tr><tr>
+        <td>
+          90
+        </td>
+        <td>
+          1188
+        </td>
+        <td>
+          2720
+          -
+          2720
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          x$1._2
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          1189
+        </td>
+        <td>
+          2767
+          -
+          2771
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.BaseKogitoMap.path
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          BaseKogitoMap.this.path
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          1190
+        </td>
+        <td>
+          2757
+          -
+          2775
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ContextInterfaces.Accessor.forPath
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          a.forPath(BaseKogitoMap.this.path, i)
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          1191
+        </td>
+        <td>
+          2784
+          -
+          2793
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Any.==
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          t.==(null)
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          1192
+        </td>
+        <td>
+          2795
+          -
+          2799
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          1193
+        </td>
+        <td>
+          2795
+          -
+          2799
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          null
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          1194
+        </td>
+        <td>
+          2805
+          -
+          2827
         </td>
         <td>
           TypeApply
@@ -1639,15 +1767,15 @@
         </td>
       </tr><tr>
         <td>
-          84
+          92
         </td>
         <td>
-          1238
+          1195
         </td>
         <td>
-          2677
+          2805
           -
-          2699
+          2827
         </td>
         <td>
           Block
@@ -1663,15 +1791,15 @@
         </td>
       </tr><tr>
         <td>
-          88
+          96
         </td>
         <td>
-          1247
+          1204
         </td>
         <td>
-          2849
+          2977
           -
-          2852
+          2980
         </td>
         <td>
           Apply
@@ -1687,15 +1815,15 @@
         </td>
       </tr><tr>
         <td>
-          88
+          96
         </td>
         <td>
-          1248
+          1205
         </td>
         <td>
-          2849
+          2977
           -
-          3163
+          3291
         </td>
         <td>
           Block
@@ -1728,15 +1856,15 @@
         </td>
       </tr><tr>
         <td>
-          88
+          96
         </td>
         <td>
-          1249
+          1206
         </td>
         <td>
-          2819
+          2947
           -
-          2819
+          2947
         </td>
         <td>
           TypeApply
@@ -1752,15 +1880,15 @@
         </td>
       </tr><tr>
         <td>
-          92
+          100
         </td>
         <td>
-          1239
+          1196
         </td>
         <td>
-          2993
+          3121
           -
-          2997
+          3125
         </td>
         <td>
           Select
@@ -1776,15 +1904,15 @@
         </td>
       </tr><tr>
         <td>
-          92
+          100
         </td>
         <td>
-          1240
+          1197
         </td>
         <td>
-          2976
+          3104
           -
-          3001
+          3129
         </td>
         <td>
           Apply
@@ -1800,15 +1928,15 @@
         </td>
       </tr><tr>
         <td>
-          93
+          101
         </td>
         <td>
-          1241
+          1198
         </td>
         <td>
-          3012
+          3140
           -
-          3021
+          3149
         </td>
         <td>
           Apply
@@ -1824,15 +1952,15 @@
         </td>
       </tr><tr>
         <td>
-          93
+          101
         </td>
         <td>
-          1242
+          1199
         </td>
         <td>
-          3023
+          3151
           -
-          3027
+          3155
         </td>
         <td>
           Literal
@@ -1848,15 +1976,15 @@
         </td>
       </tr><tr>
         <td>
-          93
+          101
         </td>
         <td>
-          1243
+          1200
         </td>
         <td>
-          3023
+          3151
           -
-          3027
+          3155
         </td>
         <td>
           Block
@@ -1872,15 +2000,15 @@
         </td>
       </tr><tr>
         <td>
-          93
+          101
         </td>
         <td>
-          1244
+          1201
         </td>
         <td>
-          3033
+          3161
           -
-          3055
+          3183
         </td>
         <td>
           TypeApply
@@ -1896,15 +2024,15 @@
         </td>
       </tr><tr>
         <td>
-          93
+          101
         </td>
         <td>
-          1245
+          1202
         </td>
         <td>
-          3033
+          3161
           -
-          3055
+          3183
         </td>
         <td>
           Block
@@ -1920,15 +2048,15 @@
         </td>
       </tr><tr>
         <td>
-          98
+          106
         </td>
         <td>
-          1250
+          1207
         </td>
         <td>
-          2810
+          2938
           -
-          3170
+          3298
         </td>
         <td>
           TypeApply
@@ -1963,15 +2091,15 @@
         </td>
       </tr><tr>
         <td>
-          98
+          106
         </td>
         <td>
-          1251
+          1208
         </td>
         <td>
-          2810
+          2938
           -
-          3177
+          3305
         </td>
         <td>
           Select
@@ -2006,15 +2134,15 @@
         </td>
       </tr><tr>
         <td>
-          111
+          119
         </td>
         <td>
-          1253
+          1210
         </td>
         <td>
-          3482
+          3610
           -
-          3484
+          3612
         </td>
         <td>
           Literal
@@ -2030,15 +2158,15 @@
         </td>
       </tr><tr>
         <td>
-          113
+          121
         </td>
         <td>
-          1257
+          1214
         </td>
         <td>
-          3537
+          3665
           -
-          3540
+          3668
         </td>
         <td>
           Apply
@@ -2054,15 +2182,15 @@
         </td>
       </tr><tr>
         <td>
-          114
+          122
         </td>
         <td>
-          1254
+          1211
         </td>
         <td>
-          3603
+          3731
           -
-          3606
+          3734
         </td>
         <td>
           Select
@@ -2078,15 +2206,15 @@
         </td>
       </tr><tr>
         <td>
-          116
+          124
         </td>
         <td>
-          1255
+          1212
         </td>
         <td>
-          3644
+          3772
           -
-          3647
+          3775
         </td>
         <td>
           Select
@@ -2102,15 +2230,15 @@
         </td>
       </tr><tr>
         <td>
-          124
+          132
         </td>
         <td>
-          1258
+          1215
         </td>
         <td>
-          3855
+          3983
           -
-          3863
+          3991
         </td>
         <td>
           Apply
@@ -2126,15 +2254,15 @@
         </td>
       </tr><tr>
         <td>
-          125
+          133
         </td>
         <td>
-          1259
+          1216
         </td>
         <td>
-          3874
+          4002
           -
-          3891
+          4019
         </td>
         <td>
           Apply
@@ -2150,15 +2278,15 @@
         </td>
       </tr><tr>
         <td>
-          125
+          133
         </td>
         <td>
-          1260
+          1217
         </td>
         <td>
-          3868
+          3996
           -
-          3891
+          4019
         </td>
         <td>
           Apply
@@ -2174,15 +2302,15 @@
         </td>
       </tr><tr>
         <td>
-          126
+          134
         </td>
         <td>
-          1261
+          1218
         </td>
         <td>
-          3902
+          4030
           -
-          3913
+          4041
         </td>
         <td>
           Apply
@@ -2198,15 +2326,15 @@
         </td>
       </tr><tr>
         <td>
-          126
+          134
         </td>
         <td>
-          1262
+          1219
         </td>
         <td>
-          3896
+          4024
           -
-          3913
+          4041
         </td>
         <td>
           Apply
@@ -2222,15 +2350,15 @@
         </td>
       </tr><tr>
         <td>
-          127
+          135
         </td>
         <td>
-          1263
+          1220
         </td>
         <td>
-          3918
+          4046
           -
-          3923
+          4051
         </td>
         <td>
           Select
@@ -2246,15 +2374,15 @@
         </td>
       </tr><tr>
         <td>
-          148
+          156
         </td>
         <td>
-          1276
+          1233
         </td>
         <td>
-          4394
+          4522
           -
-          4406
+          4534
         </td>
         <td>
           Apply
@@ -2270,15 +2398,15 @@
         </td>
       </tr><tr>
         <td>
-          149
+          157
         </td>
         <td>
-          1277
+          1234
         </td>
         <td>
-          4411
+          4539
           -
-          4417
+          4545
         </td>
         <td>
           Apply
@@ -2294,15 +2422,15 @@
         </td>
       </tr><tr>
         <td>
-          150
+          158
         </td>
         <td>
-          1278
+          1235
         </td>
         <td>
-          4422
+          4550
           -
-          4442
+          4570
         </td>
         <td>
           Apply
@@ -2318,15 +2446,15 @@
         </td>
       </tr><tr>
         <td>
-          154
+          162
         </td>
         <td>
-          1279
+          1236
         </td>
         <td>
-          4502
+          4630
           -
-          4503
+          4631
         </td>
         <td>
           Literal
@@ -2342,15 +2470,15 @@
         </td>
       </tr><tr>
         <td>
-          154
+          162
         </td>
         <td>
-          1280
+          1237
         </td>
         <td>
-          4510
+          4638
           -
-          4515
+          4643
         </td>
         <td>
           Select
@@ -2366,15 +2494,15 @@
         </td>
       </tr><tr>
         <td>
-          154
+          162
         </td>
         <td>
-          1289
+          1246
         </td>
         <td>
-          4493
+          4621
           -
-          4631
+          4759
         </td>
         <td>
           Apply
@@ -2396,15 +2524,15 @@
         </td>
       </tr><tr>
         <td>
-          155
+          163
         </td>
         <td>
-          1281
+          1238
         </td>
         <td>
-          4551
+          4679
           -
-          4552
+          4680
         </td>
         <td>
           Select
@@ -2420,15 +2548,15 @@
         </td>
       </tr><tr>
         <td>
-          155
+          163
         </td>
         <td>
-          1282
+          1239
         </td>
         <td>
-          4533
+          4661
           -
-          4553
+          4681
         </td>
         <td>
           Apply
@@ -2444,15 +2572,15 @@
         </td>
       </tr><tr>
         <td>
-          156
+          164
         </td>
         <td>
-          1283
+          1240
         </td>
         <td>
-          4576
+          4704
           -
-          4588
+          4716
         </td>
         <td>
           Apply
@@ -2468,15 +2596,15 @@
         </td>
       </tr><tr>
         <td>
-          156
+          164
         </td>
         <td>
-          1284
+          1241
         </td>
         <td>
-          4564
+          4692
           -
-          4588
+          4716
         </td>
         <td>
           Apply
@@ -2492,15 +2620,15 @@
         </td>
       </tr><tr>
         <td>
-          156
+          164
         </td>
         <td>
-          1287
+          1244
         </td>
         <td>
-          4560
+          4688
           -
-          4560
+          4688
         </td>
         <td>
           Literal
@@ -2516,15 +2644,15 @@
         </td>
       </tr><tr>
         <td>
-          156
+          164
         </td>
         <td>
-          1288
+          1245
         </td>
         <td>
-          4560
+          4688
           -
-          4560
+          4688
         </td>
         <td>
           Block
@@ -2540,15 +2668,15 @@
         </td>
       </tr><tr>
         <td>
-          157
+          165
         </td>
         <td>
-          1285
+          1242
         </td>
         <td>
-          4607
+          4735
           -
-          4617
+          4745
         </td>
         <td>
           Apply
@@ -2564,15 +2692,15 @@
         </td>
       </tr><tr>
         <td>
-          157
+          165
         </td>
         <td>
-          1286
+          1243
         </td>
         <td>
-          4600
+          4728
           -
-          4617
+          4745
         </td>
         <td>
           Return
@@ -2588,15 +2716,15 @@
         </td>
       </tr><tr>
         <td>
-          160
+          168
         </td>
         <td>
-          1290
+          1247
         </td>
         <td>
-          4636
+          4764
           -
-          4640
+          4768
         </td>
         <td>
           Literal
@@ -2612,15 +2740,15 @@
         </td>
       </tr><tr>
         <td>
-          163
+          171
         </td>
         <td>
-          1291
+          1248
         </td>
         <td>
-          4663
+          4791
           -
-          4684
+          4812
         </td>
         <td>
           Apply
@@ -2636,15 +2764,15 @@
         </td>
       </tr><tr>
         <td>
-          164
+          172
         </td>
         <td>
-          1292
+          1249
         </td>
         <td>
-          4755
+          4883
           -
-          4763
+          4891
         </td>
         <td>
           Select
@@ -2660,15 +2788,15 @@
         </td>
       </tr><tr>
         <td>
-          166
+          174
         </td>
         <td>
-          1293
+          1250
         </td>
         <td>
-          4794
+          4922
           -
-          4799
+          4927
         </td>
         <td>
           Select
@@ -2684,15 +2812,15 @@
         </td>
       </tr><tr>
         <td>
-          170
+          178
         </td>
         <td>
-          1294
+          1251
         </td>
         <td>
-          4910
+          5038
           -
-          4911
+          5039
         </td>
         <td>
           Literal
@@ -2708,15 +2836,15 @@
         </td>
       </tr><tr>
         <td>
-          172
+          180
         </td>
         <td>
-          1295
+          1252
         </td>
         <td>
-          4940
+          5068
           -
-          4945
+          5073
         </td>
         <td>
           Apply
@@ -2732,15 +2860,15 @@
         </td>
       </tr><tr>
         <td>
-          176
+          184
         </td>
         <td>
-          1296
+          1253
         </td>
         <td>
-          4993
+          5121
           -
-          5001
+          5129
         </td>
         <td>
           Apply
@@ -2756,15 +2884,15 @@
         </td>
       </tr><tr>
         <td>
-          176
+          184
         </td>
         <td>
-          1297
+          1254
         </td>
         <td>
-          4989
+          5117
           -
-          5001
+          5129
         </td>
         <td>
           Apply
@@ -2780,15 +2908,15 @@
         </td>
       </tr><tr>
         <td>
-          179
+          187
         </td>
         <td>
-          1298
+          1255
         </td>
         <td>
-          5092
+          5220
           -
-          5093
+          5221
         </td>
         <td>
           Select
@@ -2804,15 +2932,15 @@
         </td>
       </tr><tr>
         <td>
-          179
+          187
         </td>
         <td>
-          1299
+          1256
         </td>
         <td>
-          5095
+          5223
           -
-          5100
+          5228
         </td>
         <td>
           Select
@@ -2828,15 +2956,15 @@
         </td>
       </tr><tr>
         <td>
-          179
+          187
         </td>
         <td>
-          1300
+          1257
         </td>
         <td>
-          5073
+          5201
           -
-          5101
+          5229
         </td>
         <td>
           Apply
@@ -2852,15 +2980,15 @@
         </td>
       </tr><tr>
         <td>
-          180
+          188
         </td>
         <td>
-          1301
+          1258
         </td>
         <td>
-          5106
+          5234
           -
-          5112
+          5240
         </td>
         <td>
           Apply
@@ -2876,15 +3004,15 @@
         </td>
       </tr><tr>
         <td>
-          180
+          188
         </td>
         <td>
-          1302
+          1259
         </td>
         <td>
-          5106
+          5234
           -
-          5112
+          5240
         </td>
         <td>
           Apply
@@ -2900,15 +3028,15 @@
         </td>
       </tr><tr>
         <td>
-          195
+          203
         </td>
         <td>
-          1306
+          1263
         </td>
         <td>
-          5434
+          5562
           -
-          5437
+          5565
         </td>
         <td>
           Select
@@ -2924,15 +3052,15 @@
         </td>
       </tr><tr>
         <td>
-          195
+          203
         </td>
         <td>
-          1307
+          1264
         </td>
         <td>
-          5416
+          5544
           -
-          5438
+          5566
         </td>
         <td>
           Apply
@@ -2948,15 +3076,15 @@
         </td>
       </tr><tr>
         <td>
-          197
+          205
         </td>
         <td>
-          1308
+          1265
         </td>
         <td>
-          5515
+          5643
           -
-          5518
+          5646
         </td>
         <td>
           Select
@@ -2972,15 +3100,15 @@
         </td>
       </tr><tr>
         <td>
-          228
+          236
         </td>
         <td>
-          1318
+          1275
         </td>
         <td>
-          6481
+          6609
           -
-          6492
+          6620
         </td>
         <td>
           Apply
@@ -2996,15 +3124,15 @@
         </td>
       </tr><tr>
         <td>
-          259
+          267
         </td>
         <td>
-          1326
+          1283
         </td>
         <td>
-          7316
+          7444
           -
-          7317
+          7445
         </td>
         <td>
           Select
@@ -3020,15 +3148,15 @@
         </td>
       </tr><tr>
         <td>
-          259
+          267
         </td>
         <td>
-          1327
+          1284
         </td>
         <td>
-          7311
+          7439
           -
-          7318
+          7446
         </td>
         <td>
           Apply
@@ -3044,15 +3172,15 @@
         </td>
       </tr><tr>
         <td>
-          261
+          269
         </td>
         <td>
-          1328
+          1285
         </td>
         <td>
-          7356
+          7484
           -
-          7357
+          7485
         </td>
         <td>
           Select
@@ -3068,15 +3196,15 @@
         </td>
       </tr><tr>
         <td>
-          261
+          269
         </td>
         <td>
-          1329
+          1286
         </td>
         <td>
-          7349
+          7477
           -
-          7358
+          7486
         </td>
         <td>
           Apply
@@ -3092,15 +3220,15 @@
         </td>
       </tr><tr>
         <td>
-          281
+          289
         </td>
         <td>
-          1338
+          1295
         </td>
         <td>
-          7815
+          7943
           -
-          7821
+          7949
         </td>
         <td>
           Select
@@ -3116,15 +3244,15 @@
         </td>
       </tr><tr>
         <td>
-          281
+          289
         </td>
         <td>
-          1339
+          1296
         </td>
         <td>
-          7815
+          7943
           -
-          7830
+          7958
         </td>
         <td>
           Select
@@ -3140,15 +3268,15 @@
         </td>
       </tr><tr>
         <td>
-          281
+          289
         </td>
         <td>
-          1340
+          1297
         </td>
         <td>
-          7815
+          7943
           -
-          7837
+          7965
         </td>
         <td>
           Select
