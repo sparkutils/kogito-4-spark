@@ -93,7 +93,7 @@ object ContextInterfaces {
       }
     case ArrayType(typ, _) =>
       val entryAccessor = forType(typ, dmnConfiguration)
-      nullAtOr{ (path: Any, i: Int) =>
+      (path: Any, i: Int) => {
         val ar = {
           if (i == -1)
             path.asInstanceOf[ArrayData]
@@ -105,7 +105,7 @@ object ContextInterfaces {
     case MapType(k, v, _) => {
       val kAccessor = forType(k, dmnConfiguration)
       val vAccessor = forType(v, dmnConfiguration)
-      nullAtOr{ (path: Any, i: Int) =>
+      (path: Any, i: Int) => {
         val m =
           if (i == -1)
             path.asInstanceOf[MapData]
