@@ -155,7 +155,7 @@
     </profiles>
 
     <properties>
-        <revision>0.0.1-RC22-SNAPSHOT</revision>
+        <revision>0.0.1-RC22</revision>
 
         <mavenFlattenPluginVersion>1.2.7</mavenFlattenPluginVersion>
         <mavenProjectInfoReportsPluginVersion>3.4.5</mavenProjectInfoReportsPluginVersion>
