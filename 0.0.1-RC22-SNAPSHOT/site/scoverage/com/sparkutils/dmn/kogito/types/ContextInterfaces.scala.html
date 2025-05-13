@@ -24,13 +24,13 @@
           <div class="tab-pane active" id="codegrid">
             <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package com.sparkutils.dmn.kogito.types
 </span>2 <span style=''>
-</span>3 <span style=''>import com.sparkutils.dmn.kogito.types.Utils.{exprCode, exprCodeInterim, exprCodeIsNullAt}
+</span>3 <span style=''>import com.sparkutils.dmn.kogito.types.Utils.{exprCode, exprCodeInterim, exprCodeIsNullAt, nullOr}
 </span>4 <span style=''>import com.sparkutils.dmn.{DMNContextPath, DMNContextProvider, DMNException, UnaryDMNContextProvider}
 </span>5 <span style=''>import org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper
 </span>6 <span style=''>import org.apache.spark.sql.catalyst.expressions.codegen.{CodeGenerator, CodegenContext, ExprCode}
 </span>7 <span style=''>import org.apache.spark.sql.catalyst.expressions.{Expression, SpecializedGetters}
 </span>8 <span style=''>import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
-</span>9 <span style=''>import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DataType, DateType, DecimalType, DoubleType, FloatType, IntegerType, LongType, MapType, ShortType, StringType, StructType, TimestampNTZType, TimestampType}
+</span>9 <span style=''>import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DataType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, MapType, ShortType, StringType, StructType, TimestampNTZType, TimestampType}
 </span>10 <span style=''>
 </span>11 <span style=''>import java.time.{LocalDate, LocalDateTime}
 </span>12 <span style=''>import scala.collection.JavaConverters._
@@ -109,11 +109,11 @@
 </span>85 <span style=''></span><span style='background: #AEF1AE'>      (path: SpecializedGetters, i: Int) =&gt;
 </span>86 <span style=''></span><span style='background: #AEF1AE'>        DateTimeUtils.microsToLocalDateTime( path.getLong(i) )
 </span>87 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
-</span>88 <span style=''>    case _: DecimalType =&gt; </span><span style='background: #AEF1AE'>(path: Any, i: Int) =&gt;
-</span>89 <span style=''></span><span style='background: #AEF1AE'>      // max needed as Spark's past 3.4 move everything to max anyway, 1.0 comes back as 1.0 instead of 2016...
-</span>90 <span style=''></span><span style='background: #AEF1AE'>      if (path == null) </span><span style='background: #F0ADAD'>null</span><span style='background: #AEF1AE'> else {
-</span>91 <span style=''></span><span style='background: #AEF1AE'>        val t = path.asInstanceOf[SpecializedGetters].getDecimal(i, DecimalType.MAX_PRECISION, DecimalType.DEFAULT_SCALE)
-</span>92 <span style=''></span><span style='background: #AEF1AE'>        if (t == null) null else t.toJavaBigDecimal
+</span>88 <span style=''>    case _: DecimalType =&gt; // max needed as Spark's past 3.4 move everything to max anyway, 1.0 comes back as 1.0 instead of 2016...
+</span>89 <span style=''>      </span><span style='background: #AEF1AE'>nullAtOr{
+</span>90 <span style=''></span><span style='background: #AEF1AE'>        (path: SpecializedGetters, i: Int) =&gt;
+</span>91 <span style=''></span><span style='background: #AEF1AE'>        val t = path.getDecimal(i, DecimalType.MAX_PRECISION, DecimalType.DEFAULT_SCALE)
+</span>92 <span style=''></span><span style='background: #AEF1AE'>        nullOr((_: Decimal).toJavaBigDecimal)(t)
 </span>93 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
 </span>94 <span style=''>    case ArrayType(typ, _) </span><span style='background: #AEF1AE'>=&gt;
 </span>95 <span style=''></span><span style='background: #AEF1AE'>      val entryAccessor = forType(typ, dmnConfiguration)
@@ -124,7 +124,7 @@
 </span>100 <span style=''></span><span style='background: #AEF1AE'>          else
 </span>101 <span style=''></span><span style='background: #AEF1AE'>            path.asInstanceOf[SpecializedGetters].getArray(i)
 </span>102 <span style=''></span><span style='background: #AEF1AE'>        }
-</span>103 <span style=''></span><span style='background: #AEF1AE'>        if (ar == null) null else arrayOfType(entryAccessor, ar).asJava
+</span>103 <span style=''></span><span style='background: #AEF1AE'>        nullOr((ar: ArrayData) =&gt; arrayOfType(entryAccessor, ar).asJava)(ar)
 </span>104 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
 </span>105 <span style=''>    case MapType(k, v, _) =&gt; </span><span style='background: #AEF1AE'>{
 </span>106 <span style=''></span><span style='background: #AEF1AE'>      val kAccessor = forType(k, dmnConfiguration)
@@ -136,11 +136,11 @@
 </span>112 <span style=''></span><span style='background: #AEF1AE'>          else
 </span>113 <span style=''></span><span style='background: #AEF1AE'>            path.asInstanceOf[SpecializedGetters].getMap(i)
 </span>114 <span style=''></span><span style='background: #AEF1AE'>
-</span>115 <span style=''></span><span style='background: #AEF1AE'>        if (m == null) null else {
+</span>115 <span style=''></span><span style='background: #AEF1AE'>        nullOr{(m: MapData) =&gt;
 </span>116 <span style=''></span><span style='background: #AEF1AE'>          val ka = arrayOfType(kAccessor, m.keyArray())
 </span>117 <span style=''></span><span style='background: #AEF1AE'>          val va = arrayOfType(vAccessor, m.valueArray())
 </span>118 <span style=''></span><span style='background: #AEF1AE'>          (ka zip va).toMap.asJava
-</span>119 <span style=''></span><span style='background: #AEF1AE'>        }
+</span>119 <span style=''></span><span style='background: #AEF1AE'>        }(m)
 </span>120 <span style=''></span><span style='background: #AEF1AE'>      }
 </span>121 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
 </span>122 <span style=''>    case _ =&gt; </span><span style='background: #AEF1AE'>throw new DMNException(s&quot;Could not load Kogito Context Accessor for dataType $dataType&quot;)</span><span style=''>
@@ -449,9 +449,9 @@
           517
         </td>
         <td>
-          1193
+          1210
           -
-          1242
+          1259
         </td>
         <td>
           Apply
@@ -473,9 +473,9 @@
           518
         </td>
         <td>
-          1252
+          1269
           -
-          1256
+          1273
         </td>
         <td>
           Literal
@@ -497,9 +497,9 @@
           519
         </td>
         <td>
-          1252
+          1269
           -
-          1256
+          1273
         </td>
         <td>
           Block
@@ -521,9 +521,9 @@
           520
         </td>
         <td>
-          1279
+          1296
           -
-          1316
+          1333
         </td>
         <td>
           TypeApply
@@ -545,9 +545,9 @@
           521
         </td>
         <td>
-          1276
+          1293
           -
-          1320
+          1337
         </td>
         <td>
           Apply
@@ -569,9 +569,9 @@
           522
         </td>
         <td>
-          1276
+          1293
           -
-          1320
+          1337
         </td>
         <td>
           Block
@@ -593,9 +593,9 @@
           544
         </td>
         <td>
-          1513
+          1530
           -
-          1897
+          1914
         </td>
         <td>
           Block
@@ -629,9 +629,9 @@
           523
         </td>
         <td>
-          1537
-          -
           1554
+          -
+          1571
         </td>
         <td>
           Select
@@ -653,9 +653,9 @@
           524
         </td>
         <td>
-          1555
+          1572
           -
-          1555
+          1572
         </td>
         <td>
           ApplyToImplicitArgs
@@ -677,9 +677,9 @@
           525
         </td>
         <td>
-          1537
+          1554
           -
-          1567
+          1584
         </td>
         <td>
           ApplyToImplicitArgs
@@ -701,9 +701,9 @@
           526
         </td>
         <td>
-          1590
+          1607
           -
-          1596
+          1613
         </td>
         <td>
           Select
@@ -725,9 +725,9 @@
           527
         </td>
         <td>
-          1610
+          1627
           -
-          1620
+          1637
         </td>
         <td>
           Select
@@ -749,9 +749,9 @@
           528
         </td>
         <td>
-          1602
+          1619
           -
-          1639
+          1656
         </td>
         <td>
           Apply
@@ -773,9 +773,9 @@
           529
         </td>
         <td>
-          1598
+          1615
           -
-          1640
+          1657
         </td>
         <td>
           Apply
@@ -797,9 +797,9 @@
           530
         </td>
         <td>
-          1589
+          1606
           -
-          1641
+          1658
         </td>
         <td>
           Apply
@@ -821,9 +821,9 @@
           531
         </td>
         <td>
-          1589
+          1606
           -
-          1641
+          1658
         </td>
         <td>
           Block
@@ -845,9 +845,9 @@
           532
         </td>
         <td>
-          1572
+          1589
           -
-          1572
+          1589
         </td>
         <td>
           ApplyToImplicitArgs
@@ -869,9 +869,9 @@
           533
         </td>
         <td>
-          1537
+          1554
           -
-          1643
+          1660
         </td>
         <td>
           ApplyToImplicitArgs
@@ -895,9 +895,9 @@
           534
         </td>
         <td>
-          1644
+          1661
           -
-          1644
+          1661
         </td>
         <td>
           TypeApply
@@ -919,9 +919,9 @@
           535
         </td>
         <td>
-          1537
+          1554
           -
-          1649
+          1666
         </td>
         <td>
           ApplyToImplicitArgs
@@ -945,9 +945,9 @@
           536
         </td>
         <td>
-          1530
+          1547
           -
-          1650
+          1667
         </td>
         <td>
           Apply
@@ -971,9 +971,9 @@
           537
         </td>
         <td>
-          1699
+          1716
           -
-          1736
+          1753
         </td>
         <td>
           TypeApply
@@ -995,9 +995,9 @@
           538
         </td>
         <td>
-          1771
+          1788
           -
-          1778
+          1795
         </td>
         <td>
           Apply
@@ -1019,9 +1019,9 @@
           539
         </td>
         <td>
-          1792
+          1809
           -
-          1793
+          1810
         </td>
         <td>
           Ident
@@ -1043,9 +1043,9 @@
           540
         </td>
         <td>
-          1836
+          1853
           -
-          1860
+          1877
         </td>
         <td>
           Select
@@ -1067,9 +1067,9 @@
           541
         </td>
         <td>
-          1821
+          1838
           -
-          1861
+          1878
         </td>
         <td>
           Apply
@@ -1091,9 +1091,9 @@
           542
         </td>
         <td>
-          1821
+          1838
           -
-          1861
+          1878
         </td>
         <td>
           Block
@@ -1115,9 +1115,9 @@
           543
         </td>
         <td>
-          1870
+          1887
           -
-          1889
+          1906
         </td>
         <td>
           Apply
@@ -1139,9 +1139,9 @@
           546
         </td>
         <td>
-          1921
+          1938
           -
-          2020
+          2037
         </td>
         <td>
           Apply
@@ -1163,9 +1163,9 @@
           547
         </td>
         <td>
-          1921
+          1938
           -
-          2020
+          2037
         </td>
         <td>
           Block
@@ -1187,9 +1187,9 @@
           545
         </td>
         <td>
-          1984
+          2001
           -
-          2014
+          2031
         </td>
         <td>
           Apply
@@ -1211,9 +1211,9 @@
           549
         </td>
         <td>
-          2045
+          2062
           -
-          2128
+          2145
         </td>
         <td>
           Apply
@@ -1235,9 +1235,9 @@
           550
         </td>
         <td>
-          2045
+          2062
           -
-          2128
+          2145
         </td>
         <td>
           Block
@@ -1259,9 +1259,9 @@
           548
         </td>
         <td>
-          2108
+          2125
           -
-          2122
+          2139
         </td>
         <td>
           Apply
@@ -1283,9 +1283,9 @@
           552
         </td>
         <td>
-          2150
+          2167
           -
-          2234
+          2251
         </td>
         <td>
           Apply
@@ -1307,9 +1307,9 @@
           553
         </td>
         <td>
-          2150
+          2167
           -
-          2234
+          2251
         </td>
         <td>
           Block
@@ -1331,9 +1331,9 @@
           551
         </td>
         <td>
-          2213
+          2230
           -
-          2228
+          2245
         </td>
         <td>
           Apply
@@ -1355,9 +1355,9 @@
           555
         </td>
         <td>
-          2258
+          2275
           -
-          2345
+          2362
         </td>
         <td>
           Apply
@@ -1379,9 +1379,9 @@
           556
         </td>
         <td>
-          2258
+          2275
           -
-          2345
+          2362
         </td>
         <td>
           Block
@@ -1403,9 +1403,9 @@
           554
         </td>
         <td>
-          2321
+          2338
           -
-          2339
+          2356
         </td>
         <td>
           Apply
@@ -1427,9 +1427,9 @@
           558
         </td>
         <td>
-          2369
+          2386
           -
-          2455
+          2472
         </td>
         <td>
           Apply
@@ -1451,9 +1451,9 @@
           559
         </td>
         <td>
-          2369
+          2386
           -
-          2455
+          2472
         </td>
         <td>
           Block
@@ -1475,9 +1475,9 @@
           557
         </td>
         <td>
-          2432
-          -
           2449
+          -
+          2466
         </td>
         <td>
           Apply
@@ -1499,9 +1499,9 @@
           561
         </td>
         <td>
-          2477
+          2494
           -
-          2562
+          2579
         </td>
         <td>
           Apply
@@ -1523,9 +1523,9 @@
           562
         </td>
         <td>
-          2477
+          2494
           -
-          2562
+          2579
         </td>
         <td>
           Block
@@ -1547,9 +1547,9 @@
           560
         </td>
         <td>
-          2540
+          2557
           -
-          2556
+          2573
         </td>
         <td>
           Apply
@@ -1571,9 +1571,9 @@
           564
         </td>
         <td>
-          2586
+          2603
           -
-          2672
+          2689
         </td>
         <td>
           Apply
@@ -1595,9 +1595,9 @@
           565
         </td>
         <td>
-          2586
+          2603
           -
-          2672
+          2689
         </td>
         <td>
           Block
@@ -1619,9 +1619,9 @@
           563
         </td>
         <td>
-          2649
-          -
           2666
+          -
+          2683
         </td>
         <td>
           Apply
@@ -1643,9 +1643,9 @@
           567
         </td>
         <td>
-          2694
+          2711
           -
-          2778
+          2795
         </td>
         <td>
           Apply
@@ -1667,9 +1667,9 @@
           568
         </td>
         <td>
-          2694
+          2711
           -
-          2778
+          2795
         </td>
         <td>
           Block
@@ -1691,9 +1691,9 @@
           566
         </td>
         <td>
-          2757
+          2774
           -
-          2772
+          2789
         </td>
         <td>
           Apply
@@ -1715,9 +1715,9 @@
           570
         </td>
         <td>
-          2801
+          2818
           -
-          2886
+          2903
         </td>
         <td>
           Apply
@@ -1739,9 +1739,9 @@
           571
         </td>
         <td>
-          2801
+          2818
           -
-          2886
+          2903
         </td>
         <td>
           Block
@@ -1763,9 +1763,9 @@
           569
         </td>
         <td>
-          2864
+          2881
           -
-          2880
+          2897
         </td>
         <td>
           Apply
@@ -1787,9 +1787,9 @@
           574
         </td>
         <td>
-          2908
+          2925
           -
-          3023
+          3040
         </td>
         <td>
           Apply
@@ -1811,9 +1811,9 @@
           575
         </td>
         <td>
-          2908
+          2925
           -
-          3023
+          3040
         </td>
         <td>
           Block
@@ -1835,9 +1835,9 @@
           572
         </td>
         <td>
-          3001
+          3018
           -
-          3015
+          3032
         </td>
         <td>
           Apply
@@ -1859,9 +1859,9 @@
           573
         </td>
         <td>
-          2970
+          2987
           -
-          3017
+          3034
         </td>
         <td>
           Apply
@@ -1883,9 +1883,9 @@
           578
         </td>
         <td>
-          3069
+          3086
           -
-          3191
+          3208
         </td>
         <td>
           Apply
@@ -1907,9 +1907,9 @@
           579
         </td>
         <td>
-          3069
+          3086
           -
-          3191
+          3208
         </td>
         <td>
           Block
@@ -1931,9 +1931,9 @@
           576
         </td>
         <td>
-          3168
+          3185
           -
-          3183
+          3200
         </td>
         <td>
           Apply
@@ -1955,9 +1955,9 @@
           577
         </td>
         <td>
-          3131
+          3148
           -
-          3185
+          3202
         </td>
         <td>
           Apply
@@ -1973,174 +1973,93 @@
         </td>
       </tr><tr>
         <td>
-          88
-        </td>
-        <td>
-          592
-        </td>
-        <td>
-          3219
-          -
-          3571
-        </td>
-        <td>
-          Function
-        </td>
-        <td>
-          com.sparkutils.dmn.kogito.types.ContextInterfaces.$anonfun
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          ((path: Any, i: Int) =&gt; if (path.==(null))
-  null
-else
-  {
-    val t: org.apache.spark.sql.types.Decimal = path.asInstanceOf[org.apache.spark.sql.catalyst.expressions.SpecializedGetters].getDecimal(i, org.apache.spark.sql.types.DecimalType.MAX_PRECISION, org.apache.spark.sql.types.DecimalType.DEFAULT_SCALE);
-    if (t.==(null))
-      null
-    else
-      t.toJavaBigDecimal
-  })
-        </td>
-      </tr><tr>
-        <td>
-          90
-        </td>
-        <td>
-          580
-        </td>
-        <td>
-          3364
-          -
-          3376
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          scala.Any.==
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          path.==(null)
-        </td>
-      </tr><tr>
-        <td>
-          90
-        </td>
-        <td>
-          581
-        </td>
-        <td>
-          3378
-          -
-          3382
-        </td>
-        <td>
-          Literal
-        </td>
-        <td>
-          &lt;nosymbol&gt;
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          null
-        </td>
-      </tr><tr>
-        <td>
-          90
-        </td>
-        <td>
-          582
-        </td>
-        <td>
-          3378
-          -
-          3382
-        </td>
-        <td>
-          Block
-        </td>
-        <td>
-          &lt;nosymbol&gt;
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #F0ADAD">
-          null
-        </td>
-      </tr><tr>
-        <td>
-          90
-        </td>
-        <td>
-          591
-        </td>
-        <td>
-          3388
-          -
-          3571
-        </td>
-        <td>
-          Block
-        </td>
-        <td>
-          &lt;nosymbol&gt;
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          {
-  val t: org.apache.spark.sql.types.Decimal = path.asInstanceOf[org.apache.spark.sql.catalyst.expressions.SpecializedGetters].getDecimal(i, org.apache.spark.sql.types.DecimalType.MAX_PRECISION, org.apache.spark.sql.types.DecimalType.DEFAULT_SCALE);
-  if (t.==(null))
-    null
-  else
-    t.toJavaBigDecimal
-}
-        </td>
-      </tr><tr>
-        <td>
-          91
-        </td>
-        <td>
-          583
-        </td>
-        <td>
-          3458
-          -
-          3483
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          org.apache.spark.sql.types.DecimalType.MAX_PRECISION
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          org.apache.spark.sql.types.DecimalType.MAX_PRECISION
-        </td>
-      </tr><tr>
-        <td>
-          91
+          89
         </td>
         <td>
           584
         </td>
         <td>
-          3485
+          3348
           -
-          3510
+          3549
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ContextInterfaces.nullAtOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ContextInterfaces.this.nullAtOr(((path: org.apache.spark.sql.catalyst.expressions.SpecializedGetters, i: Int) =&gt; {
+  val t: org.apache.spark.sql.types.Decimal = path.getDecimal(i, org.apache.spark.sql.types.DecimalType.MAX_PRECISION, org.apache.spark.sql.types.DecimalType.DEFAULT_SCALE);
+  com.sparkutils.dmn.kogito.types.Utils.nullOr[org.apache.spark.sql.types.Decimal, AnyRef](((x$1: org.apache.spark.sql.types.Decimal) =&gt; (x$1: org.apache.spark.sql.types.Decimal).toJavaBigDecimal)).apply(t)
+}))
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          585
+        </td>
+        <td>
+          3348
+          -
+          3549
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ContextInterfaces.nullAtOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ContextInterfaces.this.nullAtOr(((path: org.apache.spark.sql.catalyst.expressions.SpecializedGetters, i: Int) =&gt; {
+  val t: org.apache.spark.sql.types.Decimal = path.getDecimal(i, org.apache.spark.sql.types.DecimalType.MAX_PRECISION, org.apache.spark.sql.types.DecimalType.DEFAULT_SCALE);
+  com.sparkutils.dmn.kogito.types.Utils.nullOr[org.apache.spark.sql.types.Decimal, AnyRef](((x$1: org.apache.spark.sql.types.Decimal) =&gt; (x$1: org.apache.spark.sql.types.Decimal).toJavaBigDecimal)).apply(t)
+}))
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          580
+        </td>
+        <td>
+          3439
+          -
+          3464
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.types.DecimalType.MAX_PRECISION
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.types.DecimalType.MAX_PRECISION
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          581
+        </td>
+        <td>
+          3466
+          -
+          3491
         </td>
         <td>
           Select
@@ -2159,12 +2078,12 @@ else
           91
         </td>
         <td>
-          585
+          582
         </td>
         <td>
-          3406
+          3420
           -
-          3511
+          3492
         </td>
         <td>
           Apply
@@ -2176,139 +2095,43 @@ else
           
         </td>
         <td style="background: #AEF1AE">
-          path.asInstanceOf[org.apache.spark.sql.catalyst.expressions.SpecializedGetters].getDecimal(i, org.apache.spark.sql.types.DecimalType.MAX_PRECISION, org.apache.spark.sql.types.DecimalType.DEFAULT_SCALE)
+          path.getDecimal(i, org.apache.spark.sql.types.DecimalType.MAX_PRECISION, org.apache.spark.sql.types.DecimalType.DEFAULT_SCALE)
         </td>
       </tr><tr>
         <td>
           92
         </td>
         <td>
-          586
+          583
         </td>
         <td>
-          3524
+          3501
           -
-          3533
+          3541
         </td>
         <td>
           Apply
         </td>
         <td>
-          java.lang.Object.==
+          scala.Function1.apply
         </td>
         <td>
           
         </td>
         <td style="background: #AEF1AE">
-          t.==(null)
-        </td>
-      </tr><tr>
-        <td>
-          92
-        </td>
-        <td>
-          587
-        </td>
-        <td>
-          3535
-          -
-          3539
-        </td>
-        <td>
-          Literal
-        </td>
-        <td>
-          &lt;nosymbol&gt;
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          null
-        </td>
-      </tr><tr>
-        <td>
-          92
-        </td>
-        <td>
-          588
-        </td>
-        <td>
-          3535
-          -
-          3539
-        </td>
-        <td>
-          Block
-        </td>
-        <td>
-          &lt;nosymbol&gt;
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          null
-        </td>
-      </tr><tr>
-        <td>
-          92
-        </td>
-        <td>
-          589
-        </td>
-        <td>
-          3545
-          -
-          3563
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          org.apache.spark.sql.types.Decimal.toJavaBigDecimal
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          t.toJavaBigDecimal
-        </td>
-      </tr><tr>
-        <td>
-          92
-        </td>
-        <td>
-          590
-        </td>
-        <td>
-          3545
-          -
-          3563
-        </td>
-        <td>
-          Block
-        </td>
-        <td>
-          org.apache.spark.sql.types.Decimal.toJavaBigDecimal
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          t.toJavaBigDecimal
+          com.sparkutils.dmn.kogito.types.Utils.nullOr[org.apache.spark.sql.types.Decimal, AnyRef](((x$1: org.apache.spark.sql.types.Decimal) =&gt; (x$1: org.apache.spark.sql.types.Decimal).toJavaBigDecimal)).apply(t)
         </td>
       </tr><tr>
         <td>
           94
         </td>
         <td>
-          605
+          593
         </td>
         <td>
-          3599
+          3577
           -
-          3939
+          3922
         </td>
         <td>
           Block
@@ -2327,10 +2150,7 @@ else
       path.asInstanceOf[org.apache.spark.sql.catalyst.util.ArrayData]
     else
       path.asInstanceOf[org.apache.spark.sql.catalyst.expressions.SpecializedGetters].getArray(i);
-    if (ar.==(null))
-      null
-    else
-      scala.collection.JavaConverters.seqAsJavaListConverter[Any](ContextInterfaces.this.arrayOfType(entryAccessor, ar)).asJava
+    com.sparkutils.dmn.kogito.types.Utils.nullOr[org.apache.spark.sql.catalyst.util.ArrayData, AnyRef](((ar: org.apache.spark.sql.catalyst.util.ArrayData) =&gt; scala.collection.JavaConverters.seqAsJavaListConverter[Any](ContextInterfaces.this.arrayOfType(entryAccessor, ar)).asJava)).apply(ar)
   })
 }
         </td>
@@ -2339,12 +2159,12 @@ else
           95
         </td>
         <td>
-          593
+          586
         </td>
         <td>
-          3628
+          3606
           -
-          3658
+          3636
         </td>
         <td>
           Apply
@@ -2363,12 +2183,12 @@ else
           98
         </td>
         <td>
-          594
+          587
         </td>
         <td>
-          3723
+          3701
           -
-          3730
+          3708
         </td>
         <td>
           Apply
@@ -2387,12 +2207,12 @@ else
           99
         </td>
         <td>
-          595
+          588
         </td>
         <td>
-          3744
+          3722
           -
-          3772
+          3750
         </td>
         <td>
           TypeApply
@@ -2411,12 +2231,12 @@ else
           99
         </td>
         <td>
-          596
+          589
         </td>
         <td>
-          3744
+          3722
           -
-          3772
+          3750
         </td>
         <td>
           Block
@@ -2435,12 +2255,12 @@ else
           101
         </td>
         <td>
-          597
+          590
         </td>
         <td>
-          3800
+          3778
           -
-          3849
+          3827
         </td>
         <td>
           Apply
@@ -2459,12 +2279,12 @@ else
           101
         </td>
         <td>
-          598
+          591
         </td>
         <td>
-          3800
+          3778
           -
-          3849
+          3827
         </td>
         <td>
           Block
@@ -2483,156 +2303,36 @@ else
           103
         </td>
         <td>
-          599
+          592
         </td>
         <td>
-          3872
+          3846
           -
-          3882
+          3914
         </td>
         <td>
           Apply
         </td>
         <td>
-          java.lang.Object.==
+          scala.Function1.apply
         </td>
         <td>
           
         </td>
         <td style="background: #AEF1AE">
-          ar.==(null)
-        </td>
-      </tr><tr>
-        <td>
-          103
-        </td>
-        <td>
-          600
-        </td>
-        <td>
-          3884
-          -
-          3888
-        </td>
-        <td>
-          Literal
-        </td>
-        <td>
-          &lt;nosymbol&gt;
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          null
-        </td>
-      </tr><tr>
-        <td>
-          103
-        </td>
-        <td>
-          601
-        </td>
-        <td>
-          3884
-          -
-          3888
-        </td>
-        <td>
-          Block
-        </td>
-        <td>
-          &lt;nosymbol&gt;
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          null
-        </td>
-      </tr><tr>
-        <td>
-          103
-        </td>
-        <td>
-          602
-        </td>
-        <td>
-          3894
-          -
-          3924
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          com.sparkutils.dmn.kogito.types.ContextInterfaces.arrayOfType
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          ContextInterfaces.this.arrayOfType(entryAccessor, ar)
-        </td>
-      </tr><tr>
-        <td>
-          103
-        </td>
-        <td>
-          603
-        </td>
-        <td>
-          3894
-          -
-          3931
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          scala.collection.convert.Decorators.AsJava.asJava
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          scala.collection.JavaConverters.seqAsJavaListConverter[Any](ContextInterfaces.this.arrayOfType(entryAccessor, ar)).asJava
-        </td>
-      </tr><tr>
-        <td>
-          103
-        </td>
-        <td>
-          604
-        </td>
-        <td>
-          3894
-          -
-          3931
-        </td>
-        <td>
-          Block
-        </td>
-        <td>
-          scala.collection.convert.Decorators.AsJava.asJava
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          scala.collection.JavaConverters.seqAsJavaListConverter[Any](ContextInterfaces.this.arrayOfType(entryAccessor, ar)).asJava
+          com.sparkutils.dmn.kogito.types.Utils.nullOr[org.apache.spark.sql.catalyst.util.ArrayData, AnyRef](((ar: org.apache.spark.sql.catalyst.util.ArrayData) =&gt; scala.collection.JavaConverters.seqAsJavaListConverter[Any](ContextInterfaces.this.arrayOfType(entryAccessor, ar)).asJava)).apply(ar)
         </td>
       </tr><tr>
         <td>
           105
         </td>
         <td>
-          625
+          602
         </td>
         <td>
-          3969
+          3952
           -
-          4465
+          4447
         </td>
         <td>
           Block
@@ -2652,14 +2352,11 @@ else
       path.asInstanceOf[org.apache.spark.sql.catalyst.util.MapData]
     else
       path.asInstanceOf[org.apache.spark.sql.catalyst.expressions.SpecializedGetters].getMap(i);
-    if (m.==(null))
-      null
-    else
-      {
-        val ka: scala.collection.immutable.IndexedSeq[Any] = ContextInterfaces.this.arrayOfType(kAccessor, m.keyArray());
-        val va: scala.collection.immutable.IndexedSeq[Any] = ContextInterfaces.this.arrayOfType(vAccessor, m.valueArray());
-        scala.collection.JavaConverters.mapAsJavaMapConverter[Any, Any](ka.zip[Any, Any, scala.collection.immutable.IndexedSeq[(Any, Any)]](va)(immutable.this.IndexedSeq.canBuildFrom[(Any, Any)]).toMap[Any, Any](scala.Predef.$conforms[(Any, Any)])).asJava
-      }
+    com.sparkutils.dmn.kogito.types.Utils.nullOr[org.apache.spark.sql.catalyst.util.MapData, AnyRef](((m: org.apache.spark.sql.catalyst.util.MapData) =&gt; {
+  val ka: scala.collection.immutable.IndexedSeq[Any] = ContextInterfaces.this.arrayOfType(kAccessor, m.keyArray());
+  val va: scala.collection.immutable.IndexedSeq[Any] = ContextInterfaces.this.arrayOfType(vAccessor, m.valueArray());
+  scala.collection.JavaConverters.mapAsJavaMapConverter[Any, Any](ka.zip[Any, Any, scala.collection.immutable.IndexedSeq[(Any, Any)]](va)(immutable.this.IndexedSeq.canBuildFrom[(Any, Any)]).toMap[Any, Any](scala.Predef.$conforms[(Any, Any)])).asJava
+})).apply(m)
   })
 }
         </td>
@@ -2668,12 +2365,12 @@ else
           106
         </td>
         <td>
-          606
+          594
         </td>
         <td>
-          3993
+          3976
           -
-          4021
+          4004
         </td>
         <td>
           Apply
@@ -2692,12 +2389,12 @@ else
           107
         </td>
         <td>
-          607
+          595
         </td>
         <td>
-          4044
+          4027
           -
-          4072
+          4055
         </td>
         <td>
           Apply
@@ -2716,12 +2413,12 @@ else
           110
         </td>
         <td>
-          608
+          596
         </td>
         <td>
-          4134
+          4117
           -
-          4141
+          4124
         </td>
         <td>
           Apply
@@ -2740,12 +2437,12 @@ else
           111
         </td>
         <td>
-          609
+          597
         </td>
         <td>
-          4155
+          4138
           -
-          4181
+          4164
         </td>
         <td>
           TypeApply
@@ -2764,12 +2461,12 @@ else
           111
         </td>
         <td>
-          610
+          598
         </td>
         <td>
-          4155
+          4138
           -
-          4181
+          4164
         </td>
         <td>
           Block
@@ -2788,12 +2485,12 @@ else
           113
         </td>
         <td>
-          611
+          599
         </td>
         <td>
-          4209
+          4192
           -
-          4256
+          4239
         </td>
         <td>
           Apply
@@ -2812,12 +2509,12 @@ else
           113
         </td>
         <td>
-          612
+          600
         </td>
         <td>
-          4209
+          4192
           -
-          4256
+          4239
         </td>
         <td>
           Block
@@ -2833,307 +2530,43 @@ else
         </td>
       </tr><tr>
         <td>
-          115
+          119
         </td>
         <td>
-          613
+          601
         </td>
         <td>
-          4270
+          4249
           -
-          4279
+          4433
         </td>
         <td>
           Apply
         </td>
         <td>
-          java.lang.Object.==
+          scala.Function1.apply
         </td>
         <td>
           
         </td>
         <td style="background: #AEF1AE">
-          m.==(null)
-        </td>
-      </tr><tr>
-        <td>
-          115
-        </td>
-        <td>
-          614
-        </td>
-        <td>
-          4281
-          -
-          4285
-        </td>
-        <td>
-          Literal
-        </td>
-        <td>
-          &lt;nosymbol&gt;
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          null
-        </td>
-      </tr><tr>
-        <td>
-          115
-        </td>
-        <td>
-          615
-        </td>
-        <td>
-          4281
-          -
-          4285
-        </td>
-        <td>
-          Block
-        </td>
-        <td>
-          &lt;nosymbol&gt;
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          null
-        </td>
-      </tr><tr>
-        <td>
-          115
-        </td>
-        <td>
-          624
-        </td>
-        <td>
-          4291
-          -
-          4451
-        </td>
-        <td>
-          Block
-        </td>
-        <td>
-          &lt;nosymbol&gt;
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          {
+          com.sparkutils.dmn.kogito.types.Utils.nullOr[org.apache.spark.sql.catalyst.util.MapData, AnyRef](((m: org.apache.spark.sql.catalyst.util.MapData) =&gt; {
   val ka: scala.collection.immutable.IndexedSeq[Any] = ContextInterfaces.this.arrayOfType(kAccessor, m.keyArray());
   val va: scala.collection.immutable.IndexedSeq[Any] = ContextInterfaces.this.arrayOfType(vAccessor, m.valueArray());
   scala.collection.JavaConverters.mapAsJavaMapConverter[Any, Any](ka.zip[Any, Any, scala.collection.immutable.IndexedSeq[(Any, Any)]](va)(immutable.this.IndexedSeq.canBuildFrom[(Any, Any)]).toMap[Any, Any](scala.Predef.$conforms[(Any, Any)])).asJava
-}
-        </td>
-      </tr><tr>
-        <td>
-          116
-        </td>
-        <td>
-          616
-        </td>
-        <td>
-          4335
-          -
-          4347
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          org.apache.spark.sql.catalyst.util.MapData.keyArray
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          m.keyArray()
-        </td>
-      </tr><tr>
-        <td>
-          116
-        </td>
-        <td>
-          617
-        </td>
-        <td>
-          4312
-          -
-          4348
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          com.sparkutils.dmn.kogito.types.ContextInterfaces.arrayOfType
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          ContextInterfaces.this.arrayOfType(kAccessor, m.keyArray())
-        </td>
-      </tr><tr>
-        <td>
-          117
-        </td>
-        <td>
-          618
-        </td>
-        <td>
-          4391
-          -
-          4405
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          org.apache.spark.sql.catalyst.util.MapData.valueArray
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          m.valueArray()
-        </td>
-      </tr><tr>
-        <td>
-          117
-        </td>
-        <td>
-          619
-        </td>
-        <td>
-          4368
-          -
-          4406
-        </td>
-        <td>
-          Apply
-        </td>
-        <td>
-          com.sparkutils.dmn.kogito.types.ContextInterfaces.arrayOfType
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          ContextInterfaces.this.arrayOfType(vAccessor, m.valueArray())
-        </td>
-      </tr><tr>
-        <td>
-          118
-        </td>
-        <td>
-          620
-        </td>
-        <td>
-          4421
-          -
-          4421
-        </td>
-        <td>
-          TypeApply
-        </td>
-        <td>
-          scala.collection.immutable.IndexedSeq.canBuildFrom
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          immutable.this.IndexedSeq.canBuildFrom[(Any, Any)]
-        </td>
-      </tr><tr>
-        <td>
-          118
-        </td>
-        <td>
-          621
-        </td>
-        <td>
-          4429
-          -
-          4429
-        </td>
-        <td>
-          TypeApply
-        </td>
-        <td>
-          scala.Predef.$conforms
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          scala.Predef.$conforms[(Any, Any)]
-        </td>
-      </tr><tr>
-        <td>
-          118
-        </td>
-        <td>
-          622
-        </td>
-        <td>
-          4417
-          -
-          4434
-        </td>
-        <td>
-          ApplyToImplicitArgs
-        </td>
-        <td>
-          scala.collection.TraversableOnce.toMap
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          ka.zip[Any, Any, scala.collection.immutable.IndexedSeq[(Any, Any)]](va)(immutable.this.IndexedSeq.canBuildFrom[(Any, Any)]).toMap[Any, Any](scala.Predef.$conforms[(Any, Any)])
-        </td>
-      </tr><tr>
-        <td>
-          118
-        </td>
-        <td>
-          623
-        </td>
-        <td>
-          4417
-          -
-          4441
-        </td>
-        <td>
-          Select
-        </td>
-        <td>
-          scala.collection.convert.Decorators.AsJava.asJava
-        </td>
-        <td>
-          
-        </td>
-        <td style="background: #AEF1AE">
-          scala.collection.JavaConverters.mapAsJavaMapConverter[Any, Any](ka.zip[Any, Any, scala.collection.immutable.IndexedSeq[(Any, Any)]](va)(immutable.this.IndexedSeq.canBuildFrom[(Any, Any)]).toMap[Any, Any](scala.Predef.$conforms[(Any, Any)])).asJava
+})).apply(m)
         </td>
       </tr><tr>
         <td>
           122
         </td>
         <td>
-          626
+          603
         </td>
         <td>
-          4480
+          4462
           -
-          4568
+          4550
         </td>
         <td>
           Throw
@@ -3152,12 +2585,12 @@ else
           122
         </td>
         <td>
-          627
+          604
         </td>
         <td>
-          4480
+          4462
           -
-          4568
+          4550
         </td>
         <td>
           Block
@@ -3176,12 +2609,12 @@ else
           137
         </td>
         <td>
-          665
+          642
         </td>
         <td>
-          5260
+          5242
           -
-          6233
+          6215
         </td>
         <td>
           Function
@@ -3195,11 +2628,11 @@ else
         <td style="background: #AEF1AE">
           ((ctx: org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, pathName: String, iName: String) =&gt; {
   val struct: String = ctx.freshName(&quot;struct&quot;);
-  &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$1: (org.apache.spark.sql.catalyst.expressions.codegen.ExprCode, String) = (ContextInterfaces.this.generateHashMap(ctx, structType, inCollection): (org.apache.spark.sql.catalyst.expressions.codegen.ExprCode, String) @unchecked) match {
+  &lt;synthetic&gt; &lt;artifact&gt; private[this] val x$2: (org.apache.spark.sql.catalyst.expressions.codegen.ExprCode, String) = (ContextInterfaces.this.generateHashMap(ctx, structType, inCollection): (org.apache.spark.sql.catalyst.expressions.codegen.ExprCode, String) @unchecked) match {
     case (_1: org.apache.spark.sql.catalyst.expressions.codegen.ExprCode, _2: String)(org.apache.spark.sql.catalyst.expressions.codegen.ExprCode, String)((theHash @ _), (vars @ _)) =&gt; scala.Tuple2.apply[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode, String](theHash, vars)
   };
-  val theHash: org.apache.spark.sql.catalyst.expressions.codegen.ExprCode = x$1._1;
-  val vars: String = x$1._2;
+  val theHash: org.apache.spark.sql.catalyst.expressions.codegen.ExprCode = x$2._1;
+  val vars: String = x$2._2;
   val expr: org.apache.spark.sql.catalyst.expressions.codegen.ExprCode = com.sparkutils.dmn.kogito.types.Utils.exprCode(classOf[java.util.Map], ctx);
   val setup: org.apache.spark.sql.catalyst.expressions.codegen.Block = scala.Predef.refArrayOps[(Int, org.apache.spark.sql.catalyst.expressions.codegen.ExprCode)](scala.Predef.refArrayOps[(org.apache.spark.sql.types.StructField, Int)](scala.Predef.refArrayOps[org.apache.spark.sql.types.StructField](structType.fields).zipWithIndex[org.apache.spark.sql.types.StructField, Array[(org.apache.spark.sql.types.StructField, Int)]](scala.this.Array.canBuildFrom[(org.apache.spark.sql.types.StructField, Int)]((ClassTag.apply[(org.apache.spark.sql.types.StructField, Int)](classOf[scala.Tuple2]): scala.reflect.ClassTag[(org.apache.spark.sql.types.StructField, Int)])))).map[(Int, org.apache.spark.sql.catalyst.expressions.codegen.ExprCode), Array[(Int, org.apache.spark.sql.catalyst.expressions.codegen.ExprCode)]](((x0$1: (org.apache.spark.sql.types.StructField, Int)) =&gt; x0$1 match {
   case (_1: org.apache.spark.sql.types.StructField, _2: Int)(org.apache.spark.sql.types.StructField, Int)((f @ _), (i @ _)) =&gt; scala.Tuple2.apply[Int, org.apache.spark.sql.catalyst.expressions.codegen.ExprCode](i, ContextInterfaces.this.forTypeCodeGen(f.dataType, inCollection, dmnConfiguration, ContextInterfaces.this.forTypeCodeGen$default$4).forPath(ctx, struct, i.toString()))
@@ -3217,12 +2650,12 @@ else
           139
         </td>
         <td>
-          628
+          605
         </td>
         <td>
-          5413
+          5395
           -
-          5436
+          5418
         </td>
         <td>
           Apply
@@ -3241,12 +2674,12 @@ else
           141
         </td>
         <td>
-          629
+          606
         </td>
         <td>
-          5449
+          5431
           -
-          5449
+          5431
         </td>
         <td>
           Select
@@ -3258,19 +2691,19 @@ else
           
         </td>
         <td style="background: #AEF1AE">
-          x$1._1
+          x$2._1
         </td>
       </tr><tr>
         <td>
           141
         </td>
         <td>
-          630
+          607
         </td>
         <td>
-          5458
+          5440
           -
-          5458
+          5440
         </td>
         <td>
           Select
@@ -3282,19 +2715,19 @@ else
           
         </td>
         <td style="background: #AEF1AE">
-          x$1._2
+          x$2._2
         </td>
       </tr><tr>
         <td>
           143
         </td>
         <td>
-          631
+          608
         </td>
         <td>
-          5531
+          5513
           -
-          5568
+          5550
         </td>
         <td>
           Apply
@@ -3313,12 +2746,12 @@ else
           144
         </td>
         <td>
-          632
+          609
         </td>
         <td>
-          5587
+          5569
           -
-          5604
+          5586
         </td>
         <td>
           Select
@@ -3337,12 +2770,12 @@ else
           144
         </td>
         <td>
-          633
+          610
         </td>
         <td>
-          5605
+          5587
           -
-          5605
+          5587
         </td>
         <td>
           ApplyToImplicitArgs
@@ -3361,12 +2794,12 @@ else
           144
         </td>
         <td>
-          634
+          611
         </td>
         <td>
-          5587
+          5569
           -
-          5617
+          5599
         </td>
         <td>
           ApplyToImplicitArgs
@@ -3385,12 +2818,12 @@ else
           144
         </td>
         <td>
-          635
+          612
         </td>
         <td>
-          5658
+          5640
           -
-          5668
+          5650
         </td>
         <td>
           Select
@@ -3409,12 +2842,12 @@ else
           144
         </td>
         <td>
-          636
+          613
         </td>
         <td>
-          5723
+          5705
           -
-          5733
+          5715
         </td>
         <td>
           Apply
@@ -3433,12 +2866,12 @@ else
           144
         </td>
         <td>
-          637
+          614
         </td>
         <td>
-          5643
+          5625
           -
-          5734
+          5716
         </td>
         <td>
           Apply
@@ -3457,12 +2890,12 @@ else
           144
         </td>
         <td>
-          638
+          615
         </td>
         <td>
-          5639
+          5621
           -
-          5735
+          5717
         </td>
         <td>
           Apply
@@ -3481,12 +2914,12 @@ else
           144
         </td>
         <td>
-          639
+          616
         </td>
         <td>
-          5639
+          5621
           -
-          5735
+          5717
         </td>
         <td>
           Block
@@ -3505,12 +2938,12 @@ else
           144
         </td>
         <td>
-          640
+          617
         </td>
         <td>
-          5622
+          5604
           -
-          5622
+          5604
         </td>
         <td>
           ApplyToImplicitArgs
@@ -3529,12 +2962,12 @@ else
           144
         </td>
         <td>
-          641
+          618
         </td>
         <td>
-          5587
+          5569
           -
-          5737
+          5719
         </td>
         <td>
           ApplyToImplicitArgs
@@ -3555,12 +2988,12 @@ else
           144
         </td>
         <td>
-          642
+          619
         </td>
         <td>
-          5747
+          5729
           -
-          5753
+          5735
         </td>
         <td>
           Apply
@@ -3579,12 +3012,12 @@ else
           144
         </td>
         <td>
-          648
+          625
         </td>
         <td>
-          5587
+          5569
           -
-          5898
+          5880
         </td>
         <td>
           Apply
@@ -3607,12 +3040,12 @@ else
           146
         </td>
         <td>
-          643
+          620
         </td>
         <td>
-          5794
+          5776
           -
-          5890
+          5872
         </td>
         <td>
           Apply
@@ -3631,12 +3064,12 @@ else
           146
         </td>
         <td>
-          646
+          623
         </td>
         <td>
-          5794
+          5776
           -
-          5890
+          5872
         </td>
         <td>
           Apply
@@ -3655,12 +3088,12 @@ else
           146
         </td>
         <td>
-          647
+          624
         </td>
         <td>
-          5794
+          5776
           -
-          5890
+          5872
         </td>
         <td>
           Block
@@ -3679,12 +3112,12 @@ else
           148
         </td>
         <td>
-          644
+          621
         </td>
         <td>
-          5831
+          5813
           -
-          5837
+          5819
         </td>
         <td>
           Select
@@ -3703,12 +3136,12 @@ else
           149
         </td>
         <td>
-          645
+          622
         </td>
         <td>
-          5865
+          5847
           -
-          5872
+          5854
         </td>
         <td>
           Select
@@ -3727,12 +3160,12 @@ else
           152
         </td>
         <td>
-          649
+          626
         </td>
         <td>
-          5915
+          5897
           -
-          6226
+          6208
         </td>
         <td>
           Apply
@@ -3751,12 +3184,12 @@ else
           152
         </td>
         <td>
-          663
+          640
         </td>
         <td>
-          5915
+          5897
           -
-          6226
+          6208
         </td>
         <td>
           Apply
@@ -3778,12 +3211,12 @@ else
           152
         </td>
         <td>
-          664
+          641
         </td>
         <td>
-          5905
+          5887
           -
-          6227
+          6209
         </td>
         <td>
           Apply
@@ -3805,12 +3238,12 @@ else
           153
         </td>
         <td>
-          650
+          627
         </td>
         <td>
-          5933
+          5915
           -
-          5965
+          5947
         </td>
         <td>
           Apply
@@ -3829,12 +3262,12 @@ else
           153
         </td>
         <td>
-          651
+          628
         </td>
         <td>
-          5993
+          5975
           -
-          6001
+          5983
         </td>
         <td>
           Ident
@@ -3853,12 +3286,12 @@ else
           153
         </td>
         <td>
-          652
+          629
         </td>
         <td>
-          6009
+          5991
           -
-          6010
+          5992
         </td>
         <td>
           Literal
@@ -3877,12 +3310,12 @@ else
           153
         </td>
         <td>
-          653
+          630
         </td>
         <td>
-          6018
+          6000
           -
-          6030
+          6012
         </td>
         <td>
           Literal
@@ -3901,12 +3334,12 @@ else
           153
         </td>
         <td>
-          654
+          631
         </td>
         <td>
-          6035
+          6017
           -
-          6038
+          6020
         </td>
         <td>
           Literal
@@ -3925,12 +3358,12 @@ else
           153
         </td>
         <td>
-          655
+          632
         </td>
         <td>
-          6064
+          6046
           -
-          6066
+          6048
         </td>
         <td>
           Literal
@@ -3949,12 +3382,12 @@ else
           153
         </td>
         <td>
-          656
+          633
         </td>
         <td>
-          6039
+          6021
           -
-          6063
+          6045
         </td>
         <td>
           Select
@@ -3973,12 +3406,12 @@ else
           153
         </td>
         <td>
-          657
+          634
         </td>
         <td>
-          6007
+          5989
           -
-          6066
+          6048
         </td>
         <td>
           Apply
@@ -3997,12 +3430,12 @@ else
           153
         </td>
         <td>
-          658
+          635
         </td>
         <td>
-          6007
+          5989
           -
-          6066
+          6048
         </td>
         <td>
           Block
@@ -4021,12 +3454,12 @@ else
           154
         </td>
         <td>
-          659
+          636
         </td>
         <td>
-          6081
+          6063
           -
-          6093
+          6075
         </td>
         <td>
           Select
@@ -4045,12 +3478,12 @@ else
           157
         </td>
         <td>
-          660
+          637
         </td>
         <td>
-          6139
+          6121
           -
-          6149
+          6131
         </td>
         <td>
           Select
@@ -4069,12 +3502,12 @@ else
           157
         </td>
         <td>
-          661
+          638
         </td>
         <td>
-          6155
+          6137
           -
-          6168
+          6150
         </td>
         <td>
           Select
@@ -4093,12 +3526,12 @@ else
           158
         </td>
         <td>
-          662
+          639
         </td>
         <td>
-          6191
+          6173
           -
-          6202
+          6184
         </td>
         <td>
           Select
@@ -4117,12 +3550,12 @@ else
           161
         </td>
         <td>
-          670
+          647
         </td>
         <td>
-          6257
+          6239
           -
-          6445
+          6427
         </td>
         <td>
           Function
@@ -4141,12 +3574,12 @@ else
           162
         </td>
         <td>
-          666
+          643
         </td>
         <td>
-          6337
+          6319
           -
-          6352
+          6334
         </td>
         <td>
           Literal
@@ -4165,12 +3598,12 @@ else
           162
         </td>
         <td>
-          669
+          646
         </td>
         <td>
-          6321
+          6303
           -
-          6445
+          6427
         </td>
         <td>
           Apply
@@ -4189,12 +3622,12 @@ else
           163
         </td>
         <td>
-          667
+          644
         </td>
         <td>
-          6367
+          6349
           -
-          6404
+          6386
         </td>
         <td>
           Apply
@@ -4213,12 +3646,12 @@ else
           163
         </td>
         <td>
-          668
+          645
         </td>
         <td>
-          6411
+          6393
           -
-          6444
+          6426
         </td>
         <td>
           Apply
@@ -4237,12 +3670,12 @@ else
           164
         </td>
         <td>
-          675
+          652
         </td>
         <td>
-          6470
+          6452
           -
-          6648
+          6630
         </td>
         <td>
           Function
@@ -4261,12 +3694,12 @@ else
           165
         </td>
         <td>
-          671
+          648
         </td>
         <td>
-          6551
+          6533
           -
-          6567
+          6549
         </td>
         <td>
           Literal
@@ -4285,12 +3718,12 @@ else
           165
         </td>
         <td>
-          672
+          649
         </td>
         <td>
-          6574
+          6556
           -
-          6606
+          6588
         </td>
         <td>
           Apply
@@ -4309,12 +3742,12 @@ else
           165
         </td>
         <td>
-          674
+          651
         </td>
         <td>
-          6534
+          6516
           -
-          6648
+          6630
         </td>
         <td>
           Apply
@@ -4333,12 +3766,12 @@ else
           166
         </td>
         <td>
-          673
+          650
         </td>
         <td>
-          6616
+          6598
           -
-          6647
+          6629
         </td>
         <td>
           Apply
@@ -4357,12 +3790,12 @@ else
           167
         </td>
         <td>
-          680
+          657
         </td>
         <td>
-          6670
+          6652
           -
-          6846
+          6828
         </td>
         <td>
           Function
@@ -4381,12 +3814,12 @@ else
           168
         </td>
         <td>
-          676
+          653
         </td>
         <td>
-          6751
+          6733
           -
-          6764
+          6746
         </td>
         <td>
           Literal
@@ -4405,12 +3838,12 @@ else
           168
         </td>
         <td>
-          677
+          654
         </td>
         <td>
-          6771
+          6753
           -
-          6803
+          6785
         </td>
         <td>
           Apply
@@ -4429,12 +3862,12 @@ else
           168
         </td>
         <td>
-          679
+          656
         </td>
         <td>
-          6734
+          6716
           -
-          6846
+          6828
         </td>
         <td>
           Apply
@@ -4453,12 +3886,12 @@ else
           169
         </td>
         <td>
-          678
+          655
         </td>
         <td>
-          6813
+          6795
           -
-          6845
+          6827
         </td>
         <td>
           Apply
@@ -4477,12 +3910,12 @@ else
           170
         </td>
         <td>
-          685
+          662
         </td>
         <td>
-          6871
+          6853
           -
-          7053
+          7035
         </td>
         <td>
           Function
@@ -4501,12 +3934,12 @@ else
           171
         </td>
         <td>
-          681
+          658
         </td>
         <td>
-          6952
+          6934
           -
-          6968
+          6950
         </td>
         <td>
           Literal
@@ -4525,12 +3958,12 @@ else
           171
         </td>
         <td>
-          682
+          659
         </td>
         <td>
-          6975
+          6957
           -
-          7007
+          6989
         </td>
         <td>
           Apply
@@ -4549,12 +3982,12 @@ else
           171
         </td>
         <td>
-          684
+          661
         </td>
         <td>
-          6935
+          6917
           -
-          7053
+          7035
         </td>
         <td>
           Apply
@@ -4573,12 +4006,12 @@ else
           172
         </td>
         <td>
-          683
+          660
         </td>
         <td>
-          7017
+          6999
           -
-          7052
+          7034
         </td>
         <td>
           Apply
@@ -4597,12 +4030,12 @@ else
           173
         </td>
         <td>
-          690
+          667
         </td>
         <td>
-          7077
+          7059
           -
-          7257
+          7239
         </td>
         <td>
           Function
@@ -4621,12 +4054,12 @@ else
           174
         </td>
         <td>
-          686
+          663
         </td>
         <td>
-          7158
+          7140
           -
-          7173
+          7155
         </td>
         <td>
           Literal
@@ -4645,12 +4078,12 @@ else
           174
         </td>
         <td>
-          687
+          664
         </td>
         <td>
-          7180
+          7162
           -
-          7212
+          7194
         </td>
         <td>
           Apply
@@ -4669,12 +4102,12 @@ else
           174
         </td>
         <td>
-          689
+          666
         </td>
         <td>
-          7141
+          7123
           -
-          7257
+          7239
         </td>
         <td>
           Apply
@@ -4693,12 +4126,12 @@ else
           175
         </td>
         <td>
-          688
+          665
         </td>
         <td>
-          7222
+          7204
           -
-          7256
+          7238
         </td>
         <td>
           Apply
@@ -4717,12 +4150,12 @@ else
           176
         </td>
         <td>
-          695
+          672
         </td>
         <td>
-          7280
+          7262
           -
-          7458
+          7440
         </td>
         <td>
           Function
@@ -4741,12 +4174,12 @@ else
           177
         </td>
         <td>
-          691
+          668
         </td>
         <td>
-          7361
+          7343
           -
-          7375
+          7357
         </td>
         <td>
           Literal
@@ -4765,12 +4198,12 @@ else
           177
         </td>
         <td>
-          692
+          669
         </td>
         <td>
-          7382
+          7364
           -
-          7414
+          7396
         </td>
         <td>
           Apply
@@ -4789,12 +4222,12 @@ else
           177
         </td>
         <td>
-          694
+          671
         </td>
         <td>
-          7344
+          7326
           -
-          7458
+          7440
         </td>
         <td>
           Apply
@@ -4813,12 +4246,12 @@ else
           178
         </td>
         <td>
-          693
+          670
         </td>
         <td>
-          7424
+          7406
           -
-          7457
+          7439
         </td>
         <td>
           Apply
@@ -4837,12 +4270,12 @@ else
           179
         </td>
         <td>
-          700
+          677
         </td>
         <td>
-          7482
+          7464
           -
-          7667
+          7649
         </td>
         <td>
           Function
@@ -4861,12 +4294,12 @@ else
           180
         </td>
         <td>
-          696
+          673
         </td>
         <td>
-          7563
+          7545
           -
-          7583
+          7565
         </td>
         <td>
           Literal
@@ -4885,12 +4318,12 @@ else
           180
         </td>
         <td>
-          697
+          674
         </td>
         <td>
-          7590
+          7572
           -
-          7622
+          7604
         </td>
         <td>
           Apply
@@ -4909,12 +4342,12 @@ else
           180
         </td>
         <td>
-          699
+          676
         </td>
         <td>
-          7546
+          7528
           -
-          7667
+          7649
         </td>
         <td>
           Apply
@@ -4933,12 +4366,12 @@ else
           181
         </td>
         <td>
-          698
+          675
         </td>
         <td>
-          7632
+          7614
           -
-          7666
+          7648
         </td>
         <td>
           Apply
@@ -4957,12 +4390,12 @@ else
           182
         </td>
         <td>
-          705
+          682
         </td>
         <td>
-          7689
+          7671
           -
-          7865
+          7847
         </td>
         <td>
           Function
@@ -4981,12 +4414,12 @@ else
           183
         </td>
         <td>
-          701
+          678
         </td>
         <td>
-          7770
+          7752
           -
-          7783
+          7765
         </td>
         <td>
           Literal
@@ -5005,12 +4438,12 @@ else
           183
         </td>
         <td>
-          702
+          679
         </td>
         <td>
-          7790
+          7772
           -
-          7822
+          7804
         </td>
         <td>
           Apply
@@ -5029,12 +4462,12 @@ else
           183
         </td>
         <td>
-          704
+          681
         </td>
         <td>
-          7753
+          7735
           -
-          7865
+          7847
         </td>
         <td>
           Apply
@@ -5053,12 +4486,12 @@ else
           184
         </td>
         <td>
-          703
+          680
         </td>
         <td>
-          7832
+          7814
           -
-          7864
+          7846
         </td>
         <td>
           Apply
@@ -5077,12 +4510,12 @@ else
           185
         </td>
         <td>
-          710
+          687
         </td>
         <td>
-          7888
+          7870
           -
-          8066
+          8048
         </td>
         <td>
           Function
@@ -5101,12 +4534,12 @@ else
           186
         </td>
         <td>
-          706
+          683
         </td>
         <td>
-          7969
+          7951
           -
-          7983
+          7965
         </td>
         <td>
           Literal
@@ -5125,12 +4558,12 @@ else
           186
         </td>
         <td>
-          707
+          684
         </td>
         <td>
-          7990
+          7972
           -
-          8022
+          8004
         </td>
         <td>
           Apply
@@ -5149,12 +4582,12 @@ else
           186
         </td>
         <td>
-          709
+          686
         </td>
         <td>
-          7952
+          7934
           -
-          8066
+          8048
         </td>
         <td>
           Apply
@@ -5173,12 +4606,12 @@ else
           187
         </td>
         <td>
-          708
+          685
         </td>
         <td>
-          8032
+          8014
           -
-          8065
+          8047
         </td>
         <td>
           Apply
@@ -5197,12 +4630,12 @@ else
           188
         </td>
         <td>
-          715
+          692
         </td>
         <td>
-          8088
+          8070
           -
-          8333
+          8315
         </td>
         <td>
           Function
@@ -5221,12 +4654,12 @@ else
           189
         </td>
         <td>
-          711
+          688
         </td>
         <td>
-          8169
+          8151
           -
-          8187
+          8169
         </td>
         <td>
           Literal
@@ -5245,12 +4678,12 @@ else
           189
         </td>
         <td>
-          712
+          689
         </td>
         <td>
-          8194
+          8176
           -
-          8226
+          8208
         </td>
         <td>
           Apply
@@ -5269,12 +4702,12 @@ else
           189
         </td>
         <td>
-          714
+          691
         </td>
         <td>
-          8152
+          8134
           -
-          8333
+          8315
         </td>
         <td>
           Apply
@@ -5293,12 +4726,12 @@ else
           190
         </td>
         <td>
-          713
+          690
         </td>
         <td>
-          8236
+          8218
           -
-          8332
+          8314
         </td>
         <td>
           Apply
@@ -5317,12 +4750,12 @@ else
           191
         </td>
         <td>
-          720
+          697
         </td>
         <td>
-          8379
+          8361
           -
-          8636
+          8618
         </td>
         <td>
           Function
@@ -5341,12 +4774,12 @@ else
           192
         </td>
         <td>
-          716
+          693
         </td>
         <td>
-          8460
+          8442
           -
-          8482
+          8464
         </td>
         <td>
           Literal
@@ -5365,12 +4798,12 @@ else
           192
         </td>
         <td>
-          717
+          694
         </td>
         <td>
-          8489
+          8471
           -
-          8521
+          8503
         </td>
         <td>
           Apply
@@ -5389,12 +4822,12 @@ else
           192
         </td>
         <td>
-          719
+          696
         </td>
         <td>
-          8443
+          8425
           -
-          8636
+          8618
         </td>
         <td>
           Apply
@@ -5413,12 +4846,12 @@ else
           193
         </td>
         <td>
-          718
+          695
         </td>
         <td>
-          8531
+          8513
           -
-          8635
+          8617
         </td>
         <td>
           Apply
@@ -5437,12 +4870,12 @@ else
           194
         </td>
         <td>
-          725
+          702
         </td>
         <td>
-          8664
+          8646
           -
-          9127
+          9109
         </td>
         <td>
           Function
@@ -5461,12 +4894,12 @@ else
           196
         </td>
         <td>
-          721
+          698
         </td>
         <td>
-          8856
+          8838
           -
-          8885
+          8867
         </td>
         <td>
           Literal
@@ -5485,12 +4918,12 @@ else
           196
         </td>
         <td>
-          724
+          701
         </td>
         <td>
-          8840
+          8822
           -
-          9127
+          9109
         </td>
         <td>
           Apply
@@ -5509,12 +4942,12 @@ else
           197
         </td>
         <td>
-          722
+          699
         </td>
         <td>
-          8900
+          8882
           -
-          9046
+          9028
         </td>
         <td>
           Apply
@@ -5533,12 +4966,12 @@ else
           198
         </td>
         <td>
-          723
+          700
         </td>
         <td>
-          9061
+          9043
           -
-          9126
+          9108
         </td>
         <td>
           Apply
@@ -5557,12 +4990,12 @@ else
           200
         </td>
         <td>
-          747
+          724
         </td>
         <td>
-          9164
+          9146
           -
-          10224
+          10206
         </td>
         <td>
           Function
@@ -5591,12 +5024,12 @@ else
           201
         </td>
         <td>
-          726
+          703
         </td>
         <td>
-          9242
+          9224
           -
-          9276
+          9258
         </td>
         <td>
           Apply
@@ -5615,12 +5048,12 @@ else
           202
         </td>
         <td>
-          727
+          704
         </td>
         <td>
-          9293
+          9275
           -
-          9329
+          9311
         </td>
         <td>
           Apply
@@ -5639,12 +5072,12 @@ else
           204
         </td>
         <td>
-          728
+          705
         </td>
         <td>
-          9388
+          9370
           -
-          9392
+          9374
         </td>
         <td>
           Literal
@@ -5663,12 +5096,12 @@ else
           204
         </td>
         <td>
-          729
+          706
         </td>
         <td>
-          9425
+          9407
           -
-          9428
+          9410
         </td>
         <td>
           ApplyImplicitView
@@ -5687,12 +5120,12 @@ else
           204
         </td>
         <td>
-          730
+          707
         </td>
         <td>
-          9430
+          9412
           -
-          9431
+          9413
         </td>
         <td>
           ApplyImplicitView
@@ -5711,12 +5144,12 @@ else
           204
         </td>
         <td>
-          731
+          708
         </td>
         <td>
-          9353
+          9335
           -
-          9432
+          9414
         </td>
         <td>
           Apply
@@ -5735,12 +5168,12 @@ else
           205
         </td>
         <td>
-          732
+          709
         </td>
         <td>
-          9454
+          9436
           -
-          9491
+          9473
         </td>
         <td>
           Apply
@@ -5759,12 +5192,12 @@ else
           207
         </td>
         <td>
-          733
+          710
         </td>
         <td>
-          9512
+          9494
           -
-          9553
+          9535
         </td>
         <td>
           Apply
@@ -5783,12 +5216,12 @@ else
           208
         </td>
         <td>
-          746
+          723
         </td>
         <td>
-          9562
+          9544
           -
-          10216
+          10198
         </td>
         <td>
           Apply
@@ -5810,12 +5243,12 @@ else
           210
         </td>
         <td>
-          734
+          711
         </td>
         <td>
-          9602
+          9584
           -
-          10206
+          10188
         </td>
         <td>
           Apply
@@ -5834,12 +5267,12 @@ else
           210
         </td>
         <td>
-          745
+          722
         </td>
         <td>
-          9602
+          9584
           -
-          10206
+          10188
         </td>
         <td>
           Apply
@@ -5861,12 +5294,12 @@ else
           211
         </td>
         <td>
-          735
+          712
         </td>
         <td>
-          9626
+          9608
           -
-          9658
+          9640
         </td>
         <td>
           Apply
@@ -5885,12 +5318,12 @@ else
           211
         </td>
         <td>
-          736
+          713
         </td>
         <td>
-          9683
+          9665
           -
-          9691
+          9673
         </td>
         <td>
           Ident
@@ -5909,12 +5342,12 @@ else
           211
         </td>
         <td>
-          737
+          714
         </td>
         <td>
-          9697
+          9679
           -
-          9726
+          9708
         </td>
         <td>
           Apply
@@ -5933,12 +5366,12 @@ else
           211
         </td>
         <td>
-          738
+          715
         </td>
         <td>
-          9697
+          9679
           -
-          9726
+          9708
         </td>
         <td>
           Block
@@ -5957,12 +5390,12 @@ else
           212
         </td>
         <td>
-          739
+          716
         </td>
         <td>
-          9753
+          9735
           -
-          9764
+          9746
         </td>
         <td>
           Select
@@ -5981,12 +5414,12 @@ else
           213
         </td>
         <td>
-          740
+          717
         </td>
         <td>
-          9815
+          9797
           -
-          9825
+          9807
         </td>
         <td>
           Select
@@ -6005,12 +5438,12 @@ else
           214
         </td>
         <td>
-          741
+          718
         </td>
         <td>
-          9856
+          9838
           -
-          9867
+          9849
         </td>
         <td>
           Select
@@ -6029,12 +5462,12 @@ else
           217
         </td>
         <td>
-          742
+          719
         </td>
         <td>
-          10025
+          10007
           -
-          10037
+          10019
         </td>
         <td>
           Select
@@ -6053,12 +5486,12 @@ else
           218
         </td>
         <td>
-          743
+          720
         </td>
         <td>
-          10073
+          10055
           -
-          10086
+          10068
         </td>
         <td>
           Select
@@ -6077,12 +5510,12 @@ else
           220
         </td>
         <td>
-          744
+          721
         </td>
         <td>
-          10125
+          10107
           -
-          10135
+          10117
         </td>
         <td>
           Select
@@ -6101,12 +5534,12 @@ else
           226
         </td>
         <td>
-          793
+          770
         </td>
         <td>
-          10260
+          10242
           -
-          11837
+          11819
         </td>
         <td>
           Function
@@ -6125,7 +5558,7 @@ else
   val i: org.apache.spark.sql.catalyst.expressions.codegen.VariableValue = ctx.freshVariable(&quot;i&quot;, classOf[scala.Int]);
   val kCode: org.apache.spark.sql.catalyst.expressions.codegen.ExprCode = ContextInterfaces.this.forTypeCodeGen(k, true, dmnConfiguration, ContextInterfaces.this.forTypeCodeGen$default$4).forPath(ctx, codegen.this.ExprValue.exprValueToString(keys), codegen.this.ExprValue.exprValueToString(i));
   val vCode: org.apache.spark.sql.catalyst.expressions.codegen.ExprCode = ContextInterfaces.this.forTypeCodeGen(v, true, dmnConfiguration, ContextInterfaces.this.forTypeCodeGen$default$4).forPath(ctx, codegen.this.ExprValue.exprValueToString(values), codegen.this.ExprValue.exprValueToString(i));
-  val mapImpl: String = if (scala.util.Try.apply[Boolean](scala.Predef.augmentString(dmnConfiguration.getOrElse[String](&quot;useTreeMap&quot;, &quot;false&quot;)).toBoolean).fold[Boolean](((x$2: Throwable) =&gt; false), {
+  val mapImpl: String = if (scala.util.Try.apply[Boolean](scala.Predef.augmentString(dmnConfiguration.getOrElse[String](&quot;useTreeMap&quot;, &quot;false&quot;)).toBoolean).fold[Boolean](((x$3: Throwable) =&gt; false), {
     ((x: Boolean) =&gt; scala.Predef.identity[Boolean](x))
   }))
     &quot;TreeMap&quot;
@@ -6143,12 +5576,12 @@ else
           227
         </td>
         <td>
-          748
+          725
         </td>
         <td>
-          10338
+          10320
           -
-          10372
+          10354
         </td>
         <td>
           Apply
@@ -6167,12 +5600,12 @@ else
           228
         </td>
         <td>
-          749
+          726
         </td>
         <td>
-          10410
+          10392
           -
-          10416
+          10398
         </td>
         <td>
           Literal
@@ -6191,12 +5624,12 @@ else
           228
         </td>
         <td>
-          750
+          727
         </td>
         <td>
-          10418
+          10400
           -
-          10430
+          10412
         </td>
         <td>
           Apply
@@ -6215,12 +5648,12 @@ else
           228
         </td>
         <td>
-          751
+          728
         </td>
         <td>
-          10392
+          10374
           -
-          10431
+          10413
         </td>
         <td>
           Apply
@@ -6239,12 +5672,12 @@ else
           229
         </td>
         <td>
-          752
+          729
         </td>
         <td>
-          10471
+          10453
           -
-          10479
+          10461
         </td>
         <td>
           Literal
@@ -6263,12 +5696,12 @@ else
           229
         </td>
         <td>
-          753
+          730
         </td>
         <td>
-          10481
+          10463
           -
-          10493
+          10475
         </td>
         <td>
           Apply
@@ -6287,12 +5720,12 @@ else
           229
         </td>
         <td>
-          754
+          731
         </td>
         <td>
-          10453
+          10435
           -
-          10494
+          10476
         </td>
         <td>
           Apply
@@ -6311,12 +5744,12 @@ else
           230
         </td>
         <td>
-          755
+          732
         </td>
         <td>
-          10511
+          10493
           -
-          10547
+          10529
         </td>
         <td>
           Apply
@@ -6335,12 +5768,12 @@ else
           232
         </td>
         <td>
-          756
+          733
         </td>
         <td>
-          10602
+          10584
           -
-          10606
+          10588
         </td>
         <td>
           Literal
@@ -6359,12 +5792,12 @@ else
           232
         </td>
         <td>
-          757
+          734
         </td>
         <td>
-          10639
+          10621
           -
-          10643
+          10625
         </td>
         <td>
           ApplyImplicitView
@@ -6383,12 +5816,12 @@ else
           232
         </td>
         <td>
-          758
+          735
         </td>
         <td>
-          10645
+          10627
           -
-          10646
+          10628
         </td>
         <td>
           ApplyImplicitView
@@ -6407,12 +5840,12 @@ else
           232
         </td>
         <td>
-          759
+          736
         </td>
         <td>
-          10569
+          10551
           -
-          10647
+          10629
         </td>
         <td>
           Apply
@@ -6431,12 +5864,12 @@ else
           233
         </td>
         <td>
-          760
+          737
         </td>
         <td>
-          10701
+          10683
           -
-          10705
+          10687
         </td>
         <td>
           Literal
@@ -6455,12 +5888,12 @@ else
           233
         </td>
         <td>
-          761
+          738
         </td>
         <td>
-          10738
+          10720
           -
-          10744
+          10726
         </td>
         <td>
           ApplyImplicitView
@@ -6479,12 +5912,12 @@ else
           233
         </td>
         <td>
-          762
+          739
         </td>
         <td>
-          10746
+          10728
           -
-          10747
+          10729
         </td>
         <td>
           ApplyImplicitView
@@ -6503,12 +5936,12 @@ else
           233
         </td>
         <td>
-          763
+          740
         </td>
         <td>
-          10668
+          10650
           -
-          10748
+          10730
         </td>
         <td>
           Apply
@@ -6527,12 +5960,12 @@ else
           236
         </td>
         <td>
-          764
+          741
         </td>
         <td>
-          10790
+          10772
           -
-          10839
+          10821
         </td>
         <td>
           Apply
@@ -6551,12 +5984,12 @@ else
           236
         </td>
         <td>
-          765
+          742
         </td>
         <td>
-          10790
+          10772
           -
-          10849
+          10831
         </td>
         <td>
           Select
@@ -6575,12 +6008,12 @@ else
           236
         </td>
         <td>
-          766
+          743
         </td>
         <td>
-          10861
+          10843
           -
-          10866
+          10848
         </td>
         <td>
           Literal
@@ -6599,12 +6032,12 @@ else
           236
         </td>
         <td>
-          767
+          744
         </td>
         <td>
-          10868
+          10850
           -
-          10876
+          10858
         </td>
         <td>
           Apply
@@ -6623,12 +6056,12 @@ else
           236
         </td>
         <td>
-          768
+          745
         </td>
         <td>
-          10786
+          10768
           -
-          10877
+          10859
         </td>
         <td>
           Apply
@@ -6640,7 +6073,7 @@ else
           
         </td>
         <td style="background: #AEF1AE">
-          scala.util.Try.apply[Boolean](scala.Predef.augmentString(dmnConfiguration.getOrElse[String](&quot;useTreeMap&quot;, &quot;false&quot;)).toBoolean).fold[Boolean](((x$2: Throwable) =&gt; false), {
+          scala.util.Try.apply[Boolean](scala.Predef.augmentString(dmnConfiguration.getOrElse[String](&quot;useTreeMap&quot;, &quot;false&quot;)).toBoolean).fold[Boolean](((x$3: Throwable) =&gt; false), {
   ((x: Boolean) =&gt; scala.Predef.identity[Boolean](x))
 })
         </td>
@@ -6649,12 +6082,12 @@ else
           237
         </td>
         <td>
-          769
+          746
         </td>
         <td>
-          10891
+          10873
           -
-          10900
+          10882
         </td>
         <td>
           Literal
@@ -6673,12 +6106,12 @@ else
           237
         </td>
         <td>
-          770
+          747
         </td>
         <td>
-          10891
+          10873
           -
-          10900
+          10882
         </td>
         <td>
           Block
@@ -6697,12 +6130,12 @@ else
           239
         </td>
         <td>
-          771
+          748
         </td>
         <td>
-          10928
+          10910
           -
-          10937
+          10919
         </td>
         <td>
           Literal
@@ -6721,12 +6154,12 @@ else
           239
         </td>
         <td>
-          772
+          749
         </td>
         <td>
-          10928
+          10910
           -
-          10937
+          10919
         </td>
         <td>
           Block
@@ -6745,12 +6178,12 @@ else
           241
         </td>
         <td>
-          773
+          750
         </td>
         <td>
-          10958
+          10940
           -
-          11000
+          10982
         </td>
         <td>
           Apply
@@ -6769,12 +6202,12 @@ else
           242
         </td>
         <td>
-          792
+          769
         </td>
         <td>
-          11009
+          10991
           -
-          11829
+          11811
         </td>
         <td>
           Apply
@@ -6796,12 +6229,12 @@ else
           244
         </td>
         <td>
-          774
+          751
         </td>
         <td>
-          11049
+          11031
           -
-          11828
+          11810
         </td>
         <td>
           Apply
@@ -6820,12 +6253,12 @@ else
           244
         </td>
         <td>
-          791
+          768
         </td>
         <td>
-          11049
+          11031
           -
-          11828
+          11810
         </td>
         <td>
           Apply
@@ -6847,12 +6280,12 @@ else
           245
         </td>
         <td>
-          775
+          752
         </td>
         <td>
-          11073
+          11055
           -
-          11105
+          11087
         </td>
         <td>
           Apply
@@ -6871,12 +6304,12 @@ else
           245
         </td>
         <td>
-          776
+          753
         </td>
         <td>
-          11130
+          11112
           -
-          11138
+          11120
         </td>
         <td>
           Ident
@@ -6895,12 +6328,12 @@ else
           245
         </td>
         <td>
-          777
+          754
         </td>
         <td>
-          11144
+          11126
           -
-          11171
+          11153
         </td>
         <td>
           Apply
@@ -6919,12 +6352,12 @@ else
           245
         </td>
         <td>
-          778
+          755
         </td>
         <td>
-          11144
+          11126
           -
-          11171
+          11153
         </td>
         <td>
           Block
@@ -6943,12 +6376,12 @@ else
           246
         </td>
         <td>
-          779
+          756
         </td>
         <td>
-          11198
+          11180
           -
-          11209
+          11191
         </td>
         <td>
           Select
@@ -6967,12 +6400,12 @@ else
           247
         </td>
         <td>
-          780
+          757
         </td>
         <td>
-          11259
+          11241
           -
-          11269
+          11251
         </td>
         <td>
           Select
@@ -6991,12 +6424,12 @@ else
           248
         </td>
         <td>
-          781
+          758
         </td>
         <td>
-          11300
+          11282
           -
-          11311
+          11293
         </td>
         <td>
           Select
@@ -7015,12 +6448,12 @@ else
           249
         </td>
         <td>
-          782
+          759
         </td>
         <td>
-          11334
+          11316
           -
-          11355
+          11337
         </td>
         <td>
           Apply
@@ -7039,12 +6472,12 @@ else
           250
         </td>
         <td>
-          783
+          760
         </td>
         <td>
-          11400
+          11382
           -
-          11423
+          11405
         </td>
         <td>
           Apply
@@ -7063,12 +6496,12 @@ else
           251
         </td>
         <td>
-          784
+          761
         </td>
         <td>
-          11472
+          11454
           -
-          11482
+          11464
         </td>
         <td>
           Select
@@ -7087,12 +6520,12 @@ else
           253
         </td>
         <td>
-          785
+          762
         </td>
         <td>
-          11599
+          11581
           -
-          11609
+          11591
         </td>
         <td>
           Select
@@ -7111,12 +6544,12 @@ else
           254
         </td>
         <td>
-          786
+          763
         </td>
         <td>
-          11631
+          11613
           -
-          11641
+          11623
         </td>
         <td>
           Select
@@ -7135,12 +6568,12 @@ else
           256
         </td>
         <td>
-          787
+          764
         </td>
         <td>
-          11669
+          11651
           -
-          11681
+          11663
         </td>
         <td>
           Select
@@ -7159,12 +6592,12 @@ else
           257
         </td>
         <td>
-          788
+          765
         </td>
         <td>
-          11708
+          11690
           -
-          11718
+          11700
         </td>
         <td>
           Select
@@ -7183,12 +6616,12 @@ else
           257
         </td>
         <td>
-          789
+          766
         </td>
         <td>
-          11726
+          11708
           -
-          11737
+          11719
         </td>
         <td>
           Select
@@ -7207,12 +6640,12 @@ else
           257
         </td>
         <td>
-          790
+          767
         </td>
         <td>
-          11742
+          11724
           -
-          11753
+          11735
         </td>
         <td>
           Select
@@ -7231,12 +6664,12 @@ else
           270
         </td>
         <td>
-          796
+          773
         </td>
         <td>
-          12207
+          12189
           -
-          12220
+          12202
         </td>
         <td>
           Literal
@@ -7255,12 +6688,12 @@ else
           270
         </td>
         <td>
-          814
+          791
         </td>
         <td>
-          12203
+          12185
           -
-          12720
+          12702
         </td>
         <td>
           Apply
@@ -7281,12 +6714,12 @@ else
           271
         </td>
         <td>
-          797
+          774
         </td>
         <td>
-          12230
+          12212
           -
-          12232
+          12214
         </td>
         <td>
           Literal
@@ -7305,12 +6738,12 @@ else
           271
         </td>
         <td>
-          798
+          775
         </td>
         <td>
-          12239
+          12221
           -
-          12317
+          12299
         </td>
         <td>
           Literal
@@ -7329,12 +6762,12 @@ else
           275
         </td>
         <td>
-          802
+          779
         </td>
         <td>
-          12329
+          12311
           -
-          12346
+          12328
         </td>
         <td>
           Select
@@ -7353,12 +6786,12 @@ else
           275
         </td>
         <td>
-          803
+          780
         </td>
         <td>
-          12347
+          12329
           -
-          12347
+          12329
         </td>
         <td>
           ApplyToImplicitArgs
@@ -7377,12 +6810,12 @@ else
           275
         </td>
         <td>
-          804
+          781
         </td>
         <td>
-          12329
+          12311
           -
-          12359
+          12341
         </td>
         <td>
           ApplyToImplicitArgs
@@ -7401,12 +6834,12 @@ else
           275
         </td>
         <td>
-          805
+          782
         </td>
         <td>
-          12369
+          12351
           -
-          12371
+          12353
         </td>
         <td>
           Literal
@@ -7425,12 +6858,12 @@ else
           275
         </td>
         <td>
-          813
+          790
         </td>
         <td>
-          12329
+          12311
           -
-          12573
+          12555
         </td>
         <td>
           Apply
@@ -7451,12 +6884,12 @@ else
           277
         </td>
         <td>
-          806
+          783
         </td>
         <td>
-          12425
+          12407
           -
-          12444
+          12426
         </td>
         <td>
           Literal
@@ -7475,12 +6908,12 @@ else
           277
         </td>
         <td>
-          811
+          788
         </td>
         <td>
-          12421
+          12403
           -
-          12561
+          12543
         </td>
         <td>
           Apply
@@ -7499,12 +6932,12 @@ else
           277
         </td>
         <td>
-          812
+          789
         </td>
         <td>
-          12421
+          12403
           -
-          12561
+          12543
         </td>
         <td>
           Block
@@ -7523,12 +6956,12 @@ else
           278
         </td>
         <td>
-          807
+          784
         </td>
         <td>
-          12445
+          12427
           -
-          12470
+          12452
         </td>
         <td>
           Literal
@@ -7547,12 +6980,12 @@ else
           279
         </td>
         <td>
-          808
+          785
         </td>
         <td>
-          12478
+          12460
           -
-          12510
+          12492
         </td>
         <td>
           Literal
@@ -7571,12 +7004,12 @@ else
           279
         </td>
         <td>
-          810
+          787
         </td>
         <td>
-          12471
+          12453
           -
-          12477
+          12459
         </td>
         <td>
           Select
@@ -7595,12 +7028,12 @@ else
           280
         </td>
         <td>
-          809
+          786
         </td>
         <td>
-          12511
+          12493
           -
-          12561
+          12543
         </td>
         <td>
           Literal
@@ -7619,12 +7052,12 @@ else
           284
         </td>
         <td>
-          799
+          776
         </td>
         <td>
-          12583
+          12565
           -
-          12672
+          12654
         </td>
         <td>
           Literal
@@ -7643,12 +7076,12 @@ else
           289
         </td>
         <td>
-          800
+          777
         </td>
         <td>
-          12679
+          12661
           -
-          12703
+          12685
         </td>
         <td>
           Literal
@@ -7667,12 +7100,12 @@ else
           291
         </td>
         <td>
-          801
+          778
         </td>
         <td>
-          12710
+          12692
           -
-          12720
+          12702
         </td>
         <td>
           Literal
@@ -7691,12 +7124,12 @@ else
           297
         </td>
         <td>
-          815
+          792
         </td>
         <td>
-          12938
+          12920
           -
-          12992
+          12974
         </td>
         <td>
           Apply
@@ -7715,12 +7148,12 @@ else
           301
         </td>
         <td>
-          816
+          793
         </td>
         <td>
-          13041
+          13023
           -
-          13062
+          13044
         </td>
         <td>
           Apply
@@ -7739,12 +7172,12 @@ else
           301
         </td>
         <td>
-          817
+          794
         </td>
         <td>
-          13041
+          13023
           -
-          13062
+          13044
         </td>
         <td>
           Block
@@ -7763,12 +7196,12 @@ else
           303
         </td>
         <td>
-          818
+          795
         </td>
         <td>
-          13102
+          13084
           -
-          13112
+          13094
         </td>
         <td>
           Literal
@@ -7787,12 +7220,12 @@ else
           303
         </td>
         <td>
-          819
+          796
         </td>
         <td>
-          13114
+          13096
           -
-          13126
+          13108
         </td>
         <td>
           Literal
@@ -7811,12 +7244,12 @@ else
           303
         </td>
         <td>
-          820
+          797
         </td>
         <td>
-          13137
+          13119
           -
-          13138
+          13120
         </td>
         <td>
           Literal
@@ -7835,12 +7268,12 @@ else
           303
         </td>
         <td>
-          821
+          798
         </td>
         <td>
-          13141
+          13123
           -
-          13156
+          13138
         </td>
         <td>
           Literal
@@ -7859,12 +7292,12 @@ else
           303
         </td>
         <td>
-          822
+          799
         </td>
         <td>
-          13182
+          13164
           -
-          13185
+          13167
         </td>
         <td>
           Literal
@@ -7883,12 +7316,12 @@ else
           303
         </td>
         <td>
-          823
+          800
         </td>
         <td>
-          13157
+          13139
           -
-          13181
+          13163
         </td>
         <td>
           Select
@@ -7907,12 +7340,12 @@ else
           303
         </td>
         <td>
-          824
+          801
         </td>
         <td>
-          13135
+          13117
           -
-          13185
+          13167
         </td>
         <td>
           Apply
@@ -7931,12 +7364,12 @@ else
           303
         </td>
         <td>
-          825
+          802
         </td>
         <td>
-          13202
+          13184
           -
-          13206
+          13188
         </td>
         <td>
           Literal
@@ -7955,12 +7388,12 @@ else
           303
         </td>
         <td>
-          826
+          803
         </td>
         <td>
-          13082
+          13064
           -
-          13207
+          13189
         </td>
         <td>
           Apply
@@ -7979,12 +7412,12 @@ else
           303
         </td>
         <td>
-          827
+          804
         </td>
         <td>
-          13082
+          13064
           -
-          13207
+          13189
         </td>
         <td>
           Block
@@ -8010,12 +7443,12 @@ else
           306
         </td>
         <td>
-          828
+          805
         </td>
         <td>
-          13253
+          13235
           -
-          13280
+          13262
         </td>
         <td>
           Literal
@@ -8034,12 +7467,12 @@ else
           306
         </td>
         <td>
-          846
+          823
         </td>
         <td>
-          13249
+          13231
           -
-          14486
+          14468
         </td>
         <td>
           Apply
@@ -8058,12 +7491,12 @@ else
           307
         </td>
         <td>
-          829
+          806
         </td>
         <td>
-          13289
+          13271
           -
-          13293
+          13275
         </td>
         <td>
           Literal
@@ -8082,12 +7515,12 @@ else
           307
         </td>
         <td>
-          830
+          807
         </td>
         <td>
-          13297
+          13279
           -
-          13310
+          13292
         </td>
         <td>
           Literal
@@ -8106,12 +7539,12 @@ else
           308
         </td>
         <td>
-          831
+          808
         </td>
         <td>
-          13313
+          13295
           -
-          13381
+          13363
         </td>
         <td>
           Literal
@@ -8130,12 +7563,12 @@ else
           309
         </td>
         <td>
-          837
+          814
         </td>
         <td>
-          13382
+          13364
           -
-          13510
+          13492
         </td>
         <td>
           Apply
@@ -8154,12 +7587,12 @@ else
           310
         </td>
         <td>
-          832
+          809
         </td>
         <td>
-          13511
+          13493
           -
-          13527
+          13509
         </td>
         <td>
           Literal
@@ -8178,12 +7611,12 @@ else
           311
         </td>
         <td>
-          838
+          815
         </td>
         <td>
-          13565
+          13547
           -
-          13570
+          13552
         </td>
         <td>
           Literal
@@ -8202,12 +7635,12 @@ else
           311
         </td>
         <td>
-          842
+          819
         </td>
         <td>
-          13528
+          13510
           -
-          13660
+          13642
         </td>
         <td>
           Apply
@@ -8226,12 +7659,12 @@ else
           312
         </td>
         <td>
-          833
+          810
         </td>
         <td>
-          13661
+          13643
           -
-          13711
+          13693
         </td>
         <td>
           Literal
@@ -8250,12 +7683,12 @@ else
           312
         </td>
         <td>
-          839
+          816
         </td>
         <td>
-          13601
+          13583
           -
-          13609
+          13591
         </td>
         <td>
           Literal
@@ -8274,12 +7707,12 @@ else
           312
         </td>
         <td>
-          840
+          817
         </td>
         <td>
-          13621
+          13603
           -
-          13641
+          13623
         </td>
         <td>
           Apply
@@ -8298,12 +7731,12 @@ else
           312
         </td>
         <td>
-          841
+          818
         </td>
         <td>
-          13653
+          13635
           -
-          13659
+          13641
         </td>
         <td>
           Literal
@@ -8322,12 +7755,12 @@ else
           314
         </td>
         <td>
-          834
+          811
         </td>
         <td>
-          13773
+          13755
           -
-          13875
+          13857
         </td>
         <td>
           Literal
@@ -8346,12 +7779,12 @@ else
           314
         </td>
         <td>
-          843
+          820
         </td>
         <td>
-          13712
+          13694
           -
-          13772
+          13754
         </td>
         <td>
           Apply
@@ -8370,12 +7803,12 @@ else
           316
         </td>
         <td>
-          835
+          812
         </td>
         <td>
-          14015
+          13997
           -
-          14416
+          14398
         </td>
         <td>
           Literal
@@ -8394,12 +7827,12 @@ else
           316
         </td>
         <td>
-          844
+          821
         </td>
         <td>
-          13876
+          13858
           -
-          14014
+          13996
         </td>
         <td>
           Apply
@@ -8418,12 +7851,12 @@ else
           326
         </td>
         <td>
-          836
+          813
         </td>
         <td>
-          14442
+          14424
           -
-          14486
+          14468
         </td>
         <td>
           Literal
@@ -8442,12 +7875,12 @@ else
           326
         </td>
         <td>
-          845
+          822
         </td>
         <td>
-          14417
+          14399
           -
-          14441
+          14423
         </td>
         <td>
           Select
@@ -8466,12 +7899,12 @@ else
           332
         </td>
         <td>
-          855
+          832
         </td>
         <td>
-          14530
+          14512
           -
-          14812
+          14794
         </td>
         <td>
           Block
@@ -8493,12 +7926,12 @@ else
           333
         </td>
         <td>
-          847
+          824
         </td>
         <td>
-          14549
+          14531
           -
-          14603
+          14585
         </td>
         <td>
           Apply
@@ -8517,12 +7950,12 @@ else
           334
         </td>
         <td>
-          854
+          831
         </td>
         <td>
-          14612
+          14594
           -
-          14804
+          14786
         </td>
         <td>
           Apply
@@ -8541,12 +7974,12 @@ else
           335
         </td>
         <td>
-          848
+          825
         </td>
         <td>
-          14637
+          14619
           -
-          14803
+          14785
         </td>
         <td>
           Apply
@@ -8565,12 +7998,12 @@ else
           335
         </td>
         <td>
-          853
+          830
         </td>
         <td>
-          14637
+          14619
           -
-          14803
+          14785
         </td>
         <td>
           Apply
@@ -8589,12 +8022,12 @@ else
           336
         </td>
         <td>
-          849
+          826
         </td>
         <td>
-          14674
+          14656
           -
-          14682
+          14664
         </td>
         <td>
           Select
@@ -8613,12 +8046,12 @@ else
           337
         </td>
         <td>
-          850
+          827
         </td>
         <td>
-          14735
+          14717
           -
-          14759
+          14741
         </td>
         <td>
           Select
@@ -8637,12 +8070,12 @@ else
           338
         </td>
         <td>
-          851
+          828
         </td>
         <td>
-          14785
+          14767
           -
-          14798
+          14780
         </td>
         <td>
           Select
@@ -8661,12 +8094,12 @@ else
           338
         </td>
         <td>
-          852
+          829
         </td>
         <td>
-          14778
+          14760
           -
-          14799
+          14781
         </td>
         <td>
           Apply
@@ -8685,12 +8118,12 @@ else
           339
         </td>
         <td>
-          865
+          842
         </td>
         <td>
-          14818
+          14800
           -
-          15085
+          15067
         </td>
         <td>
           Block
@@ -8720,12 +8153,12 @@ else
           340
         </td>
         <td>
-          856
+          833
         </td>
         <td>
-          14859
+          14841
           -
-          14890
+          14872
         </td>
         <td>
           Literal
@@ -8744,12 +8177,12 @@ else
           340
         </td>
         <td>
-          857
+          834
         </td>
         <td>
-          14892
+          14874
           -
-          14900
+          14882
         </td>
         <td>
           Literal
@@ -8768,12 +8201,12 @@ else
           340
         </td>
         <td>
-          858
+          835
         </td>
         <td>
-          14925
+          14907
           -
-          14929
+          14911
         </td>
         <td>
           Literal
@@ -8792,12 +8225,12 @@ else
           340
         </td>
         <td>
-          859
+          836
         </td>
         <td>
-          14839
+          14821
           -
-          14930
+          14912
         </td>
         <td>
           Apply
@@ -8816,12 +8249,12 @@ else
           341
         </td>
         <td>
-          860
+          837
         </td>
         <td>
-          14948
+          14930
           -
-          15002
+          14984
         </td>
         <td>
           Apply
@@ -8840,12 +8273,12 @@ else
           342
         </td>
         <td>
-          864
+          841
         </td>
         <td>
-          15011
+          14993
           -
-          15077
+          15059
         </td>
         <td>
           Apply
@@ -8864,12 +8297,12 @@ else
           343
         </td>
         <td>
-          861
+          838
         </td>
         <td>
-          15036
+          15018
           -
-          15076
+          15058
         </td>
         <td>
           Apply
@@ -8888,12 +8321,12 @@ else
           343
         </td>
         <td>
-          862
+          839
         </td>
         <td>
-          15057
+          15039
           -
-          15065
+          15047
         </td>
         <td>
           Select
@@ -8912,12 +8345,12 @@ else
           343
         </td>
         <td>
-          863
+          840
         </td>
         <td>
-          15036
+          15018
           -
-          15076
+          15058
         </td>
         <td>
           Apply
@@ -8936,12 +8369,12 @@ else
           347
         </td>
         <td>
-          866
+          843
         </td>
         <td>
-          15092
+          15074
           -
-          15107
+          15089
         </td>
         <td>
           Apply
@@ -8960,12 +8393,12 @@ else
           351
         </td>
         <td>
-          867
+          844
         </td>
         <td>
-          15198
+          15180
           -
-          15199
+          15181
         </td>
         <td>
           Literal
@@ -8984,12 +8417,12 @@ else
           351
         </td>
         <td>
-          868
+          845
         </td>
         <td>
-          15206
+          15188
           -
-          15222
+          15204
         </td>
         <td>
           Apply
@@ -9008,12 +8441,12 @@ else
           351
         </td>
         <td>
-          870
+          847
         </td>
         <td>
-          15195
+          15177
           -
-          15195
+          15177
         </td>
         <td>
           TypeApply
@@ -9032,12 +8465,12 @@ else
           351
         </td>
         <td>
-          871
+          848
         </td>
         <td>
-          15188
+          15170
           -
-          15264
+          15246
         </td>
         <td>
           ApplyToImplicitArgs
@@ -9056,12 +8489,12 @@ else
           352
         </td>
         <td>
-          869
+          846
         </td>
         <td>
-          15236
+          15218
           -
-          15264
+          15246
         </td>
         <td>
           Apply
@@ -9080,12 +8513,12 @@ else
           357
         </td>
         <td>
-          872
+          849
         </td>
         <td>
-          15565
+          15547
           -
-          15599
+          15581
         </td>
         <td>
           Apply
@@ -9104,12 +8537,12 @@ else
           358
         </td>
         <td>
-          873
+          850
         </td>
         <td>
-          15604
+          15586
           -
-          15713
+          15695
         </td>
         <td>
           ApplyToImplicitArgs
@@ -9128,12 +8561,12 @@ else
           362
         </td>
         <td>
-          874
+          851
         </td>
         <td>
-          15922
+          15904
           -
-          15958
+          15940
         </td>
         <td>
           Apply
@@ -9152,12 +8585,12 @@ else
           363
         </td>
         <td>
-          875
+          852
         </td>
         <td>
-          15963
+          15945
           -
-          16067
+          16049
         </td>
         <td>
           ApplyToImplicitArgs
@@ -9176,12 +8609,12 @@ else
           372
         </td>
         <td>
-          876
+          853
         </td>
         <td>
-          16392
+          16374
           -
-          16429
+          16411
         </td>
         <td>
           Apply
@@ -9200,12 +8633,12 @@ else
           373
         </td>
         <td>
-          877
+          854
         </td>
         <td>
-          16434
+          16416
           -
-          16546
+          16528
         </td>
         <td>
           ApplyToImplicitArgs
@@ -9224,12 +8657,12 @@ else
           378
         </td>
         <td>
-          878
+          855
         </td>
         <td>
-          16866
+          16848
           -
-          16866
+          16848
         </td>
         <td>
           TypeApply
@@ -9248,12 +8681,12 @@ else
           378
         </td>
         <td>
-          879
+          856
         </td>
         <td>
-          16866
+          16848
           -
-          16866
+          16848
         </td>
         <td>
           TypeApply
@@ -9272,12 +8705,12 @@ else
           378
         </td>
         <td>
-          880
+          857
         </td>
         <td>
-          16866
+          16848
           -
-          16866
+          16848
         </td>
         <td>
           TypeApply
@@ -9296,12 +8729,12 @@ else
           378
         </td>
         <td>
-          881
+          858
         </td>
         <td>
-          16866
+          16848
           -
-          16866
+          16848
         </td>
         <td>
           TypeApply
@@ -9320,12 +8753,12 @@ else
           378
         </td>
         <td>
-          882
+          859
         </td>
         <td>
-          16866
+          16848
           -
-          16866
+          16848
         </td>
         <td>
           TypeApply
@@ -9344,12 +8777,12 @@ else
           378
         </td>
         <td>
-          883
+          860
         </td>
         <td>
-          16866
+          16848
           -
-          16888
+          16870
         </td>
         <td>
           ApplyToImplicitArgs
@@ -9368,12 +8801,12 @@ else
           381
         </td>
         <td>
-          884
+          861
         </td>
         <td>
-          16976
+          16958
           -
-          16978
+          16960
         </td>
         <td>
           Literal
@@ -9392,12 +8825,12 @@ else
           381
         </td>
         <td>
-          885
+          862
         </td>
         <td>
-          16952
+          16934
           -
-          16995
+          16977
         </td>
         <td>
           TypeApply
@@ -9416,12 +8849,12 @@ else
           386
         </td>
         <td>
-          886
+          863
         </td>
         <td>
-          17078
+          17060
           -
-          17125
+          17107
         </td>
         <td>
           TypeApply
@@ -9440,12 +8873,12 @@ else
           388
         </td>
         <td>
-          887
+          864
         </td>
         <td>
-          17241
+          17223
           -
-          17256
+          17238
         </td>
         <td>
           Apply
@@ -9464,12 +8897,12 @@ else
           388
         </td>
         <td>
-          888
+          865
         </td>
         <td>
-          17222
+          17204
           -
-          17238
+          17220
         </td>
         <td>
           Ident
@@ -9488,12 +8921,12 @@ else
           389
         </td>
         <td>
-          889
+          866
         </td>
         <td>
-          17280
+          17262
           -
-          17298
+          17280
         </td>
         <td>
           Apply
@@ -9512,12 +8945,12 @@ else
           390
         </td>
         <td>
-          890
+          867
         </td>
         <td>
-          17317
+          17299
           -
-          17352
+          17334
         </td>
         <td>
           Apply
@@ -9536,12 +8969,12 @@ else
           392
         </td>
         <td>
-          891
+          868
         </td>
         <td>
-          17383
+          17365
           -
-          17388
+          17370
         </td>
         <td>
           Select
@@ -9560,12 +8993,12 @@ else
           392
         </td>
         <td>
-          905
+          882
         </td>
         <td>
-          17360
+          17342
           -
-          17810
+          17792
         </td>
         <td>
           Apply
@@ -9587,12 +9020,12 @@ else
           393
         </td>
         <td>
-          892
+          869
         </td>
         <td>
-          17450
+          17432
           -
-          17561
+          17543
         </td>
         <td>
           Apply
@@ -9611,12 +9044,12 @@ else
           394
         </td>
         <td>
-          893
+          870
         </td>
         <td>
-          17574
+          17556
           -
-          17635
+          17617
         </td>
         <td>
           Literal
@@ -9635,12 +9068,12 @@ else
           394
         </td>
         <td>
-          904
+          881
         </td>
         <td>
-          17570
+          17552
           -
-          17801
+          17783
         </td>
         <td>
           Apply
@@ -9659,12 +9092,12 @@ else
           396
         </td>
         <td>
-          894
+          871
         </td>
         <td>
-          17650
+          17632
           -
-          17660
+          17642
         </td>
         <td>
           Literal
@@ -9683,12 +9116,12 @@ else
           396
         </td>
         <td>
-          900
+          877
         </td>
         <td>
-          17636
+          17618
           -
-          17649
+          17631
         </td>
         <td>
           Select
@@ -9707,12 +9140,12 @@ else
           397
         </td>
         <td>
-          895
+          872
         </td>
         <td>
-          17670
+          17652
           -
-          17677
+          17659
         </td>
         <td>
           Literal
@@ -9731,12 +9164,12 @@ else
           397
         </td>
         <td>
-          896
+          873
         </td>
         <td>
-          17688
+          17670
           -
-          17699
+          17681
         </td>
         <td>
           Literal
@@ -9755,12 +9188,12 @@ else
           397
         </td>
         <td>
-          901
+          878
         </td>
         <td>
-          17661
+          17643
           -
-          17669
+          17651
         </td>
         <td>
           Select
@@ -9779,12 +9212,12 @@ else
           398
         </td>
         <td>
-          897
+          874
         </td>
         <td>
-          17709
+          17691
           -
-          17717
+          17699
         </td>
         <td>
           Literal
@@ -9803,12 +9236,12 @@ else
           398
         </td>
         <td>
-          898
+          875
         </td>
         <td>
-          17722
+          17704
           -
-          17725
+          17707
         </td>
         <td>
           Literal
@@ -9827,12 +9260,12 @@ else
           398
         </td>
         <td>
-          899
+          876
         </td>
         <td>
-          17741
+          17723
           -
-          17801
+          17783
         </td>
         <td>
           Literal
@@ -9851,12 +9284,12 @@ else
           398
         </td>
         <td>
-          902
+          879
         </td>
         <td>
-          17700
+          17682
           -
-          17708
+          17690
         </td>
         <td>
           Select
@@ -9875,12 +9308,12 @@ else
           398
         </td>
         <td>
-          903
+          880
         </td>
         <td>
-          17726
+          17708
           -
-          17740
+          17722
         </td>
         <td>
           Select
@@ -9899,12 +9332,12 @@ else
           406
         </td>
         <td>
-          906
+          883
         </td>
         <td>
-          17940
+          17922
           -
-          17970
+          17952
         </td>
         <td>
           Apply
