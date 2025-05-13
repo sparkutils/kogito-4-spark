@@ -1,6 +1,5 @@
 package com.sparkutils.dmn.kogito
 
-import com.sparkutils.dmn.kogito.Types.OSEQ
 import com.sparkutils.dmn.kogito.types.Utils.optEqual
 import com.sparkutils.dmn.{DMNConfiguration, DMNExecution, DMNFile, DMNInputField, DMNModelService}
 import frameless.{RecordFieldEncoder, TypedEncoder, TypedExpressionEncoder}
@@ -29,7 +28,7 @@ case class Result[A,B](eval: Top[A,B]) extends Serializable
 
 case class Quality[A,B](quality: Result[A,B]) extends Serializable
 
-case class DebugResult[A,B](eval: Top[A,B], dmnDebugMode: OSEQ[KogitoResult], messages: OSEQ[KogitoMessage]) extends Serializable
+case class DebugResult[A,B](eval: Top[A,B], dmnDebugMode: Seq[KogitoResult], messages: Seq[KogitoMessage]) extends Serializable
 
 case class DebugQuality[A,B](quality: DebugResult[A,B]) extends Serializable
 

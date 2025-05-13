@@ -1,7 +1,6 @@
 package com.sparkutils.dmn.kogito
 
 import com.sparkutils.dmn.kogito.Errors.CONTEXT_PROVIDER_PARSE
-import com.sparkutils.dmn.kogito.Types.OSEQ
 import com.sparkutils.dmn.{DMNException, DMNExecution, DMNFile, DMNInputField, DMNModelService}
 import frameless.{TypedDataset, TypedEncoder, TypedExpressionEncoder}
 import org.apache.spark.sql.SaveMode
@@ -201,7 +200,7 @@ class ExceptionsTest extends FunSuite with Matchers with TestUtils {
       ))
     val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec, debug = true))
     dres.show
-    val messages = dres.select("quality.dmnMessages").as[OSEQ[KogitoMessage]].collect
+    val messages = dres.select("quality.dmnMessages").as[Seq[KogitoMessage]].collect
     messages.length shouldBe 1
     messages.head.length shouldBe 1
     messages.head.head shouldBe KogitoMessage("_EEA70EE7-2AD0-4466-B326-8C0514EE2E6E","sqrt(\"my name\")",null,KogitoFeelEvent("ERROR","Unable to find function 'sqrt( lass org.kie.dmn.feel.runtime.functions.SqrtFunctio )'",-1,-1,null,null))
