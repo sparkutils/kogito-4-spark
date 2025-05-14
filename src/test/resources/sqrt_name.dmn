@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/" expressionLanguage="https://www.omg.org/spec/DMN/20230324/FEEL/" namespace="throws" id="_888F9C55-0CEC-4252-90BB-6311FA85CDB0" name="throws" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:kie="https://kie.org/dmn/extensions/1.0">
+  <decisionService name="ds" id="_8D3CCCC3-6D8D-4D1E-A036-F388E3CED12A">
+    <variable name="ds" id="_E208DF9A-E366-420E-BD89-53FA20F7E6A9" />
+  </decisionService>
+  <decision name="evaluate" id="_6D3E2EE9-FAC4-4789-8CC1-3B0EB760749C">
+    <variable name="evaluate" id="_88E7CD24-193C-4918-BBA1-DEB556290B40" typeRef="Any" />
+    <informationRequirement id="_D2893E02-5B20-48F4-BBB2-62A0523E111F">
+      <requiredInput href="#_E7610566-16F3-4EA2-B2EE-5ABE8C39FBCB" />
+    </informationRequirement>
+    <literalExpression id="_EEA70EE7-2AD0-4466-B326-8C0514EE2E6E" typeRef="Any" label="evaluate">
+      <text>sqrt("my name")</text>
+    </literalExpression>
+  </decision>
+  <inputData name="inputData" id="_E7610566-16F3-4EA2-B2EE-5ABE8C39FBCB">
+    <variable name="inputData" id="_8D6869FB-173D-44EC-90C2-B226B116EDA7" typeRef="Any" />
+  </inputData>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="_234691B1-52F2-47FE-BA88-DF01050B719D" name="Default DRD" useAlternativeInputDataShape="false">
+      <di:extension>
+        <kie:ComponentsWidthsExtension>
+          <kie:ComponentWidths dmnElementRef="_EEA70EE7-2AD0-4466-B326-8C0514EE2E6E">
+            <kie:width>190</kie:width>
+          </kie:ComponentWidths>
+        </kie:ComponentsWidthsExtension>
+      </di:extension>
+      <dmndi:DMNShape id="_D25D2E29-AFC8-48E2-9155-264DF1BD525B" dmnElementRef="_8D3CCCC3-6D8D-4D1E-A036-F388E3CED12A" isCollapsed="false" isListedInputData="false">
+        <dc:Bounds x="920" y="320" width="320" height="320" />
+        <dmndi:DMNDecisionServiceDividerLine id="_FB1F4246-AAB6-4326-93C3-2D6B872C5745">
+          <di:waypoint x="920" y="480" />
+          <di:waypoint x="1240" y="480" />
+        </dmndi:DMNDecisionServiceDividerLine>
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="_F7900F93-AC1A-4117-BBB0-A7472A2A62D6" dmnElementRef="_6D3E2EE9-FAC4-4789-8CC1-3B0EB760749C" isCollapsed="false" isListedInputData="false">
+        <dc:Bounds x="1060" y="540" width="160" height="80" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="_FBE5CF44-1A84-4E9C-BD56-28E3A697E8B0" dmnElementRef="_E7610566-16F3-4EA2-B2EE-5ABE8C39FBCB" isCollapsed="false" isListedInputData="false">
+        <dc:Bounds x="540" y="300" width="160" height="80" />
+      </dmndi:DMNShape>
+      <dmndi:DMNEdge id="_97E6D9C2-9C53-48B0-A1D1-608ED25437C9" dmnElementRef="_D2893E02-5B20-48F4-BBB2-62A0523E111F" sourceElement="_FBE5CF44-1A84-4E9C-BD56-28E3A697E8B0" targetElement="_F7900F93-AC1A-4117-BBB0-A7472A2A62D6">
+        <di:waypoint x="620" y="340" />
+        <di:waypoint x="1060" y="580" />
+      </dmndi:DMNEdge>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

@@ -4,7 +4,9 @@ import com.sparkutils.dmn._
 import com.sparkutils.dmn.impl._
 import com.sparkutils.dmn.impl.utils.configMap
 import com.sparkutils.dmn.kogito.ContextProviders.contextProviderFromDDL
+import com.sparkutils.dmn.kogito.Errors.CONTEXT_PROVIDER_PARSE
 import com.sparkutils.dmn.kogito.Types.MAP
+import org.apache.spark.sql.catalyst.parser.ParseException
 import org.apache.spark.sql.types.{DataType, StructType}
 import org.kie.dmn.core.internal.utils.DMNRuntimeBuilder
 import org.kie.internal.io.ResourceFactory
@@ -58,7 +60,11 @@ class KogitoDMNRepository() extends DMNRepository {
   override def supportsDecisionService: Boolean = true
 
   override def providerForType(inputField: DMNInputField, debug: Boolean, dmnConfiguration: DMNConfiguration): DMNContextProvider[_] = {
-    val (path, expr) = (KogitoDMNContextPath(inputField.contextPath), inputField.defaultExpr)
+    val (path, expr) = try {
+      (KogitoDMNContextPath(inputField.contextPath), inputField.defaultExpr)
+    } catch {
+      case p: ParseException => throw DMNException(s"$CONTEXT_PROVIDER_PARSE : ${inputField.fieldExpression}", p)
+    }
 
     val config = configMap(dmnConfiguration)
 
@@ -101,34 +107,33 @@ case class KogitoDMNContext(ctx: org.kie.dmn.api.core.DMNContext) extends DMNCon
     val starter =
       ctx.get(bits(0)) match {
         case _ if bits.length == 1 =>
+          // top level direct entries only (map or otherwise)
           ctx.set(bits.head, data)
           return
-        case null if bits.length > 1 =>
+        case t: MAP =>
+          t
+        case _ =>
+          // any other top level field must be overwritten
           val n = new util.HashMap[String, Object]()
           ctx.set(bits.head, n)
           n
-        case t: MAP =>
-          t
-        case _ => // TODO log warn
-          ctx.set(bits.head, data)
-          return
       }
 
-    // top is the root context, bottom is the place we'd store things
-    bits.drop(1).dropRight(1).foldLeft(starter){
+    val remaining =
+      if (data.isInstanceOf[MAP])
+        bits.drop(1)
+      else
+        bits.drop(1).dropRight(1)
+
+    remaining.foldLeft(starter){
       (map, pathBit) =>
-        map match {
-          case t: MAP =>
-            val n =
-              t.get(pathBit) match {
-                case null => new util.HashMap[String, Object]()
-                case t: MAP => t
-                case _ => new util.HashMap[String, Object]()
-              }
-            t.put(pathBit, n)
-            n
-          case _ => map
-        }
+        val n =
+          map.get(pathBit) match {
+            case null => new util.HashMap[String, Object]()
+            case t: MAP => t
+          }
+        map.put(pathBit, n)
+        n
     }
 
     def updateContext(bits: Seq[String], map: MAP): MAP =
@@ -138,7 +143,7 @@ case class KogitoDMNContext(ctx: org.kie.dmn.api.core.DMNContext) extends DMNCon
       } else
         updateContext(bits.drop(1), map.get(bits.head).asInstanceOf[MAP])
 
-    ctx.set(bits.head, updateContext(bits.drop(1).toVector, starter)) // drop the 1st as that's for the root context
+    updateContext(bits.drop(1).toVector, starter)
   }
 }
 
@@ -167,3 +172,7 @@ case class KogitoMessage(sourceId: String, sourceReference: String, exception: S
  * @param messages
  */
 case class KogitoResult(decisionId: String, decisionName: String, hasErrors: Boolean, messages: Seq[KogitoMessage], evaluationStatus: String) extends Serializable
+
+object Errors {
+  val CONTEXT_PROVIDER_PARSE = "FieldExpression is invalid SQL"
+}

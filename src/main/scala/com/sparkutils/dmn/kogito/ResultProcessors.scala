@@ -3,26 +3,57 @@ package com.sparkutils.dmn.kogito
 import com.sparkutils.dmn
 import com.sparkutils.dmn.DMNResultProvider
 import com.sparkutils.dmn.impl.DMNExpression
-import com.sparkutils.dmn.kogito.types.Arrays.exprCode
+import com.sparkutils.dmn.kogito.ResultProcessors.{debugDDL, messagesDDL}
+import com.sparkutils.dmn.kogito.types.Utils.{exprCode, nullOr}
 import com.sparkutils.dmn.kogito.types.ResultInterfaces
 import com.sparkutils.dmn.kogito.types.ResultInterfaces.{EVALUATING, FAILED, NOT_EVALUATED, NOT_FOUND, SKIPPED_ERROR, SKIPPED_WARN, SUCCEEDED, evalStatusEnding, forTypeCodeGen}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper
 import org.apache.spark.sql.catalyst.expressions.{GenericInternalRow, LeafExpression}
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, CodegenFallback, ExprCode}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.util.GenericArrayData
 import org.apache.spark.sql.types.{ArrayType, BooleanType, DataType, IntegerType, StringType, StructField, StructType}
 import org.apache.spark.unsafe.types.UTF8String
 import org.kie.dmn.api.core
 import org.kie.dmn.api.core.DMNDecisionResult.DecisionEvaluationStatus
-import org.kie.dmn.api.core.DMNResult
+import org.kie.dmn.api.core.{DMNMessage, DMNResult}
+import org.kie.dmn.api.feel.runtime.events.FEELEvent
 import org.kie.dmn.feel.lang.types.impl.ComparablePeriod
+import org.kie.dmn.model.api.LiteralExpression
 import org.kie.kogito.dmn.rest.DMNFEELComparablePeriodSerializer
 import sparkutilsKogito.com.fasterxml.jackson.databind.{ObjectMapper, SerializationFeature}
 import sparkutilsKogito.com.fasterxml.jackson.databind.module.SimpleModule
 
 import scala.collection.JavaConverters._
 import scala.util.Try
+
+object ResultProcessors {
+
+  val messagesDDL =
+    ArrayType(StructType(Seq(
+      StructField("sourceId", StringType),
+      StructField("sourceReference", StringType), // TODO should this be structs for DMNModelInstrumentedBase ?
+      StructField("exception", StringType, nullable = true),
+      StructField("feelEvent", StructType(Seq(
+        StructField("severity", StringType),
+        StructField("message", StringType),
+        StructField("line", IntegerType),
+        StructField("column", IntegerType),
+        StructField("sourceException", StringType, nullable = true),
+        StructField("offendingSymbol", StringType)
+      )))
+    )))
+
+  val debugDDL =
+    ArrayType(StructType(Seq(
+      StructField("decisionId", StringType),
+      StructField("decisionName", StringType),
+      StructField("hasErrors", BooleanType),
+      StructField("messages", messagesDDL, nullable = true),
+      StructField("evaluationStatus", StringType),
+    )))
+
+}
 
 trait KogitoProcess extends DMNResultProvider {
 
@@ -32,31 +63,10 @@ trait KogitoProcess extends DMNResultProvider {
 
   def underlyingType: StructType
 
-  val debugDDL =
-    ArrayType(StructType(Seq(
-      StructField("decisionId", StringType),
-      StructField("decisionName", StringType),
-      StructField("hasErrors", BooleanType),
-      StructField("messages", ArrayType(StructType(Seq(
-        StructField("sourceId", StringType),
-        StructField("sourceReference", StringType), // TODO should this be structs for DMNModelInstrumentedBase ?
-        StructField("exception", StringType, nullable = true),
-        StructField("feelEvent", StructType(Seq(
-          StructField("severity", StringType),
-          StructField("message", StringType),
-          StructField("line", IntegerType),
-          StructField("column", IntegerType),
-          StructField("sourceException", StringType, nullable = true),
-          StructField("offendingSymbol", StringType)
-        )), nullable = true)
-      )))),
-      StructField("evaluationStatus", StringType),
-    )))
-
   override def dataType: DataType = {
     val nullables = underlyingType.copy(fields = underlyingType.fields.map(_.copy(nullable = true)))
     if (debug)
-      nullables.copy(fields = nullables.fields :+ StructField("debugMode", debugDDL))
+      nullables.copy(fields = nullables.fields ++ Seq(StructField("dmnDebugMode", ResultProcessors.debugDDL), StructField("dmnMessages", messagesDDL)))
     else
       nullables
   }
@@ -66,6 +76,13 @@ trait KogitoProcess extends DMNResultProvider {
     val res = dmnResult.asInstanceOf[KogitoDMNResult].result
     process(res)
   }
+
+  // helpful for debugging if you uncomment in the processors codegen
+  // $COVERAGE-OFF$
+  def checkResult(res: DMNResult): Unit = {
+    println(res)
+  }
+  // $COVERAGE-ON$
 
   def kogitoResultStr = s"((${classOf[KogitoDMNResult].getName})${DMNExpression.runtimeVar.get()}).result()"
 
@@ -135,38 +152,46 @@ case class KogitoDDLResult(debug: Boolean, underlyingType: StructType, config: M
         ires
   }
 
-  def withDebug(res: DMNResult, ires: GenericInternalRow) = {
-    new GenericInternalRow(ires.values :+ new GenericArrayData(
+  def withMessages(messages: java.util.List[DMNMessage]): GenericArrayData =
+    new GenericArrayData(
+      messages.asScala.map {
+        m =>
+          InternalRow(
+            nullOr(a => UTF8String.fromString(a))(m.getSourceId),
+            nullOr{(_: Object) match {
+              case feel: LiteralExpression => UTF8String.fromString(feel.getText)
+              case a => UTF8String.fromString(a.toString)
+            }}(m.getSourceReference),
+            nullOr((a: Throwable) => UTF8String.fromString(a.getMessage))(m.getException),
+            nullOr{ (ev: FEELEvent) =>
+              InternalRow(
+                nullOr((a: FEELEvent.Severity) => UTF8String.fromString(a.toString))(ev.getSeverity),
+                UTF8String.fromString(ev.getMessage),
+                ev.getLine,
+                ev.getColumn,
+                nullOr((a: Throwable) => UTF8String.fromString(a.getMessage))(ev.getSourceException),
+                nullOr((a: Object) => UTF8String.fromString(a.toString))(ev.getOffendingSymbol)
+              )
+            }(m.getFeelEvent)
+          )
+      }
+    )
+
+  def withDebug(res: DMNResult, ires: GenericInternalRow) =
+    new GenericInternalRow(ires.values ++ Seq( new GenericArrayData(
       res.getDecisionResults.asScala.map {
         d =>
           InternalRow(
             UTF8String.fromString(d.getDecisionId),
             UTF8String.fromString(d.getDecisionName),
             d.hasErrors,
-            new GenericArrayData(
-              d.getMessages.asScala.map {
-                m =>
-                  InternalRow(
-                    UTF8String.fromString(m.getSourceId),
-                    UTF8String.fromString(m.getSourceReference.toString),
-                    if (m.getException eq null) null else UTF8String.fromString(m.getException.getMessage),
-                    if (m.getFeelEvent eq null) null else
-                      InternalRow(
-                        UTF8String.fromString(m.getFeelEvent.getSeverity.toString),
-                        UTF8String.fromString(m.getFeelEvent.getMessage),
-                        m.getFeelEvent.getLine,
-                        m.getFeelEvent.getColumn,
-                        if (m.getFeelEvent.getSourceException eq null) null else UTF8String.fromString(m.getFeelEvent.getSourceException.getMessage),
-                        UTF8String.fromString(m.getFeelEvent.getOffendingSymbol.toString)
-                      )
-                  )
-              }
-            ),
+            withMessages(d.getMessages),
             UTF8String.fromString(d.getEvaluationStatus.toString)
           )
       }
+      ),
+      withMessages(res.getMessages)
     ))
-  }
 
   def setStatuses(tres: GenericInternalRow, res: org.kie.dmn.api.core.DMNResult): GenericInternalRow =
     evalStatus.foldLeft(tres) {
@@ -175,8 +200,11 @@ case class KogitoDDLResult(debug: Boolean, underlyingType: StructType, config: M
         val dr = res.getDecisionResultByName(decisionName)
         if (dr ne null) {
           row.update(i, dr.getEvaluationStatus match {
+            // $COVERAGE-OFF$
+            // would require throwing in the evaluation, not sure how to reproduce that
             case DecisionEvaluationStatus.NOT_EVALUATED => NOT_EVALUATED
             case DecisionEvaluationStatus.EVALUATING => EVALUATING
+            // $COVERAGE-ON$
             case DecisionEvaluationStatus.SUCCEEDED => SUCCEEDED
             case DecisionEvaluationStatus.SKIPPED if dr.hasErrors => SKIPPED_ERROR
             case DecisionEvaluationStatus.SKIPPED => SKIPPED_WARN
@@ -203,11 +231,13 @@ case class KogitoDDLResult(debug: Boolean, underlyingType: StructType, config: M
     val decisionMapN = dm.value
 
 
-    val getExpr = forTypeCodeGen(underlyingType).forPath(ctx, decisionMapN, ev.isNull)
+    val getExpr = forTypeCodeGen(underlyingType).forPath(ctx, decisionMapN)
 
     ev.copy(code =
       code"""
          org.apache.spark.sql.catalyst.expressions.GenericInternalRow ${ev.value} = null;
+         // uncomment to debug the result
+         // (($ddlResultClassName)references[$resultIdx]).checkResult($kogitoResultStr);
          boolean ${ev.isNull} = ($kogitoResultStr == null);
          if (!${ev.isNull}) {
            final java.util.List<org.kie.dmn.api.core.DMNDecisionResult> $decisionResults = $kogitoResultStr.getDecisionResults();

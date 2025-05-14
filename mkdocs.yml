@@ -37,7 +37,7 @@ nav:
   - About:
       - Changelog: about/changelog.md
   - Maven Site: site/index.html
-  - Scala Docs: site/scaladocs/com/sparkutils/quality/index.html
+  - Scala Docs: site/scaladocs/com/sparkutils/dmn/kogito/index.html
 
 plugins:
   - search:

@@ -5,7 +5,7 @@
     <groupId>com.sparkutils</groupId>
     <artifactId>kogito-4-spark_testshade_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
 
-    <version>0.0.1-RC18</version>
+    <version>0.0.1-RC23-SNAPSHOT</version>
     <name>kogito-4-spark Test Pack</name>
     <description>Packaged tests and shaded jar for deploying in Databricks, or similar to verify builds still run</description>
     <url>https://sparkutils.github.io/kogito-4-spark/</url>
@@ -25,7 +25,7 @@
         <developerConnection>scm:git:ssh://github.com:sparkutils/kogito-4-spark.git</developerConnection>
         <url>http://github.com/sparkutils/kogito-4-spark/tree/master</url>
     </scm>
-<!-- not tied to a parent pom as it should not be built first and may be split out into a separate project -->
+<!-- not tied to a parent pom as it should  not be built first and may be split out into a separate project -->
     <profiles>
         <profile>
             <id>scala_2.12.18</id> <!-- 4 was built against this, seemingly dropped since Sep 23 -->

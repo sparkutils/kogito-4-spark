@@ -13,7 +13,7 @@ Databricks supports both 2.12 and 2.13 scala versions for 16.4, ensure the corre
 
 ## Testing out kogito-4-spark via Notebooks
 
-You can use the appropriate runtime kogito-4-spark_testshade artefact jar (e.g. [DBR 16.4](https://s01.oss.sonatype.org/content/repositories/releases/com/sparkutils/kogito-4-spark_testshade_16.3.dbr_3.5_2.12/0.0.1-RC14/kogito-4-spark_testshade_16.3.dbr_3.5_2.12-0.0.1-RC14.jar)) from maven to upload into your workspace / notebook env (or add via maven).  When using Databricks make sure to use the appropriate _Version.dbr builds.
+You can use the appropriate runtime kogito-4-spark_testshade artefact jar (e.g. [DBR 16.4 2.12](https://s01.oss.sonatype.org/content/repositories/releases/com/sparkutils/kogito-4-spark_testshade_16.3.dbr_3.5_2.12/0.0.1-RC22/kogito-4-spark_testshade_16.3.dbr_3.5_2.12-0.0.1-RC22.jar)) from maven to upload into your workspace / notebook env (or add via maven).  When using Databricks make sure to use the appropriate _Version.dbr builds.
 
 Then using:
 
@@ -38,11 +38,11 @@ Ideally at the end of your runs you'll see - after 2 minutes or so and some stdo
 
 ```
 .......................................................
-Time: 85.331
+Time: 95.255
 
-OK (55 tests)
+OK (79 tests)
 
-Finished. Result: Failures: 0. Ignored: 0. Tests run: 55. Time: 85331ms.
+Finished. Result: Failures: 0. Ignored: 0. Tests run: 79. Time: 95255ms.
 import com.sparkutils.dmn.kogito.tests.TestSuite
 import com.sparkutils.dmn.kogito.TestUtils
 fileLoc: String = /Workspace/Users/name@domain/kogito-4-spark-testdir

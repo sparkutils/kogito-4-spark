@@ -1,13 +1,13 @@
 package com.sparkutils.dmn.kogito.types
 
 import com.sparkutils.dmn.DMNException
-import com.sparkutils.dmn.kogito.types.Arrays.exprCode
+import com.sparkutils.dmn.kogito.types.Utils.{exprCode, exprCodeInterim, nullOr => rnullOr}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.GenericInternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeGenerator, CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.util.{ArrayBasedMapData, DateTimeUtils, GenericArrayData}
-import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DataType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, MapType, ShortType, StringType, StructType, TimestampType}
+import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DataType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, MapType, ShortType, StringType, StructType, TimestampNTZType, TimestampType}
 import org.apache.spark.unsafe.types.UTF8String
 
 import java.time.{LocalDate, LocalDateTime}
@@ -35,6 +35,10 @@ object ResultInterfaces {
     def get(path: Any): Any
   }
 
+  def anullOr(f: Any => Any) = new Getter {
+    def get(path: Any) = rnullOr[Any, Any](f)(path)
+  }
+
   def forType(dataType: DataType): Getter = dataType match {
     case structType: StructType =>
 
@@ -47,41 +51,35 @@ object ResultInterfaces {
         )
       }
 
-      (path: Any) => {
-        if (path == null) null else {
-          val m = path.asInstanceOf[util.Map[String, Object]]
-          InternalRow(s.map { case (name, g) => g.get(m.get(name)) }: _*)
-        }
+      anullOr{ path =>
+        val m = path.asInstanceOf[util.Map[String, Object]]
+        InternalRow(s.map { case (name, g) => g.get(m.get(name)) }: _*)
       }
-    case StringType => (path: Any) => if (path == null) null else UTF8String.fromString( path.toString )
-    case IntegerType => (path: Any) => if (path == null) null else path.asInstanceOf[Integer]
-    case LongType => (path: Any) => if (path == null) null else path.asInstanceOf[Long]
-    case BooleanType => (path: Any) => if (path == null) null else path.asInstanceOf[Boolean]
-    case DoubleType => (path: Any) => if (path == null) null else path.asInstanceOf[Double]
-    case FloatType => (path: Any) => if (path == null) null else path.asInstanceOf[Float]
-    case BinaryType => (path: Any) => if (path == null) null else path.asInstanceOf[Array[Byte]]
-    case ByteType => (path: Any) => if (path == null) null else path.asInstanceOf[Byte]
-    case ShortType => (path: Any) => if (path == null) null else path.asInstanceOf[Short]
-    case DateType => (path: Any) => if (path == null) null else DateTimeUtils.localDateToDays( path.asInstanceOf[LocalDate] )
-    case TimestampType => (path: Any) => if (path == null) null else DateTimeUtils.localDateTimeToMicros( path.asInstanceOf[LocalDateTime] )
-    case _: DecimalType => (path: Any) =>
-      if (path == null) null else Decimal.apply(path.asInstanceOf[java.math.BigDecimal])
+    case StringType => anullOr(path => UTF8String.fromString( path.toString ))
+    case IntegerType => anullOr(path => path.asInstanceOf[Integer])
+    case LongType => anullOr(path => path.asInstanceOf[Long])
+    case BooleanType => anullOr(path => path.asInstanceOf[Boolean])
+    case DoubleType => anullOr(path => path.asInstanceOf[Double])
+    case FloatType => anullOr(path => path.asInstanceOf[Float])
+    case BinaryType => anullOr(path => path.asInstanceOf[Array[Byte]])
+    case ByteType => anullOr(path => path.asInstanceOf[Byte])
+    case ShortType => anullOr(path => path.asInstanceOf[Short])
+    case DateType => anullOr(path => DateTimeUtils.localDateToDays( path.asInstanceOf[LocalDate] ))
+    case TimestampType | TimestampNTZType => anullOr(path =>
+      DateTimeUtils.localDateTimeToMicros( path.asInstanceOf[LocalDateTime] ))
+    case _: DecimalType => anullOr(path => Decimal.apply(path.asInstanceOf[java.math.BigDecimal]))
     case ArrayType(typ, _) =>
       val g = forType(typ)
-      (path: Any) => {
-        if (path == null) null else {
-          val a = path.asInstanceOf[util.List[_]].toArray.map(g.get(_))
-          new GenericArrayData(a)
-        }
+      anullOr{path =>
+        val a = path.asInstanceOf[util.List[_]].toArray.map(g.get(_))
+        new GenericArrayData(a)
       }
     case MapType(k, v, _) =>
       val kG = forType(k)
       val vG = forType(v)
-      (path: Any) => {
-        if (path == null) null else {
-          val m = path.asInstanceOf[util.Map[Object, Object]].asScala.toMap.map(e => kG.get(e._1) -> vG.get(e._2))
-          new ArrayBasedMapData(new GenericArrayData(m.keys.toArray), new GenericArrayData(m.values.toArray))
-        }
+      anullOr{path =>
+        val m = path.asInstanceOf[util.Map[Object, Object]].asScala.toMap.map(e => kG.get(e._1) -> vG.get(e._2))
+        new ArrayBasedMapData(new GenericArrayData(m.keys.toArray), new GenericArrayData(m.values.toArray))
       }
     case _ => throw new DMNException(s"Could not load Kogito Result Provider for dataType $dataType")
   }
@@ -93,32 +91,32 @@ object ResultInterfaces {
      * @param pathName variable to access (typically a SpecializedGetters)
      * @return generated code which returns either the underlying type or util.map/util.list
      */
-    def forPath(ctx: CodegenContext, pathName: String, pathNameIsNull: String): ExprCode
+    def forPath(ctx: CodegenContext, pathName: String): ExprCode
   }
   def nullOr[T: ClassTag](f: String => String = path => s"$path"): GetterCodeGen =
-    (ctx: CodegenContext, pathName: String, pathNameIsNull: String) => {
-      val c = f(pathName)
-      exprCode(classTag[T].runtimeClass, ctx,
-        code"""(($pathNameIsNull) ? null : $c);""", cast = false) // all are object anyway
+    (ctx: CodegenContext, pathName: String) => {
+      exprCodeInterim(classTag[T].runtimeClass, ctx, code"$pathName",
+        i => code"""${f(i)}""", cast = false) // all are object anyway
     }
 
   def forTypeCodeGen(dataType: DataType): GetterCodeGen = dataType match {
-   case structType: StructType =>
-      (ctx: CodegenContext, pathName: String, pathNameIsNull: String) => {
+    case structType: StructType =>
+      val mappedFields = structType.fields.map { f =>
+        (f.name,
+          if (f.name.endsWith(evalStatusEnding))
+            nullOr[Byte](_ => s"com.sparkutils.dmn.kogito.types.ResultInterfaces.EVALUATING()")
+          else
+            forTypeCodeGen(f.dataType)
+        )
+      }
+      (ctx: CodegenContext, pathName: String) => {
         val expr = exprCode(classOf[GenericInternalRow],ctx)
 
         val mapName = ctx.freshVariable("map", classOf[util.Map[String,Object]])
 
-        val s = structType.fields.map { f =>
-          (f.name,
-            if (f.name.endsWith(evalStatusEnding))
-              nullOr[Byte](_ => s"com.sparkutils.dmn.kogito.types.ResultInterfaces.EVALUATING()")
-            else
-              forTypeCodeGen(f.dataType)
-          )
-        }.map{
+        val s = mappedFields.map{
           case (n,f) =>
-            f.forPath(ctx, s"""$mapName.get("$n")""", expr.isNull)
+            f.forPath(ctx, s"""$mapName.get("$n")""")
         }
         val init = s.foldLeft(code""){
           case (c, e) =>
@@ -134,10 +132,8 @@ object ResultInterfaces {
           code"""
             org.apache.spark.sql.catalyst.expressions.GenericInternalRow ${expr.value} = null;
             java.util.Map $mapName = (java.util.Map<String, Object>)$pathName;
-            boolean ${expr.isNull} = false;
-            if ($pathNameIsNull) {
-              ${expr.isNull} = true;
-            } else {
+            boolean ${expr.isNull} = ($mapName == null);
+            if (!${expr.isNull}) {
               $init
               Object[] $resArr = new Object[]{$fields};
 
@@ -159,12 +155,13 @@ object ResultInterfaces {
     case ShortType => nullOr[Short]()
     case DateType =>
       nullOr[Int]( path => s"org.apache.spark.sql.catalyst.util.DateTimeUtils.localDateToDays( (java.time.LocalDate) $path )")
-    case TimestampType =>
+    case TimestampType  | TimestampNTZType =>
       nullOr[Long]( path => s"org.apache.spark.sql.catalyst.util.DateTimeUtils.localDateTimeToMicros( (java.time.LocalDateTime) $path )")
     case _: DecimalType =>
       nullOr[Decimal]( path => s"org.apache.spark.sql.types.Decimal.apply( (java.math.BigDecimal) $path )")
     case ArrayType(typ, _) =>
-      (ctx: CodegenContext, pathName: String, pathNameIsNull: String) => {
+      val arrCode = forTypeCodeGen(typ)
+      (ctx: CodegenContext, pathName: String) => {
         val expr = exprCode(classOf[GenericArrayData],ctx)
 
         val iar = ctx.freshVariable("ar", classOf[util.List[Object]])
@@ -173,17 +170,15 @@ object ResultInterfaces {
 
         val arrRes = ctx.freshVariable("arr", classOf[Array[Object]])
 
-        val typCode = forTypeCodeGen(typ).forPath(ctx, s"$arrRes[$i]", expr.isNull)
+        val typCode = arrCode.forPath(ctx, s"$arrRes[$i]")
 
         expr.copy(
           code =
             code"""
             org.apache.spark.sql.catalyst.util.GenericArrayData ${expr.value} = null;
             java.util.List $iar = (java.util.List<Object>)$pathName;
-            boolean ${expr.isNull} = false;
-            if ($pathNameIsNull) {
-              ${expr.isNull} = true;
-            } else {
+            boolean ${expr.isNull} = ($iar == null);
+            if (!${expr.isNull}) {
               Object[] $arrRes = $iar.toArray();
 
               for (int $i = 0; $i < $arrRes.length; $i++) {
@@ -196,7 +191,9 @@ object ResultInterfaces {
         )
       }
     case MapType(k, v, _) =>
-      (ctx: CodegenContext, pathName: String, pathNameIsNull: String) => {
+      val kCode = forTypeCodeGen(k)
+      val vCode = forTypeCodeGen(v)
+      (ctx: CodegenContext, pathName: String) => {
         val expr = exprCode(classOf[ArrayBasedMapData], ctx)
 
         val map = ctx.freshVariable("map", classOf[util.Map[String, Object]])
@@ -205,8 +202,8 @@ object ResultInterfaces {
 
         val entry = ctx.freshVariable("entry", classOf[util.Map.Entry[String, Object]])
 
-        val typCodeK = forTypeCodeGen(k).forPath(ctx, s"$entry.getKey()", expr.isNull)
-        val typCodeV = forTypeCodeGen(v).forPath(ctx, s"$entry.getValue()", expr.isNull)
+        val typCodeK = kCode.forPath(ctx, s"$entry.getKey()")
+        val typCodeV = vCode.forPath(ctx, s"$entry.getValue()")
 
         val arrKeyRes = ctx.freshVariable("arrKey", classOf[Array[Object]])
         val arrValueRes = ctx.freshVariable("arrValue", classOf[Array[Object]])
@@ -218,10 +215,8 @@ object ResultInterfaces {
             code"""
             org.apache.spark.sql.catalyst.util.ArrayBasedMapData ${expr.value} = null;
             java.util.Map $map = (java.util.Map<String, Object>)$pathName;
-            boolean ${expr.isNull} = false;
-            if ($pathNameIsNull) {
-              ${expr.isNull} = true;
-            } else {
+            boolean ${expr.isNull} = ($map == null);
+            if (!${expr.isNull}) {
               Object[] $arrKeyRes = new Object[$map.size()];
               Object[] $arrValueRes = new Object[$map.size()];
               java.util.Iterator<java.util.Map.Entry<String, Object>> $itr = $map.entrySet().iterator();

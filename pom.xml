@@ -155,7 +155,7 @@
     </profiles>
 
     <properties>
-        <revision>0.0.1-RC18</revision>
+        <revision>0.0.1-RC23-SNAPSHOT</revision>
 
         <mavenFlattenPluginVersion>1.2.7</mavenFlattenPluginVersion>
         <mavenProjectInfoReportsPluginVersion>3.4.5</mavenProjectInfoReportsPluginVersion>
@@ -194,7 +194,7 @@
         <shimCompilationVersion>0.2.0-RC2</shimCompilationVersion>
         <shimRuntimeVersion>0.2.0-RC2</shimRuntimeVersion>
 
-        <dmn4SparkVersion>0.0.1-RC7</dmn4SparkVersion>
+        <dmn4SparkVersion>0.0.1-RC8</dmn4SparkVersion>
         <shadedKogitoVersion>0.0.12</shadedKogitoVersion>
 
         <framelessVersion>0.17.0</framelessVersion>
@@ -207,6 +207,10 @@
         <repository>
             <id>ossrh</id>
             <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
+        </repository>
+        <repository>
+            <id>ossrh_rel</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/releases/</url>
         </repository>
         <repository>
             <id>apache_snaps</id>

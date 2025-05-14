@@ -1,8 +1,8 @@
 package com.sparkutils.dmn.kogito
 
 import com.sparkutils.dmn.kogito.types.ResultInterfaces.{SUCCEEDED, evalStatusEnding}
-import com.sparkutils.dmn.{DMNExecution, DMNFile, DMNInputField, DMNModelService}
-import frameless.TypedExpressionEncoder
+import com.sparkutils.dmn.{DMNConfiguration, DMNExecution, DMNFile, DMNInputField, DMNModelService}
+import frameless.{TypedDataset, TypedEncoder, TypedExpressionEncoder}
 import org.apache.spark.sql.{DataFrame, SaveMode}
 import org.junit.runner.RunWith
 import org.scalatest.{FunSuite, Matchers}
@@ -33,6 +33,13 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
     TestData("MX", "a", 1, 4, "it"),
     TestData("BR", "a", 1, 5, "ops"),
   )
+  val dataBasisNulls = Seq(
+    TestData(null, null , 1, 1, "sales"),
+    TestData("UK", "a", 1, 2, null),
+    TestData("CH", null, 1, 3, "hr"),
+    TestData(null, "a", 1, 4, "it"),
+    TestData(null, "a", 1, 5, null),
+  )
 
   def testResults(res: DataFrame): Unit = {
     import sparkSession.implicits._
@@ -59,7 +66,7 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
     testResults(res)
     val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec, debug = true))
     testResults(dres)
-    val debugs = dres.select("quality.debugMode").as[Seq[KogitoResult]].collect
+    val debugs = dres.select("quality.dmnDebugMode").as[Seq[KogitoResult]].collect
     debugs.forall( _ == Seq(testDebug)) shouldBe true
     if (exec.model.resultProvider.contains(evalStatusEnding)) {
       val statuses = dres.select(s"quality.evaluate$evalStatusEnding").as[Byte](TypedExpressionEncoder[Byte]).collect()
@@ -267,4 +274,83 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
     res.size shouldBe 1
     res.head shouldBe """{"evaluate":null}"""
   }
+
+  def testNullable(fields: scala.collection.immutable.Seq[DMNInputField]): Unit = evalCodeGens {
+    import sparkSession.implicits._
+
+    val ds = Seq(dataBasisNulls).toDS.selectExpr("explode(value) as f").selectExpr("f.*")
+
+    val exec = DMNExecution(dmnFiles, dmnModel, fields)
+    val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec, debug = true))
+    val asSeqs = dres.select("quality.evaluate").as[Seq[Boolean]](TypedExpressionEncoder[Seq[Boolean]]).collect()
+    val (without3, after2) = asSeqs.toSeq.splitAt(2)
+    val three = after2.head
+    three(13) shouldBe true
+    three.count(_ == true) shouldBe 1
+    (without3 ++ after2.tail).forall(_.forall(_ == false)) shouldBe true
+  }
+
+  test("nullable fields") {
+    testNullable(
+      scala.collection.immutable.Seq(
+        DMNInputField("location", "", "testData.location"),
+        DMNInputField("idPrefix", "", "testData.idPrefix"),
+        DMNInputField("id", "", "testData.id"),
+        DMNInputField("page", "", "testData.page"),
+        DMNInputField("department", "", "testData.department")
+      ))
+  }
+
+  test("nullable struct") {
+    testNullable(
+      scala.collection.immutable.Seq(
+        DMNInputField("struct(*)", "", "testData")
+      ))
+  }
+
+  val ons = "onetoone"
+
+  val odmnFiles = scala.collection.immutable.Seq(
+    DMNFile("onetoone.dmn",
+      this.getClass.getClassLoader.getResourceAsStream("onetoone.dmn").readAllBytes()
+    )
+  )
+  def odmnModel(resDDL: String) = DMNModelService(ons, ons, None, s"struct<`evaluate a thing_dmnEvalStatus`: Byte, `evaluate a thing`: $resDDL>")
+
+  def testOneToOne[A: TypedEncoder](data: A, fields: scala.collection.immutable.Seq[DMNInputField], resDDL: String = Others.ddl, extraPath: String = ".*"): Unit = evalCodeGens {
+    implicit val spark = sparkSession
+    val tds = TypedDataset.create(Seq(data)).dataset
+    val ds = if (inCodegen) tds.repartition(4) else tds
+
+    val exec = DMNExecution(odmnFiles, odmnModel(resDDL), fields, configuration = DMNConfiguration(options = "useTreeMap=nottrue")) // triggers the case of a bad boolean parse
+    val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec))
+    val asSeqs = dres.select(s"quality.`evaluate a thing`$extraPath").as[A](TypedExpressionEncoder[A]).collect()
+    asSeqs.length shouldBe 1
+    asSeqs.head shouldBe data
+  }
+
+  test("top fields others nulls - straight through") {
+    testOneToOne(Others.nulls, Others.fields)
+  }
+
+  test("top fields others - straight through") {
+    testOneToOne(Others.vals, Others.fields)
+  }
+
+  test("top struct others nulls - straight through") {
+    testOneToOne(Others.nulls, Others.struct)
+  }
+
+  test("top struct others - straight through") {
+    testOneToOne(Others.vals, Others.struct)
+  }
+
+  test("top field - straight through") {
+    testOneToOne("field", scala.collection.immutable.Seq(DMNInputField("value","","inputData")), "string", "")
+  }
+
+  test("top field null - straight through") {
+    testOneToOne(null: String, scala.collection.immutable.Seq(DMNInputField("value","","inputData")), "string", "")
+  }
+
 }
