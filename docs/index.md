@@ -149,7 +149,7 @@ The top level decision result map is proxied for both DDL and JSON processing, s
 
 ### Debug mode
 
-Use debugMode when calling evaluate to force the full DMNResult structure (without results) to be written out into additional dmnDebugMode and dmnMessages fields, in the case where no issues are present this is likely overkill and should be kept for debug information only.  The debugMode field has the following DDL type (also found in ResultProcessors.debugDDL):
+Use debugMode when calling evaluate to force the full DMNResult structure (without results) to be written out into additional dmnDebugMode and dmnMessages fields, in the case where no issues are present this is likely overkill and should be kept for debug information only.  The dmnDebugMode field has the following DDL type (also found in ResultProcessors.debugDDL with KogitoResult provided to serialize it):
 
 ```sql
 dmnDebugMode: array< struct< 
@@ -170,7 +170,12 @@ dmnDebugMode: array< struct<
     >
   > >,
   evaluationStatus: String
-> >,
+> >
+```
+
+with the dmnMessages field having ddl of (also found in ResultProcessors.messagesDDL with the KogitoMessage type provided to serialize it):
+
+```sql
 dmnMessages: array< struct<
     sourceId: String,
     sourceReference: String,

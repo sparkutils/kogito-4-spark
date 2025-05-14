@@ -3,13 +3,14 @@ package com.sparkutils.dmn.kogito
 import com.sparkutils.dmn
 import com.sparkutils.dmn.DMNResultProvider
 import com.sparkutils.dmn.impl.DMNExpression
+import com.sparkutils.dmn.kogito.ResultProcessors.{debugDDL, messagesDDL}
 import com.sparkutils.dmn.kogito.types.Utils.{exprCode, nullOr}
 import com.sparkutils.dmn.kogito.types.ResultInterfaces
 import com.sparkutils.dmn.kogito.types.ResultInterfaces.{EVALUATING, FAILED, NOT_EVALUATED, NOT_FOUND, SKIPPED_ERROR, SKIPPED_WARN, SUCCEEDED, evalStatusEnding, forTypeCodeGen}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper
 import org.apache.spark.sql.catalyst.expressions.{GenericInternalRow, LeafExpression}
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, CodegenFallback, ExprCode}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.util.GenericArrayData
 import org.apache.spark.sql.types.{ArrayType, BooleanType, DataType, IntegerType, StringType, StructField, StructType}
 import org.apache.spark.unsafe.types.UTF8String
@@ -26,13 +27,7 @@ import sparkutilsKogito.com.fasterxml.jackson.databind.module.SimpleModule
 import scala.collection.JavaConverters._
 import scala.util.Try
 
-trait KogitoProcess extends DMNResultProvider {
-
-  def nullable = false
-
-  def debug: Boolean
-
-  def underlyingType: StructType
+object ResultProcessors {
 
   val messagesDDL =
     ArrayType(StructType(Seq(
@@ -58,10 +53,20 @@ trait KogitoProcess extends DMNResultProvider {
       StructField("evaluationStatus", StringType),
     )))
 
+}
+
+trait KogitoProcess extends DMNResultProvider {
+
+  def nullable = false
+
+  def debug: Boolean
+
+  def underlyingType: StructType
+
   override def dataType: DataType = {
     val nullables = underlyingType.copy(fields = underlyingType.fields.map(_.copy(nullable = true)))
     if (debug)
-      nullables.copy(fields = nullables.fields ++ Seq(StructField("dmnDebugMode", debugDDL), StructField("dmnMessages", messagesDDL)))
+      nullables.copy(fields = nullables.fields ++ Seq(StructField("dmnDebugMode", ResultProcessors.debugDDL), StructField("dmnMessages", messagesDDL)))
     else
       nullables
   }
