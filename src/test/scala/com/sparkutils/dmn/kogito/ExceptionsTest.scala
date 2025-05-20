@@ -3,6 +3,7 @@ package com.sparkutils.dmn.kogito
 import com.sparkutils.dmn.kogito.Errors.CONTEXT_PROVIDER_PARSE
 import com.sparkutils.dmn.{DMNException, DMNExecution, DMNFile, DMNInputField, DMNModelService}
 import frameless.{TypedDataset, TypedEncoder, TypedExpressionEncoder}
+import org.apache.spark.SparkException
 import org.apache.spark.sql.SaveMode
 import org.junit.runner.RunWith
 import org.scalatest.{FunSuite, Matchers}
@@ -129,18 +130,32 @@ class ExceptionsTest extends FunSuite with Matchers with TestUtils {
   }
 
   test("bad model should throw"){
-    implicit val spark = sparkSession
-    val tds = TypedDataset.create(Seq(testData)).dataset
-    val ds = if (inCodegen) tds.repartition(4) else tds
+    evalCodeGens {
+      implicit val spark = sparkSession
+      val tds = TypedDataset.create(Seq(testData)).dataset
+      val ds = if (inCodegen) tds.repartition(4) else tds
 
-    val exec = DMNExecution(badImportDmnFiles, badDmnModel, scala.collection.immutable.Seq(
-      DMNInputField("location","","")
-    ))
-    val e = intercept[DMNException] {
-      val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec))
-      dres.select("quality.evaluate").as[Seq[Boolean]](TypedExpressionEncoder[Seq[Boolean]]).collect()
+      val exec = DMNExecution(badImportDmnFiles, badDmnModel, scala.collection.immutable.Seq(
+        DMNInputField("location", "", "")
+      ))
+
+      val thunk = () => {
+        val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec))
+        dres.select("quality.evaluate").as[Seq[Boolean]](TypedExpressionEncoder[Seq[Boolean]]).collect()
+      }
+
+      if (inCodegen) {
+        val e = intercept[SparkException] {
+          thunk()
+        }
+        e.getCause.getMessage should include("Could not load model from Kogito runtime with namespace decisionsooo")
+      } else {
+        val e = intercept[DMNException] {
+          thunk()
+        }
+        e.message should include("Could not load model from Kogito runtime with namespace decisionsooo")
+      }
     }
-    e.message should include("Could not load model from Kogito runtime with namespace decisionsooo")
   }
 
   // doesn't actually throw - kogito doesn't seem to care about uri but uses the qname instead
