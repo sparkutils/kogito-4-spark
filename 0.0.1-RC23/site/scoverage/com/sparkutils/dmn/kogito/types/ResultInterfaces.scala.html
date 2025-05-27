@@ -1,0 +1,5880 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          com/sparkutils/dmn/kogito/types/ResultInterfaces.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package com.sparkutils.dmn.kogito.types
+</span>2 <span style=''>
+</span>3 <span style=''>import com.sparkutils.dmn.DMNException
+</span>4 <span style=''>import com.sparkutils.dmn.kogito.types.Utils.{exprCode, exprCodeInterim, nullOr =&gt; rnullOr}
+</span>5 <span style=''>import org.apache.spark.sql.catalyst.InternalRow
+</span>6 <span style=''>import org.apache.spark.sql.catalyst.expressions.GenericInternalRow
+</span>7 <span style=''>import org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper
+</span>8 <span style=''>import org.apache.spark.sql.catalyst.expressions.codegen.{CodeGenerator, CodegenContext, ExprCode}
+</span>9 <span style=''>import org.apache.spark.sql.catalyst.util.{ArrayBasedMapData, DateTimeUtils, GenericArrayData}
+</span>10 <span style=''>import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DataType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, MapType, ShortType, StringType, StructType, TimestampNTZType, TimestampType}
+</span>11 <span style=''>import org.apache.spark.unsafe.types.UTF8String
+</span>12 <span style=''>
+</span>13 <span style=''>import java.time.{LocalDate, LocalDateTime}
+</span>14 <span style=''>import java.util
+</span>15 <span style=''>import scala.collection.JavaConverters._
+</span>16 <span style=''>import scala.reflect.{ClassTag, classTag}
+</span>17 <span style=''>
+</span>18 <span style=''>/**
+</span>19 <span style=''> * Reverse the logic from ContextInterfaces
+</span>20 <span style=''> */
+</span>21 <span style=''>object ResultInterfaces {
+</span>22 <span style=''>
+</span>23 <span style=''>  val evalStatusEnding = </span><span style='background: #AEF1AE'>&quot;_dmnEvalStatus&quot;</span><span style=''>
+</span>24 <span style=''>
+</span>25 <span style=''>  // The errors in intellij are not real
+</span>26 <span style=''>  val NOT_FOUND: Byte = </span><span style='background: #AEF1AE'>-6.toByte</span><span style=''> // DDL has a decision which isn't in the DMN, possibly a typo or the dmn decision was removed / not there yet
+</span>27 <span style=''>  val NOT_EVALUATED: Byte = </span><span style='background: #AEF1AE'>-5.toByte</span><span style=''> // shouldn't happen
+</span>28 <span style=''>  val EVALUATING: Byte = </span><span style='background: #AEF1AE'>-4.toByte</span><span style=''> // shouldn't happen as it'll be overwritten in KogitoDDLResult
+</span>29 <span style=''>  val SUCCEEDED: Byte  = </span><span style='background: #AEF1AE'>1.toByte</span><span style=''>
+</span>30 <span style=''>  val SKIPPED_WARN: Byte  = </span><span style='background: #AEF1AE'>-3.toByte</span><span style=''>
+</span>31 <span style=''>  val SKIPPED_ERROR: Byte  = </span><span style='background: #AEF1AE'>-2.toByte</span><span style=''>
+</span>32 <span style=''>  val FAILED: Byte  = </span><span style='background: #AEF1AE'>0.toByte</span><span style=''>
+</span>33 <span style=''>
+</span>34 <span style=''>  trait Getter {
+</span>35 <span style=''>    def get(path: Any): Any
+</span>36 <span style=''>  }
+</span>37 <span style=''>
+</span>38 <span style=''>  def anullOr(f: Any =&gt; Any) = </span><span style='background: #AEF1AE'>new</span><span style=''> Getter {
+</span>39 <span style=''>    def get(path: Any) = </span><span style='background: #AEF1AE'>rnullOr[Any, Any](f)(path)</span><span style=''>
+</span>40 <span style=''>  }
+</span>41 <span style=''>
+</span>42 <span style=''>  def forType(dataType: DataType): Getter = dataType match {
+</span>43 <span style=''>    case structType: StructType </span><span style='background: #AEF1AE'>=&gt;
+</span>44 <span style=''></span><span style='background: #AEF1AE'>
+</span>45 <span style=''></span><span style='background: #AEF1AE'>      val s = structType.fields.map { f =&gt;
+</span>46 <span style=''></span><span style='background: #AEF1AE'>        (f.name,
+</span>47 <span style=''></span><span style='background: #AEF1AE'>          if (f.name.endsWith(evalStatusEnding))
+</span>48 <span style=''></span><span style='background: #AEF1AE'>            ((path: Any) =&gt; EVALUATING): Getter
+</span>49 <span style=''></span><span style='background: #AEF1AE'>          else
+</span>50 <span style=''></span><span style='background: #AEF1AE'>            forType(f.dataType)
+</span>51 <span style=''></span><span style='background: #AEF1AE'>        )
+</span>52 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>53 <span style=''></span><span style='background: #AEF1AE'>
+</span>54 <span style=''></span><span style='background: #AEF1AE'>      anullOr{ path =&gt;
+</span>55 <span style=''></span><span style='background: #AEF1AE'>        val m = path.asInstanceOf[util.Map[String, Object]]
+</span>56 <span style=''></span><span style='background: #AEF1AE'>        InternalRow(s.map { case (name, g) =&gt; g.get(m.get(name)) }: _*)
+</span>57 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
+</span>58 <span style=''>    case StringType =&gt; </span><span style='background: #AEF1AE'>anullOr(path =&gt; UTF8String.fromString( path.toString ))</span><span style=''>
+</span>59 <span style=''>    case IntegerType =&gt; </span><span style='background: #AEF1AE'>anullOr(path =&gt; path.asInstanceOf[Integer])</span><span style=''>
+</span>60 <span style=''>    case LongType =&gt; </span><span style='background: #AEF1AE'>anullOr(path =&gt; path.asInstanceOf[Long])</span><span style=''>
+</span>61 <span style=''>    case BooleanType =&gt; </span><span style='background: #AEF1AE'>anullOr(path =&gt; path.asInstanceOf[Boolean])</span><span style=''>
+</span>62 <span style=''>    case DoubleType =&gt; </span><span style='background: #AEF1AE'>anullOr(path =&gt; path.asInstanceOf[Double])</span><span style=''>
+</span>63 <span style=''>    case FloatType =&gt; </span><span style='background: #AEF1AE'>anullOr(path =&gt; path.asInstanceOf[Float])</span><span style=''>
+</span>64 <span style=''>    case BinaryType =&gt; </span><span style='background: #AEF1AE'>anullOr(path =&gt; path.asInstanceOf[Array[Byte]])</span><span style=''>
+</span>65 <span style=''>    case ByteType =&gt; </span><span style='background: #AEF1AE'>anullOr(path =&gt; path.asInstanceOf[Byte])</span><span style=''>
+</span>66 <span style=''>    case ShortType =&gt; </span><span style='background: #AEF1AE'>anullOr(path =&gt; path.asInstanceOf[Short])</span><span style=''>
+</span>67 <span style=''>    case DateType =&gt; </span><span style='background: #AEF1AE'>anullOr(path =&gt; DateTimeUtils.localDateToDays( path.asInstanceOf[LocalDate] ))</span><span style=''>
+</span>68 <span style=''>    case TimestampType | TimestampNTZType =&gt; </span><span style='background: #AEF1AE'>anullOr(path =&gt;
+</span>69 <span style=''></span><span style='background: #AEF1AE'>      DateTimeUtils.localDateTimeToMicros( path.asInstanceOf[LocalDateTime] ))</span><span style=''>
+</span>70 <span style=''>    case _: DecimalType =&gt; </span><span style='background: #AEF1AE'>anullOr(path =&gt; Decimal.apply(path.asInstanceOf[java.math.BigDecimal]))</span><span style=''>
+</span>71 <span style=''>    case ArrayType(typ, _) </span><span style='background: #AEF1AE'>=&gt;
+</span>72 <span style=''></span><span style='background: #AEF1AE'>      val g = forType(typ)
+</span>73 <span style=''></span><span style='background: #AEF1AE'>      anullOr{path =&gt;
+</span>74 <span style=''></span><span style='background: #AEF1AE'>        val a = path.asInstanceOf[util.List[_]].toArray.map(g.get(_))
+</span>75 <span style=''></span><span style='background: #AEF1AE'>        new GenericArrayData(a)
+</span>76 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
+</span>77 <span style=''>    case MapType(k, v, _) </span><span style='background: #AEF1AE'>=&gt;
+</span>78 <span style=''></span><span style='background: #AEF1AE'>      val kG = forType(k)
+</span>79 <span style=''></span><span style='background: #AEF1AE'>      val vG = forType(v)
+</span>80 <span style=''></span><span style='background: #AEF1AE'>      anullOr{path =&gt;
+</span>81 <span style=''></span><span style='background: #AEF1AE'>        val m = path.asInstanceOf[util.Map[Object, Object]].asScala.toMap.map(e =&gt; kG.get(e._1) -&gt; vG.get(e._2))
+</span>82 <span style=''></span><span style='background: #AEF1AE'>        new ArrayBasedMapData(new GenericArrayData(m.keys.toArray), new GenericArrayData(m.values.toArray))
+</span>83 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
+</span>84 <span style=''>    case _ =&gt; </span><span style='background: #AEF1AE'>throw new DMNException(s&quot;Could not load Kogito Result Provider for dataType $dataType&quot;)</span><span style=''>
+</span>85 <span style=''>  }
+</span>86 <span style=''>
+</span>87 <span style=''>  trait GetterCodeGen extends Serializable {
+</span>88 <span style=''>    /**
+</span>89 <span style=''>     * Generate code for this path, object casting and input null checking will be added by the caller
+</span>90 <span style=''>     * @param ctx
+</span>91 <span style=''>     * @param pathName variable to access (typically a SpecializedGetters)
+</span>92 <span style=''>     * @return generated code which returns either the underlying type or util.map/util.list
+</span>93 <span style=''>     */
+</span>94 <span style=''>    def forPath(ctx: CodegenContext, pathName: String): ExprCode
+</span>95 <span style=''>  }
+</span>96 <span style=''>  def nullOr[T: ClassTag](f: String =&gt; String = path =&gt; s&quot;$path&quot;): GetterCodeGen =
+</span>97 <span style=''>    (ctx: CodegenContext, pathName: String) =&gt; {
+</span>98 <span style=''>      </span><span style='background: #AEF1AE'>exprCodeInterim(classTag[T].runtimeClass, ctx, code&quot;$pathName&quot;,
+</span>99 <span style=''></span><span style='background: #AEF1AE'>        i =&gt; code&quot;&quot;&quot;${f(i)}&quot;&quot;&quot;, cast = false)</span><span style=''> // all are object anyway
+</span>100 <span style=''>    }
+</span>101 <span style=''>
+</span>102 <span style=''>  def forTypeCodeGen(dataType: DataType): GetterCodeGen = dataType match {
+</span>103 <span style=''>    case structType: StructType </span><span style='background: #AEF1AE'>=&gt;
+</span>104 <span style=''></span><span style='background: #AEF1AE'>      val mappedFields = structType.fields.map { f =&gt;
+</span>105 <span style=''></span><span style='background: #AEF1AE'>        (f.name,
+</span>106 <span style=''></span><span style='background: #AEF1AE'>          if (f.name.endsWith(evalStatusEnding))
+</span>107 <span style=''></span><span style='background: #AEF1AE'>            nullOr[Byte](_ =&gt; s&quot;com.sparkutils.dmn.kogito.types.ResultInterfaces.EVALUATING()&quot;)
+</span>108 <span style=''></span><span style='background: #AEF1AE'>          else
+</span>109 <span style=''></span><span style='background: #AEF1AE'>            forTypeCodeGen(f.dataType)
+</span>110 <span style=''></span><span style='background: #AEF1AE'>        )
+</span>111 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>112 <span style=''></span><span style='background: #AEF1AE'>      (ctx: CodegenContext, pathName: String) =&gt; {
+</span>113 <span style=''></span><span style='background: #AEF1AE'>        val expr = exprCode(classOf[GenericInternalRow],ctx)
+</span>114 <span style=''></span><span style='background: #AEF1AE'>
+</span>115 <span style=''></span><span style='background: #AEF1AE'>        val mapName = ctx.freshVariable(&quot;map&quot;, classOf[util.Map[String,Object]])
+</span>116 <span style=''></span><span style='background: #AEF1AE'>
+</span>117 <span style=''></span><span style='background: #AEF1AE'>        val s = mappedFields.map{
+</span>118 <span style=''></span><span style='background: #AEF1AE'>          case (n,f) =&gt;
+</span>119 <span style=''></span><span style='background: #AEF1AE'>            f.forPath(ctx, s&quot;&quot;&quot;$mapName.get(&quot;$n&quot;)&quot;&quot;&quot;)
+</span>120 <span style=''></span><span style='background: #AEF1AE'>        }
+</span>121 <span style=''></span><span style='background: #AEF1AE'>        val init = s.foldLeft(code&quot;&quot;){
+</span>122 <span style=''></span><span style='background: #AEF1AE'>          case (c, e) =&gt;
+</span>123 <span style=''></span><span style='background: #AEF1AE'>            code&quot;&quot;&quot;$c
+</span>124 <span style=''></span><span style='background: #AEF1AE'>                ${e.code}
+</span>125 <span style=''></span><span style='background: #AEF1AE'>                &quot;&quot;&quot;
+</span>126 <span style=''></span><span style='background: #AEF1AE'>        }
+</span>127 <span style=''></span><span style='background: #AEF1AE'>        val fields = s.map(_.value).mkString(&quot;\n,&quot;)
+</span>128 <span style=''></span><span style='background: #AEF1AE'>
+</span>129 <span style=''></span><span style='background: #AEF1AE'>        val resArr = ctx.freshName(&quot;resArr&quot;)
+</span>130 <span style=''></span><span style='background: #AEF1AE'>
+</span>131 <span style=''></span><span style='background: #AEF1AE'>        expr.copy(code =
+</span>132 <span style=''></span><span style='background: #AEF1AE'>          code&quot;&quot;&quot;
+</span>133 <span style=''></span><span style='background: #AEF1AE'>            org.apache.spark.sql.catalyst.expressions.GenericInternalRow ${expr.value} = null;
+</span>134 <span style=''></span><span style='background: #AEF1AE'>            java.util.Map $mapName = (java.util.Map&lt;String, Object&gt;)$pathName;
+</span>135 <span style=''></span><span style='background: #AEF1AE'>            boolean ${expr.isNull} = ($mapName == null);
+</span>136 <span style=''></span><span style='background: #AEF1AE'>            if (!${expr.isNull}) {
+</span>137 <span style=''></span><span style='background: #AEF1AE'>              $init
+</span>138 <span style=''></span><span style='background: #AEF1AE'>              Object[] $resArr = new Object[]{$fields};
+</span>139 <span style=''></span><span style='background: #AEF1AE'>
+</span>140 <span style=''></span><span style='background: #AEF1AE'>              ${expr.value} = new org.apache.spark.sql.catalyst.expressions.GenericInternalRow(
+</span>141 <span style=''></span><span style='background: #AEF1AE'>                $resArr
+</span>142 <span style=''></span><span style='background: #AEF1AE'>              );
+</span>143 <span style=''></span><span style='background: #AEF1AE'>            }
+</span>144 <span style=''></span><span style='background: #AEF1AE'>              &quot;&quot;&quot;
+</span>145 <span style=''></span><span style='background: #AEF1AE'>        )
+</span>146 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
+</span>147 <span style=''>    case StringType =&gt; </span><span style='background: #AEF1AE'>nullOr[String]( path =&gt; s&quot;UTF8String.fromString( $path.toString() )&quot;)</span><span style=''>
+</span>148 <span style=''>    case IntegerType =&gt; </span><span style='background: #AEF1AE'>nullOr[Integer]()</span><span style=''>
+</span>149 <span style=''>    case LongType =&gt; </span><span style='background: #AEF1AE'>nullOr[Long]()</span><span style=''>
+</span>150 <span style=''>    case BooleanType =&gt; </span><span style='background: #AEF1AE'>nullOr[Boolean]()</span><span style=''>
+</span>151 <span style=''>    case DoubleType =&gt; </span><span style='background: #AEF1AE'>nullOr[Double]()</span><span style=''>
+</span>152 <span style=''>    case FloatType =&gt; </span><span style='background: #AEF1AE'>nullOr[Float]()</span><span style=''>
+</span>153 <span style=''>    case BinaryType =&gt; </span><span style='background: #AEF1AE'>nullOr[Array[Byte]]()</span><span style=''>
+</span>154 <span style=''>    case ByteType =&gt; </span><span style='background: #AEF1AE'>nullOr[Byte]()</span><span style=''>
+</span>155 <span style=''>    case ShortType =&gt; </span><span style='background: #AEF1AE'>nullOr[Short]()</span><span style=''>
+</span>156 <span style=''>    case DateType =&gt;
+</span>157 <span style=''>      </span><span style='background: #AEF1AE'>nullOr[Int]( path =&gt; s&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.localDateToDays( (java.time.LocalDate) $path )&quot;)</span><span style=''>
+</span>158 <span style=''>    case TimestampType  | TimestampNTZType =&gt;
+</span>159 <span style=''>      </span><span style='background: #AEF1AE'>nullOr[Long]( path =&gt; s&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.localDateTimeToMicros( (java.time.LocalDateTime) $path )&quot;)</span><span style=''>
+</span>160 <span style=''>    case _: DecimalType =&gt;
+</span>161 <span style=''>      </span><span style='background: #AEF1AE'>nullOr[Decimal]( path =&gt; s&quot;org.apache.spark.sql.types.Decimal.apply( (java.math.BigDecimal) $path )&quot;)</span><span style=''>
+</span>162 <span style=''>    case ArrayType(typ, _) </span><span style='background: #AEF1AE'>=&gt;
+</span>163 <span style=''></span><span style='background: #AEF1AE'>      val arrCode = forTypeCodeGen(typ)
+</span>164 <span style=''></span><span style='background: #AEF1AE'>      (ctx: CodegenContext, pathName: String) =&gt; {
+</span>165 <span style=''></span><span style='background: #AEF1AE'>        val expr = exprCode(classOf[GenericArrayData],ctx)
+</span>166 <span style=''></span><span style='background: #AEF1AE'>
+</span>167 <span style=''></span><span style='background: #AEF1AE'>        val iar = ctx.freshVariable(&quot;ar&quot;, classOf[util.List[Object]])
+</span>168 <span style=''></span><span style='background: #AEF1AE'>
+</span>169 <span style=''></span><span style='background: #AEF1AE'>        val i = ctx.freshVariable(&quot;i&quot;, classOf[Int])
+</span>170 <span style=''></span><span style='background: #AEF1AE'>
+</span>171 <span style=''></span><span style='background: #AEF1AE'>        val arrRes = ctx.freshVariable(&quot;arr&quot;, classOf[Array[Object]])
+</span>172 <span style=''></span><span style='background: #AEF1AE'>
+</span>173 <span style=''></span><span style='background: #AEF1AE'>        val typCode = arrCode.forPath(ctx, s&quot;$arrRes[$i]&quot;)
+</span>174 <span style=''></span><span style='background: #AEF1AE'>
+</span>175 <span style=''></span><span style='background: #AEF1AE'>        expr.copy(
+</span>176 <span style=''></span><span style='background: #AEF1AE'>          code =
+</span>177 <span style=''></span><span style='background: #AEF1AE'>            code&quot;&quot;&quot;
+</span>178 <span style=''></span><span style='background: #AEF1AE'>            org.apache.spark.sql.catalyst.util.GenericArrayData ${expr.value} = null;
+</span>179 <span style=''></span><span style='background: #AEF1AE'>            java.util.List $iar = (java.util.List&lt;Object&gt;)$pathName;
+</span>180 <span style=''></span><span style='background: #AEF1AE'>            boolean ${expr.isNull} = ($iar == null);
+</span>181 <span style=''></span><span style='background: #AEF1AE'>            if (!${expr.isNull}) {
+</span>182 <span style=''></span><span style='background: #AEF1AE'>              Object[] $arrRes = $iar.toArray();
+</span>183 <span style=''></span><span style='background: #AEF1AE'>
+</span>184 <span style=''></span><span style='background: #AEF1AE'>              for (int $i = 0; $i &lt; $arrRes.length; $i++) {
+</span>185 <span style=''></span><span style='background: #AEF1AE'>                ${typCode.code}
+</span>186 <span style=''></span><span style='background: #AEF1AE'>                $arrRes[$i] = ${typCode.value};
+</span>187 <span style=''></span><span style='background: #AEF1AE'>              }
+</span>188 <span style=''></span><span style='background: #AEF1AE'>              ${expr.value} = new org.apache.spark.sql.catalyst.util.GenericArrayData($arrRes);
+</span>189 <span style=''></span><span style='background: #AEF1AE'>            }
+</span>190 <span style=''></span><span style='background: #AEF1AE'>            &quot;&quot;&quot;
+</span>191 <span style=''></span><span style='background: #AEF1AE'>        )
+</span>192 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
+</span>193 <span style=''>    case MapType(k, v, _) </span><span style='background: #AEF1AE'>=&gt;
+</span>194 <span style=''></span><span style='background: #AEF1AE'>      val kCode = forTypeCodeGen(k)
+</span>195 <span style=''></span><span style='background: #AEF1AE'>      val vCode = forTypeCodeGen(v)
+</span>196 <span style=''></span><span style='background: #AEF1AE'>      (ctx: CodegenContext, pathName: String) =&gt; {
+</span>197 <span style=''></span><span style='background: #AEF1AE'>        val expr = exprCode(classOf[ArrayBasedMapData], ctx)
+</span>198 <span style=''></span><span style='background: #AEF1AE'>
+</span>199 <span style=''></span><span style='background: #AEF1AE'>        val map = ctx.freshVariable(&quot;map&quot;, classOf[util.Map[String, Object]])
+</span>200 <span style=''></span><span style='background: #AEF1AE'>
+</span>201 <span style=''></span><span style='background: #AEF1AE'>        val i = ctx.freshVariable(&quot;i&quot;, classOf[Int])
+</span>202 <span style=''></span><span style='background: #AEF1AE'>
+</span>203 <span style=''></span><span style='background: #AEF1AE'>        val entry = ctx.freshVariable(&quot;entry&quot;, classOf[util.Map.Entry[String, Object]])
+</span>204 <span style=''></span><span style='background: #AEF1AE'>
+</span>205 <span style=''></span><span style='background: #AEF1AE'>        val typCodeK = kCode.forPath(ctx, s&quot;$entry.getKey()&quot;)
+</span>206 <span style=''></span><span style='background: #AEF1AE'>        val typCodeV = vCode.forPath(ctx, s&quot;$entry.getValue()&quot;)
+</span>207 <span style=''></span><span style='background: #AEF1AE'>
+</span>208 <span style=''></span><span style='background: #AEF1AE'>        val arrKeyRes = ctx.freshVariable(&quot;arrKey&quot;, classOf[Array[Object]])
+</span>209 <span style=''></span><span style='background: #AEF1AE'>        val arrValueRes = ctx.freshVariable(&quot;arrValue&quot;, classOf[Array[Object]])
+</span>210 <span style=''></span><span style='background: #AEF1AE'>
+</span>211 <span style=''></span><span style='background: #AEF1AE'>        val itr = ctx.freshName(&quot;itr&quot;)
+</span>212 <span style=''></span><span style='background: #AEF1AE'>        // NB most maps iterators aren't bounds checking, AbstractCollection.toArray uses iterator anyway
+</span>213 <span style=''></span><span style='background: #AEF1AE'>        expr.copy(
+</span>214 <span style=''></span><span style='background: #AEF1AE'>          code =
+</span>215 <span style=''></span><span style='background: #AEF1AE'>            code&quot;&quot;&quot;
+</span>216 <span style=''></span><span style='background: #AEF1AE'>            org.apache.spark.sql.catalyst.util.ArrayBasedMapData ${expr.value} = null;
+</span>217 <span style=''></span><span style='background: #AEF1AE'>            java.util.Map $map = (java.util.Map&lt;String, Object&gt;)$pathName;
+</span>218 <span style=''></span><span style='background: #AEF1AE'>            boolean ${expr.isNull} = ($map == null);
+</span>219 <span style=''></span><span style='background: #AEF1AE'>            if (!${expr.isNull}) {
+</span>220 <span style=''></span><span style='background: #AEF1AE'>              Object[] $arrKeyRes = new Object[$map.size()];
+</span>221 <span style=''></span><span style='background: #AEF1AE'>              Object[] $arrValueRes = new Object[$map.size()];
+</span>222 <span style=''></span><span style='background: #AEF1AE'>              java.util.Iterator&lt;java.util.Map.Entry&lt;String, Object&gt;&gt; $itr = $map.entrySet().iterator();
+</span>223 <span style=''></span><span style='background: #AEF1AE'>              int $i = 0;
+</span>224 <span style=''></span><span style='background: #AEF1AE'>              while ($itr.hasNext()){
+</span>225 <span style=''></span><span style='background: #AEF1AE'>                java.util.Map.Entry&lt;String, Object&gt; $entry = (java.util.Map.Entry&lt;String, Object&gt;) $itr.next();
+</span>226 <span style=''></span><span style='background: #AEF1AE'>                ${typCodeK.code}
+</span>227 <span style=''></span><span style='background: #AEF1AE'>                ${typCodeV.code}
+</span>228 <span style=''></span><span style='background: #AEF1AE'>                $arrKeyRes[$i] = ${typCodeK.value};
+</span>229 <span style=''></span><span style='background: #AEF1AE'>                $arrValueRes[$i] = ${typCodeV.value};
+</span>230 <span style=''></span><span style='background: #AEF1AE'>                $i = $i + 1;
+</span>231 <span style=''></span><span style='background: #AEF1AE'>              }
+</span>232 <span style=''></span><span style='background: #AEF1AE'>
+</span>233 <span style=''></span><span style='background: #AEF1AE'>              ${expr.value} = new org.apache.spark.sql.catalyst.util.ArrayBasedMapData(
+</span>234 <span style=''></span><span style='background: #AEF1AE'>                new org.apache.spark.sql.catalyst.util.GenericArrayData($arrKeyRes),
+</span>235 <span style=''></span><span style='background: #AEF1AE'>                new org.apache.spark.sql.catalyst.util.GenericArrayData($arrValueRes)
+</span>236 <span style=''></span><span style='background: #AEF1AE'>                );
+</span>237 <span style=''></span><span style='background: #AEF1AE'>            }
+</span>238 <span style=''></span><span style='background: #AEF1AE'>            &quot;&quot;&quot;
+</span>239 <span style=''></span><span style='background: #AEF1AE'>        )
+</span>240 <span style=''></span><span style='background: #AEF1AE'>      }</span><span style=''>
+</span>241 <span style=''>    case _ =&gt; </span><span style='background: #AEF1AE'>throw new DMNException(s&quot;Could not load Kogito Result Provider for dataType $dataType&quot;)</span><span style=''>
+</span>242 <span style=''>  }
+</span>243 <span style=''>
+</span>244 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          23
+        </td>
+        <td>
+          906
+        </td>
+        <td>
+          1102
+          -
+          1118
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;_dmnEvalStatus&quot;
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          907
+        </td>
+        <td>
+          1185
+          -
+          1187
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          -6
+        </td>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          908
+        </td>
+        <td>
+          1185
+          -
+          1194
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Int.toByte
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          -6.toByte
+        </td>
+      </tr><tr>
+        <td>
+          27
+        </td>
+        <td>
+          909
+        </td>
+        <td>
+          1333
+          -
+          1335
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          -5
+        </td>
+      </tr><tr>
+        <td>
+          27
+        </td>
+        <td>
+          910
+        </td>
+        <td>
+          1333
+          -
+          1342
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Int.toByte
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          -5.toByte
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          911
+        </td>
+        <td>
+          1388
+          -
+          1390
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          -4
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          912
+        </td>
+        <td>
+          1388
+          -
+          1397
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Int.toByte
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          -4.toByte
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          913
+        </td>
+        <td>
+          1486
+          -
+          1487
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          914
+        </td>
+        <td>
+          1486
+          -
+          1494
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Int.toByte
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          1.toByte
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          915
+        </td>
+        <td>
+          1523
+          -
+          1525
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          -3
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          916
+        </td>
+        <td>
+          1523
+          -
+          1532
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Int.toByte
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          -3.toByte
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          917
+        </td>
+        <td>
+          1562
+          -
+          1564
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          -2
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          918
+        </td>
+        <td>
+          1562
+          -
+          1571
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Int.toByte
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          -2.toByte
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          919
+        </td>
+        <td>
+          1594
+          -
+          1595
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          920
+        </td>
+        <td>
+          1594
+          -
+          1602
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Int.toByte
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          0.toByte
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          922
+        </td>
+        <td>
+          1685
+          -
+          1688
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.$anon.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new $anon()
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          921
+        </td>
+        <td>
+          1723
+          -
+          1749
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.kogito.types.Utils.nullOr[Any, Any](f).apply(path)
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          943
+        </td>
+        <td>
+          1848
+          -
+          2237
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val s: Array[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)] = scala.Predef.refArrayOps[org.apache.spark.sql.types.StructField](structType.fields).map[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter), Array[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)]](((f: org.apache.spark.sql.types.StructField) =&gt; scala.Tuple2.apply[String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter](f.name, if (f.name.endsWith(ResultInterfaces.this.evalStatusEnding))
+    (((path: Any) =&gt; ResultInterfaces.this.EVALUATING): com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)
+  else
+    ResultInterfaces.this.forType(f.dataType))))(scala.this.Array.canBuildFrom[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)]((ClassTag.apply[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)](classOf[scala.Tuple2]): scala.reflect.ClassTag[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)])));
+  ResultInterfaces.this.anullOr(((path: Any) =&gt; {
+    val m: java.util.Map[String,Object] = path.asInstanceOf[java.util.Map[String,Object]];
+    org.apache.spark.sql.catalyst.InternalRow.apply((scala.Predef.refArrayOps[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)](s).map[Any, Array[Any]](((x0$1: (String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)) =&gt; x0$1 match {
+      case (_1: String, _2: com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)((name @ _), (g @ _)) =&gt; g.get(m.get(name))
+    }))(scala.this.Array.canBuildFrom[Any]((ClassTag.Any: scala.reflect.ClassTag[Any]))): _*))
+  }))
+}
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          923
+        </td>
+        <td>
+          1866
+          -
+          1883
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.types.StructType.fields
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          structType.fields
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          933
+        </td>
+        <td>
+          1888
+          -
+          1888
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.Array.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Array.canBuildFrom[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)]((ClassTag.apply[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)](classOf[scala.Tuple2]): scala.reflect.ClassTag[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)]))
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          934
+        </td>
+        <td>
+          1866
+          -
+          2073
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.map
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.refArrayOps[org.apache.spark.sql.types.StructField](structType.fields).map[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter), Array[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)]](((f: org.apache.spark.sql.types.StructField) =&gt; scala.Tuple2.apply[String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter](f.name, if (f.name.endsWith(ResultInterfaces.this.evalStatusEnding))
+  (((path: Any) =&gt; ResultInterfaces.this.EVALUATING): com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)
+else
+  ResultInterfaces.this.forType(f.dataType))))(scala.this.Array.canBuildFrom[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)]((ClassTag.apply[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)](classOf[scala.Tuple2]): scala.reflect.ClassTag[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)])))
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          924
+        </td>
+        <td>
+          1904
+          -
+          1910
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.types.StructField.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          f.name
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          932
+        </td>
+        <td>
+          1903
+          -
+          2065
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter](f.name, if (f.name.endsWith(ResultInterfaces.this.evalStatusEnding))
+  (((path: Any) =&gt; ResultInterfaces.this.EVALUATING): com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)
+else
+  ResultInterfaces.this.forType(f.dataType))
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          925
+        </td>
+        <td>
+          1942
+          -
+          1958
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.evalStatusEnding
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.evalStatusEnding
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          926
+        </td>
+        <td>
+          1926
+          -
+          1959
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.endsWith
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          f.name.endsWith(ResultInterfaces.this.evalStatusEnding)
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          927
+        </td>
+        <td>
+          1989
+          -
+          1999
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.EVALUATING
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.EVALUATING
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          928
+        </td>
+        <td>
+          1974
+          -
+          2008
+        </td>
+        <td>
+          Typed
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          (((path: Any) =&gt; ResultInterfaces.this.EVALUATING): com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          929
+        </td>
+        <td>
+          2044
+          -
+          2054
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.types.StructField.dataType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          f.dataType
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          930
+        </td>
+        <td>
+          2036
+          -
+          2055
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.forType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.forType(f.dataType)
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          931
+        </td>
+        <td>
+          2036
+          -
+          2055
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.forType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.forType(f.dataType)
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          942
+        </td>
+        <td>
+          2081
+          -
+          2237
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.anullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.anullOr(((path: Any) =&gt; {
+  val m: java.util.Map[String,Object] = path.asInstanceOf[java.util.Map[String,Object]];
+  org.apache.spark.sql.catalyst.InternalRow.apply((scala.Predef.refArrayOps[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)](s).map[Any, Array[Any]](((x0$1: (String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)) =&gt; x0$1 match {
+    case (_1: String, _2: com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)((name @ _), (g @ _)) =&gt; g.get(m.get(name))
+  }))(scala.this.Array.canBuildFrom[Any]((ClassTag.Any: scala.reflect.ClassTag[Any]))): _*))
+}))
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          935
+        </td>
+        <td>
+          2114
+          -
+          2157
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.asInstanceOf[java.util.Map[String,Object]]
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          936
+        </td>
+        <td>
+          2210
+          -
+          2221
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.Map.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          m.get(name)
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          937
+        </td>
+        <td>
+          2204
+          -
+          2222
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          g.get(m.get(name))
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          938
+        </td>
+        <td>
+          2204
+          -
+          2222
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          g.get(m.get(name))
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          939
+        </td>
+        <td>
+          2184
+          -
+          2184
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.Array.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Array.canBuildFrom[Any]((ClassTag.Any: scala.reflect.ClassTag[Any]))
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          940
+        </td>
+        <td>
+          2178
+          -
+          2224
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.map
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.refArrayOps[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)](s).map[Any, Array[Any]](((x0$1: (String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)) =&gt; x0$1 match {
+  case (_1: String, _2: com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)((name @ _), (g @ _)) =&gt; g.get(m.get(name))
+}))(scala.this.Array.canBuildFrom[Any]((ClassTag.Any: scala.reflect.ClassTag[Any])))
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          941
+        </td>
+        <td>
+          2166
+          -
+          2229
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.InternalRow.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.InternalRow.apply((scala.Predef.refArrayOps[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)](s).map[Any, Array[Any]](((x0$1: (String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)) =&gt; x0$1 match {
+  case (_1: String, _2: com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter)((name @ _), (g @ _)) =&gt; g.get(m.get(name))
+}))(scala.this.Array.canBuildFrom[Any]((ClassTag.Any: scala.reflect.ClassTag[Any]))): _*))
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          944
+        </td>
+        <td>
+          2300
+          -
+          2313
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Any.toString
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.toString()
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          945
+        </td>
+        <td>
+          2277
+          -
+          2315
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.unsafe.types.UTF8String.fromString
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.unsafe.types.UTF8String.fromString(path.toString())
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          946
+        </td>
+        <td>
+          2261
+          -
+          2316
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.anullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.anullOr(((path: Any) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(path.toString())))
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          947
+        </td>
+        <td>
+          2261
+          -
+          2316
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.anullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.anullOr(((path: Any) =&gt; org.apache.spark.unsafe.types.UTF8String.fromString(path.toString())))
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          948
+        </td>
+        <td>
+          2357
+          -
+          2383
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.asInstanceOf[Integer]
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          949
+        </td>
+        <td>
+          2341
+          -
+          2384
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.anullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.anullOr(((path: Any) =&gt; path.asInstanceOf[Integer]))
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          950
+        </td>
+        <td>
+          2341
+          -
+          2384
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.anullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.anullOr(((path: Any) =&gt; path.asInstanceOf[Integer]))
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          951
+        </td>
+        <td>
+          2422
+          -
+          2445
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.asInstanceOf[Long]
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          952
+        </td>
+        <td>
+          2406
+          -
+          2446
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.anullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.anullOr(((path: Any) =&gt; path.asInstanceOf[Long]))
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          953
+        </td>
+        <td>
+          2406
+          -
+          2446
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.anullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.anullOr(((path: Any) =&gt; path.asInstanceOf[Long]))
+        </td>
+      </tr><tr>
+        <td>
+          61
+        </td>
+        <td>
+          954
+        </td>
+        <td>
+          2487
+          -
+          2513
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.asInstanceOf[Boolean]
+        </td>
+      </tr><tr>
+        <td>
+          61
+        </td>
+        <td>
+          955
+        </td>
+        <td>
+          2471
+          -
+          2514
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.anullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.anullOr(((path: Any) =&gt; path.asInstanceOf[Boolean]))
+        </td>
+      </tr><tr>
+        <td>
+          61
+        </td>
+        <td>
+          956
+        </td>
+        <td>
+          2471
+          -
+          2514
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.anullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.anullOr(((path: Any) =&gt; path.asInstanceOf[Boolean]))
+        </td>
+      </tr><tr>
+        <td>
+          62
+        </td>
+        <td>
+          957
+        </td>
+        <td>
+          2554
+          -
+          2579
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.asInstanceOf[Double]
+        </td>
+      </tr><tr>
+        <td>
+          62
+        </td>
+        <td>
+          958
+        </td>
+        <td>
+          2538
+          -
+          2580
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.anullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.anullOr(((path: Any) =&gt; path.asInstanceOf[Double]))
+        </td>
+      </tr><tr>
+        <td>
+          62
+        </td>
+        <td>
+          959
+        </td>
+        <td>
+          2538
+          -
+          2580
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.anullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.anullOr(((path: Any) =&gt; path.asInstanceOf[Double]))
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          960
+        </td>
+        <td>
+          2619
+          -
+          2643
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.asInstanceOf[Float]
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          961
+        </td>
+        <td>
+          2603
+          -
+          2644
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.anullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.anullOr(((path: Any) =&gt; path.asInstanceOf[Float]))
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          962
+        </td>
+        <td>
+          2603
+          -
+          2644
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.anullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.anullOr(((path: Any) =&gt; path.asInstanceOf[Float]))
+        </td>
+      </tr><tr>
+        <td>
+          64
+        </td>
+        <td>
+          963
+        </td>
+        <td>
+          2684
+          -
+          2714
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.asInstanceOf[Array[Byte]]
+        </td>
+      </tr><tr>
+        <td>
+          64
+        </td>
+        <td>
+          964
+        </td>
+        <td>
+          2668
+          -
+          2715
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.anullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.anullOr(((path: Any) =&gt; path.asInstanceOf[Array[Byte]]))
+        </td>
+      </tr><tr>
+        <td>
+          64
+        </td>
+        <td>
+          965
+        </td>
+        <td>
+          2668
+          -
+          2715
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.anullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.anullOr(((path: Any) =&gt; path.asInstanceOf[Array[Byte]]))
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          966
+        </td>
+        <td>
+          2753
+          -
+          2776
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.asInstanceOf[Byte]
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          967
+        </td>
+        <td>
+          2737
+          -
+          2777
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.anullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.anullOr(((path: Any) =&gt; path.asInstanceOf[Byte]))
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          968
+        </td>
+        <td>
+          2737
+          -
+          2777
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.anullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.anullOr(((path: Any) =&gt; path.asInstanceOf[Byte]))
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          969
+        </td>
+        <td>
+          2816
+          -
+          2840
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.asInstanceOf[Short]
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          970
+        </td>
+        <td>
+          2800
+          -
+          2841
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.anullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.anullOr(((path: Any) =&gt; path.asInstanceOf[Short]))
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          971
+        </td>
+        <td>
+          2800
+          -
+          2841
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.anullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.anullOr(((path: Any) =&gt; path.asInstanceOf[Short]))
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          972
+        </td>
+        <td>
+          2910
+          -
+          2938
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.asInstanceOf[java.time.LocalDate]
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          973
+        </td>
+        <td>
+          2879
+          -
+          2940
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.util.SparkDateTimeUtils.localDateToDays
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.util.DateTimeUtils.localDateToDays(path.asInstanceOf[java.time.LocalDate])
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          974
+        </td>
+        <td>
+          2863
+          -
+          2941
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.anullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.anullOr(((path: Any) =&gt; org.apache.spark.sql.catalyst.util.DateTimeUtils.localDateToDays(path.asInstanceOf[java.time.LocalDate])))
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          975
+        </td>
+        <td>
+          2863
+          -
+          2941
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.anullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.anullOr(((path: Any) =&gt; org.apache.spark.sql.catalyst.util.DateTimeUtils.localDateToDays(path.asInstanceOf[java.time.LocalDate])))
+        </td>
+      </tr><tr>
+        <td>
+          68
+        </td>
+        <td>
+          978
+        </td>
+        <td>
+          2987
+          -
+          3081
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.anullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.anullOr(((path: Any) =&gt; org.apache.spark.sql.catalyst.util.DateTimeUtils.localDateTimeToMicros(path.asInstanceOf[java.time.LocalDateTime])))
+        </td>
+      </tr><tr>
+        <td>
+          68
+        </td>
+        <td>
+          979
+        </td>
+        <td>
+          2987
+          -
+          3081
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.anullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.anullOr(((path: Any) =&gt; org.apache.spark.sql.catalyst.util.DateTimeUtils.localDateTimeToMicros(path.asInstanceOf[java.time.LocalDateTime])))
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          976
+        </td>
+        <td>
+          3046
+          -
+          3078
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.asInstanceOf[java.time.LocalDateTime]
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          977
+        </td>
+        <td>
+          3009
+          -
+          3080
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.util.SparkDateTimeUtils.localDateTimeToMicros
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.util.DateTimeUtils.localDateTimeToMicros(path.asInstanceOf[java.time.LocalDateTime])
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          980
+        </td>
+        <td>
+          3139
+          -
+          3178
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.asInstanceOf[java.math.BigDecimal]
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          981
+        </td>
+        <td>
+          3125
+          -
+          3179
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.types.Decimal.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.types.Decimal.apply(path.asInstanceOf[java.math.BigDecimal])
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          982
+        </td>
+        <td>
+          3109
+          -
+          3180
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.anullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.anullOr(((path: Any) =&gt; org.apache.spark.sql.types.Decimal.apply(path.asInstanceOf[java.math.BigDecimal])))
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          983
+        </td>
+        <td>
+          3109
+          -
+          3180
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.anullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.anullOr(((path: Any) =&gt; org.apache.spark.sql.types.Decimal.apply(path.asInstanceOf[java.math.BigDecimal])))
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          991
+        </td>
+        <td>
+          3208
+          -
+          3369
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val g: com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter = ResultInterfaces.this.forType(typ);
+  ResultInterfaces.this.anullOr(((path: Any) =&gt; {
+    val a: Array[Any] = scala.Predef.refArrayOps[Object](path.asInstanceOf[java.util.List[_]].toArray()).map[Any, Array[Any]](((x$1: Object) =&gt; g.get(x$1)))(scala.this.Array.canBuildFrom[Any]((ClassTag.Any: scala.reflect.ClassTag[Any])));
+    new org.apache.spark.sql.catalyst.util.GenericArrayData(a)
+  }))
+}
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          984
+        </td>
+        <td>
+          3225
+          -
+          3237
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.forType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.forType(typ)
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          990
+        </td>
+        <td>
+          3244
+          -
+          3369
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.anullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.anullOr(((path: Any) =&gt; {
+  val a: Array[Any] = scala.Predef.refArrayOps[Object](path.asInstanceOf[java.util.List[_]].toArray()).map[Any, Array[Any]](((x$1: Object) =&gt; g.get(x$1)))(scala.this.Array.canBuildFrom[Any]((ClassTag.Any: scala.reflect.ClassTag[Any])));
+  new org.apache.spark.sql.catalyst.util.GenericArrayData(a)
+}))
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          985
+        </td>
+        <td>
+          3276
+          -
+          3315
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.util.List.toArray
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.asInstanceOf[java.util.List[_]].toArray()
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          986
+        </td>
+        <td>
+          3320
+          -
+          3328
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          g.get(x$1)
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          987
+        </td>
+        <td>
+          3319
+          -
+          3319
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.Array.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Array.canBuildFrom[Any]((ClassTag.Any: scala.reflect.ClassTag[Any]))
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          988
+        </td>
+        <td>
+          3276
+          -
+          3329
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.map
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.refArrayOps[Object](path.asInstanceOf[java.util.List[_]].toArray()).map[Any, Array[Any]](((x$1: Object) =&gt; g.get(x$1)))(scala.this.Array.canBuildFrom[Any]((ClassTag.Any: scala.reflect.ClassTag[Any])))
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          989
+        </td>
+        <td>
+          3338
+          -
+          3361
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.util.GenericArrayData.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new org.apache.spark.sql.catalyst.util.GenericArrayData(a)
+        </td>
+      </tr><tr>
+        <td>
+          77
+        </td>
+        <td>
+          1009
+        </td>
+        <td>
+          3396
+          -
+          3701
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val kG: com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter = ResultInterfaces.this.forType(k);
+  val vG: com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter = ResultInterfaces.this.forType(v);
+  ResultInterfaces.this.anullOr(((path: Any) =&gt; {
+    val m: scala.collection.immutable.Map[Any,Any] = scala.collection.JavaConverters.mapAsScalaMapConverter[Object, Object](path.asInstanceOf[java.util.Map[Object,Object]]).asScala.toMap[Object, Object](scala.Predef.$conforms[(Object, Object)]).map[(Any, Any), scala.collection.immutable.Map[Any,Any]](((e: (Object, Object)) =&gt; scala.Predef.ArrowAssoc[Any](kG.get(e._1)).-&gt;[Any](vG.get(e._2))))(immutable.this.Map.canBuildFrom[Any, Any]);
+    new org.apache.spark.sql.catalyst.util.ArrayBasedMapData(new org.apache.spark.sql.catalyst.util.GenericArrayData(m.keys.toArray[Any]((ClassTag.Any: scala.reflect.ClassTag[Any]))), new org.apache.spark.sql.catalyst.util.GenericArrayData(m.values.toArray[Any]((ClassTag.Any: scala.reflect.ClassTag[Any]))))
+  }))
+}
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          992
+        </td>
+        <td>
+          3414
+          -
+          3424
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.forType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.forType(k)
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          993
+        </td>
+        <td>
+          3440
+          -
+          3450
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.forType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.forType(v)
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          1008
+        </td>
+        <td>
+          3457
+          -
+          3701
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.anullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.anullOr(((path: Any) =&gt; {
+  val m: scala.collection.immutable.Map[Any,Any] = scala.collection.JavaConverters.mapAsScalaMapConverter[Object, Object](path.asInstanceOf[java.util.Map[Object,Object]]).asScala.toMap[Object, Object](scala.Predef.$conforms[(Object, Object)]).map[(Any, Any), scala.collection.immutable.Map[Any,Any]](((e: (Object, Object)) =&gt; scala.Predef.ArrowAssoc[Any](kG.get(e._1)).-&gt;[Any](vG.get(e._2))))(immutable.this.Map.canBuildFrom[Any, Any]);
+  new org.apache.spark.sql.catalyst.util.ArrayBasedMapData(new org.apache.spark.sql.catalyst.util.GenericArrayData(m.keys.toArray[Any]((ClassTag.Any: scala.reflect.ClassTag[Any]))), new org.apache.spark.sql.catalyst.util.GenericArrayData(m.values.toArray[Any]((ClassTag.Any: scala.reflect.ClassTag[Any]))))
+}))
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          994
+        </td>
+        <td>
+          3489
+          -
+          3532
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          path.asInstanceOf[java.util.Map[Object,Object]]
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          995
+        </td>
+        <td>
+          3541
+          -
+          3541
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Predef.$conforms
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.$conforms[(Object, Object)]
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          996
+        </td>
+        <td>
+          3563
+          -
+          3567
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          e._1
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          997
+        </td>
+        <td>
+          3556
+          -
+          3568
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          kG.get(e._1)
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          998
+        </td>
+        <td>
+          3579
+          -
+          3583
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          e._2
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          999
+        </td>
+        <td>
+          3572
+          -
+          3584
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.Getter.get
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          vG.get(e._2)
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          1000
+        </td>
+        <td>
+          3556
+          -
+          3584
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Predef.ArrowAssoc.-&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.ArrowAssoc[Any](kG.get(e._1)).-&gt;[Any](vG.get(e._2))
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          1001
+        </td>
+        <td>
+          3550
+          -
+          3550
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.immutable.Map.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          immutable.this.Map.canBuildFrom[Any, Any]
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          1002
+        </td>
+        <td>
+          3489
+          -
+          3585
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.map
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.collection.JavaConverters.mapAsScalaMapConverter[Object, Object](path.asInstanceOf[java.util.Map[Object,Object]]).asScala.toMap[Object, Object](scala.Predef.$conforms[(Object, Object)]).map[(Any, Any), scala.collection.immutable.Map[Any,Any]](((e: (Object, Object)) =&gt; scala.Predef.ArrowAssoc[Any](kG.get(e._1)).-&gt;[Any](vG.get(e._2))))(immutable.this.Map.canBuildFrom[Any, Any])
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          1003
+        </td>
+        <td>
+          3637
+          -
+          3651
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableOnce.toArray
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          m.keys.toArray[Any]((ClassTag.Any: scala.reflect.ClassTag[Any]))
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          1004
+        </td>
+        <td>
+          3616
+          -
+          3652
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.util.GenericArrayData.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new org.apache.spark.sql.catalyst.util.GenericArrayData(m.keys.toArray[Any]((ClassTag.Any: scala.reflect.ClassTag[Any])))
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          1005
+        </td>
+        <td>
+          3675
+          -
+          3691
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableOnce.toArray
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          m.values.toArray[Any]((ClassTag.Any: scala.reflect.ClassTag[Any]))
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          1006
+        </td>
+        <td>
+          3654
+          -
+          3692
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.util.GenericArrayData.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new org.apache.spark.sql.catalyst.util.GenericArrayData(m.values.toArray[Any]((ClassTag.Any: scala.reflect.ClassTag[Any])))
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          1007
+        </td>
+        <td>
+          3594
+          -
+          3693
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.util.ArrayBasedMapData.&lt;init&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          new org.apache.spark.sql.catalyst.util.ArrayBasedMapData(new org.apache.spark.sql.catalyst.util.GenericArrayData(m.keys.toArray[Any]((ClassTag.Any: scala.reflect.ClassTag[Any]))), new org.apache.spark.sql.catalyst.util.GenericArrayData(m.values.toArray[Any]((ClassTag.Any: scala.reflect.ClassTag[Any]))))
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          1010
+        </td>
+        <td>
+          3716
+          -
+          3803
+        </td>
+        <td>
+          Throw
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          throw new com.sparkutils.dmn.DMNException(scala.StringContext.apply(&quot;Could not load Kogito Result Provider for dataType &quot;, &quot;&quot;).s(dataType))
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          1011
+        </td>
+        <td>
+          3716
+          -
+          3803
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          throw new com.sparkutils.dmn.DMNException(scala.StringContext.apply(&quot;Could not load Kogito Result Provider for dataType &quot;, &quot;&quot;).s(dataType))
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          1012
+        </td>
+        <td>
+          4382
+          -
+          4406
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.reflect.ClassTag.runtimeClass
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.reflect.`package`.classTag[T](evidence$1).runtimeClass
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          1013
+        </td>
+        <td>
+          4413
+          -
+          4428
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper.code
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;&quot;, &quot;&quot;)).code(pathName)
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          1018
+        </td>
+        <td>
+          4366
+          -
+          4475
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.Utils.exprCodeInterim
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.kogito.types.Utils.exprCodeInterim(scala.reflect.`package`.classTag[T](evidence$1).runtimeClass, ctx, org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;&quot;, &quot;&quot;)).code(pathName), ((i: String) =&gt; org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;&quot;, &quot;&quot;)).code(f.apply(i))), false)
+        </td>
+      </tr><tr>
+        <td>
+          99
+        </td>
+        <td>
+          1014
+        </td>
+        <td>
+          4443
+          -
+          4460
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;&quot;, &quot;&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          99
+        </td>
+        <td>
+          1015
+        </td>
+        <td>
+          4452
+          -
+          4456
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function1.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          f.apply(i)
+        </td>
+      </tr><tr>
+        <td>
+          99
+        </td>
+        <td>
+          1016
+        </td>
+        <td>
+          4443
+          -
+          4460
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper.code
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;&quot;, &quot;&quot;)).code(f.apply(i))
+        </td>
+      </tr><tr>
+        <td>
+          99
+        </td>
+        <td>
+          1017
+        </td>
+        <td>
+          4469
+          -
+          4474
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          103
+        </td>
+        <td>
+          1054
+        </td>
+        <td>
+          4615
+          -
+          6036
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val mappedFields: Array[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen)] = scala.Predef.refArrayOps[org.apache.spark.sql.types.StructField](structType.fields).map[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen), Array[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen)]](((f: org.apache.spark.sql.types.StructField) =&gt; scala.Tuple2.apply[String, com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen](f.name, if (f.name.endsWith(ResultInterfaces.this.evalStatusEnding))
+    ResultInterfaces.this.nullOr[Byte](((x$2: String) =&gt; scala.StringContext.apply(&quot;com.sparkutils.dmn.kogito.types.ResultInterfaces.EVALUATING()&quot;).s()))((ClassTag.Byte: scala.reflect.ClassTag[Byte]))
+  else
+    ResultInterfaces.this.forTypeCodeGen(f.dataType))))(scala.this.Array.canBuildFrom[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen)]((ClassTag.apply[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen)](classOf[scala.Tuple2]): scala.reflect.ClassTag[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen)])));
+  ((ctx: org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, pathName: String) =&gt; {
+    val expr: org.apache.spark.sql.catalyst.expressions.codegen.ExprCode = com.sparkutils.dmn.kogito.types.Utils.exprCode(classOf[org.apache.spark.sql.catalyst.expressions.GenericInternalRow], ctx);
+    val mapName: org.apache.spark.sql.catalyst.expressions.codegen.VariableValue = ctx.freshVariable(&quot;map&quot;, classOf[java.util.Map]);
+    val s: Array[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode] = scala.Predef.refArrayOps[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen)](mappedFields).map[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode, Array[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode]](((x0$1: (String, com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen)) =&gt; x0$1 match {
+      case (_1: String, _2: com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen)(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen)((n @ _), (f @ _)) =&gt; f.forPath(ctx, scala.StringContext.apply(&quot;&quot;, &quot;.get(\&quot;&quot;, &quot;\&quot;)&quot;).s(mapName, n))
+    }))(scala.this.Array.canBuildFrom[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode]((ClassTag.apply[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode](classOf[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode]): scala.reflect.ClassTag[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode])));
+    val init: org.apache.spark.sql.catalyst.expressions.codegen.Block = scala.Predef.refArrayOps[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode](s).foldLeft[org.apache.spark.sql.catalyst.expressions.codegen.Block](org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;&quot;)).code())(((x0$2: org.apache.spark.sql.catalyst.expressions.codegen.Block, x1$1: org.apache.spark.sql.catalyst.expressions.codegen.ExprCode) =&gt; scala.Tuple2.apply[org.apache.spark.sql.catalyst.expressions.codegen.Block, org.apache.spark.sql.catalyst.expressions.codegen.ExprCode](x0$2, x1$1) match {
+      case (_1: org.apache.spark.sql.catalyst.expressions.codegen.Block, _2: org.apache.spark.sql.catalyst.expressions.codegen.ExprCode)(org.apache.spark.sql.catalyst.expressions.codegen.Block, org.apache.spark.sql.catalyst.expressions.codegen.ExprCode)((c @ _), (e @ _)) =&gt; org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;&quot;, &quot;\n                &quot;, &quot;\n                &quot;)).code(c, e.code)
+    }));
+    val fields: String = scala.Predef.refArrayOps[org.apache.spark.sql.catalyst.expressions.codegen.ExprValue](scala.Predef.refArrayOps[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode](s).map[org.apache.spark.sql.catalyst.expressions.codegen.ExprValue, Array[org.apache.spark.sql.catalyst.expressions.codegen.ExprValue]](((x$3: org.apache.spark.sql.catalyst.expressions.codegen.ExprCode) =&gt; x$3.value))(scala.this.Array.canBuildFrom[org.apache.spark.sql.catalyst.expressions.codegen.ExprValue]((ClassTag.apply[org.apache.spark.sql.catalyst.expressions.codegen.ExprValue](classOf[org.apache.spark.sql.catalyst.expressions.codegen.ExprValue]): scala.reflect.ClassTag[org.apache.spark.sql.catalyst.expressions.codegen.ExprValue])))).mkString(&quot;\n,&quot;);
+    val resArr: String = ctx.freshName(&quot;resArr&quot;);
+    expr.copy(org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;\n            org.apache.spark.sql.catalyst.expressions.GenericInternalRow &quot;, &quot; = null;\n            java.util.Map &quot;, &quot; = (java.util.Map&lt;String, Object&gt;)&quot;, &quot;;\n            boolean &quot;, &quot; = (&quot;, &quot; == null);\n            if (!&quot;, &quot;) {\n              &quot;, &quot;\n              Object[] &quot;, &quot; = new Object[]{&quot;, &quot;};\n\n              &quot;, &quot; = new org.apache.spark.sql.catalyst.expressions.GenericInternalRow(\n                &quot;, &quot;\n              );\n            }\n              &quot;)).code(expr.value, mapName, pathName, expr.isNull, mapName, expr.isNull, init, resArr, fields, expr.value, resArr), expr.copy$default$2, expr.copy$default$3)
+  })
+}
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          1019
+        </td>
+        <td>
+          4643
+          -
+          4660
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.types.StructType.fields
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          structType.fields
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          1030
+        </td>
+        <td>
+          4665
+          -
+          4665
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.Array.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Array.canBuildFrom[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen)]((ClassTag.apply[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen)](classOf[scala.Tuple2]): scala.reflect.ClassTag[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen)]))
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          1031
+        </td>
+        <td>
+          4643
+          -
+          4905
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.map
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.refArrayOps[org.apache.spark.sql.types.StructField](structType.fields).map[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen), Array[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen)]](((f: org.apache.spark.sql.types.StructField) =&gt; scala.Tuple2.apply[String, com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen](f.name, if (f.name.endsWith(ResultInterfaces.this.evalStatusEnding))
+  ResultInterfaces.this.nullOr[Byte](((x$2: String) =&gt; scala.StringContext.apply(&quot;com.sparkutils.dmn.kogito.types.ResultInterfaces.EVALUATING()&quot;).s()))((ClassTag.Byte: scala.reflect.ClassTag[Byte]))
+else
+  ResultInterfaces.this.forTypeCodeGen(f.dataType))))(scala.this.Array.canBuildFrom[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen)]((ClassTag.apply[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen)](classOf[scala.Tuple2]): scala.reflect.ClassTag[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen)])))
+        </td>
+      </tr><tr>
+        <td>
+          105
+        </td>
+        <td>
+          1020
+        </td>
+        <td>
+          4681
+          -
+          4687
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.types.StructField.name
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          f.name
+        </td>
+      </tr><tr>
+        <td>
+          105
+        </td>
+        <td>
+          1029
+        </td>
+        <td>
+          4680
+          -
+          4897
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[String, com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen](f.name, if (f.name.endsWith(ResultInterfaces.this.evalStatusEnding))
+  ResultInterfaces.this.nullOr[Byte](((x$2: String) =&gt; scala.StringContext.apply(&quot;com.sparkutils.dmn.kogito.types.ResultInterfaces.EVALUATING()&quot;).s()))((ClassTag.Byte: scala.reflect.ClassTag[Byte]))
+else
+  ResultInterfaces.this.forTypeCodeGen(f.dataType))
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          1021
+        </td>
+        <td>
+          4719
+          -
+          4735
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.evalStatusEnding
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.evalStatusEnding
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          1022
+        </td>
+        <td>
+          4703
+          -
+          4736
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.endsWith
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          f.name.endsWith(ResultInterfaces.this.evalStatusEnding)
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          1023
+        </td>
+        <td>
+          4768
+          -
+          4832
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.s
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;com.sparkutils.dmn.kogito.types.ResultInterfaces.EVALUATING()&quot;).s()
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          1024
+        </td>
+        <td>
+          4750
+          -
+          4833
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr[Byte](((x$2: String) =&gt; scala.StringContext.apply(&quot;com.sparkutils.dmn.kogito.types.ResultInterfaces.EVALUATING()&quot;).s()))((ClassTag.Byte: scala.reflect.ClassTag[Byte]))
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          1025
+        </td>
+        <td>
+          4750
+          -
+          4833
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr[Byte](((x$2: String) =&gt; scala.StringContext.apply(&quot;com.sparkutils.dmn.kogito.types.ResultInterfaces.EVALUATING()&quot;).s()))((ClassTag.Byte: scala.reflect.ClassTag[Byte]))
+        </td>
+      </tr><tr>
+        <td>
+          109
+        </td>
+        <td>
+          1026
+        </td>
+        <td>
+          4876
+          -
+          4886
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.types.StructField.dataType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          f.dataType
+        </td>
+      </tr><tr>
+        <td>
+          109
+        </td>
+        <td>
+          1027
+        </td>
+        <td>
+          4861
+          -
+          4887
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.forTypeCodeGen
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.forTypeCodeGen(f.dataType)
+        </td>
+      </tr><tr>
+        <td>
+          109
+        </td>
+        <td>
+          1028
+        </td>
+        <td>
+          4861
+          -
+          4887
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.forTypeCodeGen
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.forTypeCodeGen(f.dataType)
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          1032
+        </td>
+        <td>
+          4976
+          -
+          5017
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.Utils.exprCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.kogito.types.Utils.exprCode(classOf[org.apache.spark.sql.catalyst.expressions.GenericInternalRow], ctx)
+        </td>
+      </tr><tr>
+        <td>
+          115
+        </td>
+        <td>
+          1033
+        </td>
+        <td>
+          5041
+          -
+          5099
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext.freshVariable
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ctx.freshVariable(&quot;map&quot;, classOf[java.util.Map])
+        </td>
+      </tr><tr>
+        <td>
+          117
+        </td>
+        <td>
+          1037
+        </td>
+        <td>
+          5133
+          -
+          5133
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.Array.canBuildFrom
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Array.canBuildFrom[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode]((ClassTag.apply[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode](classOf[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode]): scala.reflect.ClassTag[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode]))
+        </td>
+      </tr><tr>
+        <td>
+          117
+        </td>
+        <td>
+          1038
+        </td>
+        <td>
+          5117
+          -
+          5222
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.map
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.refArrayOps[(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen)](mappedFields).map[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode, Array[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode]](((x0$1: (String, com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen)) =&gt; x0$1 match {
+  case (_1: String, _2: com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen)(String, com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen)((n @ _), (f @ _)) =&gt; f.forPath(ctx, scala.StringContext.apply(&quot;&quot;, &quot;.get(\&quot;&quot;, &quot;\&quot;)&quot;).s(mapName, n))
+}))(scala.this.Array.canBuildFrom[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode]((ClassTag.apply[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode](classOf[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode]): scala.reflect.ClassTag[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode])))
+        </td>
+      </tr><tr>
+        <td>
+          119
+        </td>
+        <td>
+          1034
+        </td>
+        <td>
+          5186
+          -
+          5211
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.s
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;&quot;, &quot;.get(\&quot;&quot;, &quot;\&quot;)&quot;).s(mapName, n)
+        </td>
+      </tr><tr>
+        <td>
+          119
+        </td>
+        <td>
+          1035
+        </td>
+        <td>
+          5171
+          -
+          5212
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen.forPath
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          f.forPath(ctx, scala.StringContext.apply(&quot;&quot;, &quot;.get(\&quot;&quot;, &quot;\&quot;)&quot;).s(mapName, n))
+        </td>
+      </tr><tr>
+        <td>
+          119
+        </td>
+        <td>
+          1036
+        </td>
+        <td>
+          5171
+          -
+          5212
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen.forPath
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          f.forPath(ctx, scala.StringContext.apply(&quot;&quot;, &quot;.get(\&quot;&quot;, &quot;\&quot;)&quot;).s(mapName, n))
+        </td>
+      </tr><tr>
+        <td>
+          121
+        </td>
+        <td>
+          1039
+        </td>
+        <td>
+          5253
+          -
+          5259
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper.code
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;&quot;)).code()
+        </td>
+      </tr><tr>
+        <td>
+          121
+        </td>
+        <td>
+          1044
+        </td>
+        <td>
+          5242
+          -
+          5364
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.IndexedSeqOptimized.foldLeft
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.refArrayOps[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode](s).foldLeft[org.apache.spark.sql.catalyst.expressions.codegen.Block](org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;&quot;)).code())(((x0$2: org.apache.spark.sql.catalyst.expressions.codegen.Block, x1$1: org.apache.spark.sql.catalyst.expressions.codegen.ExprCode) =&gt; scala.Tuple2.apply[org.apache.spark.sql.catalyst.expressions.codegen.Block, org.apache.spark.sql.catalyst.expressions.codegen.ExprCode](x0$2, x1$1) match {
+  case (_1: org.apache.spark.sql.catalyst.expressions.codegen.Block, _2: org.apache.spark.sql.catalyst.expressions.codegen.ExprCode)(org.apache.spark.sql.catalyst.expressions.codegen.Block, org.apache.spark.sql.catalyst.expressions.codegen.ExprCode)((c @ _), (e @ _)) =&gt; org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;&quot;, &quot;\n                &quot;, &quot;\n                &quot;)).code(c, e.code)
+}))
+        </td>
+      </tr><tr>
+        <td>
+          123
+        </td>
+        <td>
+          1040
+        </td>
+        <td>
+          5299
+          -
+          5354
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;&quot;, &quot;\n                &quot;, &quot;\n                &quot;)
+        </td>
+      </tr><tr>
+        <td>
+          123
+        </td>
+        <td>
+          1042
+        </td>
+        <td>
+          5299
+          -
+          5354
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper.code
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;&quot;, &quot;\n                &quot;, &quot;\n                &quot;)).code(c, e.code)
+        </td>
+      </tr><tr>
+        <td>
+          123
+        </td>
+        <td>
+          1043
+        </td>
+        <td>
+          5299
+          -
+          5354
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper.code
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;&quot;, &quot;\n                &quot;, &quot;\n                &quot;)).code(c, e.code)
+        </td>
+      </tr><tr>
+        <td>
+          124
+        </td>
+        <td>
+          1041
+        </td>
+        <td>
+          5327
+          -
+          5333
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.code
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          e.code
+        </td>
+      </tr><tr>
+        <td>
+          127
+        </td>
+        <td>
+          1045
+        </td>
+        <td>
+          5386
+          -
+          5416
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.TraversableOnce.mkString
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.refArrayOps[org.apache.spark.sql.catalyst.expressions.codegen.ExprValue](scala.Predef.refArrayOps[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode](s).map[org.apache.spark.sql.catalyst.expressions.codegen.ExprValue, Array[org.apache.spark.sql.catalyst.expressions.codegen.ExprValue]](((x$3: org.apache.spark.sql.catalyst.expressions.codegen.ExprCode) =&gt; x$3.value))(scala.this.Array.canBuildFrom[org.apache.spark.sql.catalyst.expressions.codegen.ExprValue]((ClassTag.apply[org.apache.spark.sql.catalyst.expressions.codegen.ExprValue](classOf[org.apache.spark.sql.catalyst.expressions.codegen.ExprValue]): scala.reflect.ClassTag[org.apache.spark.sql.catalyst.expressions.codegen.ExprValue])))).mkString(&quot;\n,&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          129
+        </td>
+        <td>
+          1046
+        </td>
+        <td>
+          5439
+          -
+          5462
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext.freshName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ctx.freshName(&quot;resArr&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          131
+        </td>
+        <td>
+          1053
+        </td>
+        <td>
+          5472
+          -
+          6028
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          expr.copy(org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;\n            org.apache.spark.sql.catalyst.expressions.GenericInternalRow &quot;, &quot; = null;\n            java.util.Map &quot;, &quot; = (java.util.Map&lt;String, Object&gt;)&quot;, &quot;;\n            boolean &quot;, &quot; = (&quot;, &quot; == null);\n            if (!&quot;, &quot;) {\n              &quot;, &quot;\n              Object[] &quot;, &quot; = new Object[]{&quot;, &quot;};\n\n              &quot;, &quot; = new org.apache.spark.sql.catalyst.expressions.GenericInternalRow(\n                &quot;, &quot;\n              );\n            }\n              &quot;)).code(expr.value, mapName, pathName, expr.isNull, mapName, expr.isNull, init, resArr, fields, expr.value, resArr), expr.copy$default$2, expr.copy$default$3)
+        </td>
+      </tr><tr>
+        <td>
+          132
+        </td>
+        <td>
+          1047
+        </td>
+        <td>
+          5499
+          -
+          6018
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;\n            org.apache.spark.sql.catalyst.expressions.GenericInternalRow &quot;, &quot; = null;\n            java.util.Map &quot;, &quot; = (java.util.Map&lt;String, Object&gt;)&quot;, &quot;;\n            boolean &quot;, &quot; = (&quot;, &quot; == null);\n            if (!&quot;, &quot;) {\n              &quot;, &quot;\n              Object[] &quot;, &quot; = new Object[]{&quot;, &quot;};\n\n              &quot;, &quot; = new org.apache.spark.sql.catalyst.expressions.GenericInternalRow(\n                &quot;, &quot;\n              );\n            }\n              &quot;)
+        </td>
+      </tr><tr>
+        <td>
+          132
+        </td>
+        <td>
+          1052
+        </td>
+        <td>
+          5499
+          -
+          6018
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper.code
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;\n            org.apache.spark.sql.catalyst.expressions.GenericInternalRow &quot;, &quot; = null;\n            java.util.Map &quot;, &quot; = (java.util.Map&lt;String, Object&gt;)&quot;, &quot;;\n            boolean &quot;, &quot; = (&quot;, &quot; == null);\n            if (!&quot;, &quot;) {\n              &quot;, &quot;\n              Object[] &quot;, &quot; = new Object[]{&quot;, &quot;};\n\n              &quot;, &quot; = new org.apache.spark.sql.catalyst.expressions.GenericInternalRow(\n                &quot;, &quot;\n              );\n            }\n              &quot;)).code(expr.value, mapName, pathName, expr.isNull, mapName, expr.isNull, init, resArr, fields, expr.value, resArr)
+        </td>
+      </tr><tr>
+        <td>
+          133
+        </td>
+        <td>
+          1048
+        </td>
+        <td>
+          5582
+          -
+          5592
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          expr.value
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          1049
+        </td>
+        <td>
+          5703
+          -
+          5714
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.isNull
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          expr.isNull
+        </td>
+      </tr><tr>
+        <td>
+          136
+        </td>
+        <td>
+          1050
+        </td>
+        <td>
+          5757
+          -
+          5768
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.isNull
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          expr.isNull
+        </td>
+      </tr><tr>
+        <td>
+          140
+        </td>
+        <td>
+          1051
+        </td>
+        <td>
+          5866
+          -
+          5876
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          expr.value
+        </td>
+      </tr><tr>
+        <td>
+          147
+        </td>
+        <td>
+          1055
+        </td>
+        <td>
+          6084
+          -
+          6128
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.s
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;UTF8String.fromString( &quot;, &quot;.toString() )&quot;).s(path)
+        </td>
+      </tr><tr>
+        <td>
+          147
+        </td>
+        <td>
+          1056
+        </td>
+        <td>
+          6060
+          -
+          6129
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr[String](((path: String) =&gt; scala.StringContext.apply(&quot;UTF8String.fromString( &quot;, &quot;.toString() )&quot;).s(path)))((ClassTag.apply[String](classOf[java.lang.String]): scala.reflect.ClassTag[String]))
+        </td>
+      </tr><tr>
+        <td>
+          147
+        </td>
+        <td>
+          1057
+        </td>
+        <td>
+          6060
+          -
+          6129
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr[String](((path: String) =&gt; scala.StringContext.apply(&quot;UTF8String.fromString( &quot;, &quot;.toString() )&quot;).s(path)))((ClassTag.apply[String](classOf[java.lang.String]): scala.reflect.ClassTag[String]))
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          1058
+        </td>
+        <td>
+          6160
+          -
+          6160
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr$default$1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr$default$1[Integer]
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          1059
+        </td>
+        <td>
+          6154
+          -
+          6171
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr[Integer](ResultInterfaces.this.nullOr$default$1[Integer])((ClassTag.apply[Integer](classOf[java.lang.Integer]): scala.reflect.ClassTag[Integer]))
+        </td>
+      </tr><tr>
+        <td>
+          148
+        </td>
+        <td>
+          1060
+        </td>
+        <td>
+          6154
+          -
+          6171
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr[Integer](ResultInterfaces.this.nullOr$default$1[Integer])((ClassTag.apply[Integer](classOf[java.lang.Integer]): scala.reflect.ClassTag[Integer]))
+        </td>
+      </tr><tr>
+        <td>
+          149
+        </td>
+        <td>
+          1061
+        </td>
+        <td>
+          6199
+          -
+          6199
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr$default$1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr$default$1[Long]
+        </td>
+      </tr><tr>
+        <td>
+          149
+        </td>
+        <td>
+          1062
+        </td>
+        <td>
+          6193
+          -
+          6207
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr[Long](ResultInterfaces.this.nullOr$default$1[Long])((ClassTag.Long: scala.reflect.ClassTag[Long]))
+        </td>
+      </tr><tr>
+        <td>
+          149
+        </td>
+        <td>
+          1063
+        </td>
+        <td>
+          6193
+          -
+          6207
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr[Long](ResultInterfaces.this.nullOr$default$1[Long])((ClassTag.Long: scala.reflect.ClassTag[Long]))
+        </td>
+      </tr><tr>
+        <td>
+          150
+        </td>
+        <td>
+          1064
+        </td>
+        <td>
+          6238
+          -
+          6238
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr$default$1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr$default$1[Boolean]
+        </td>
+      </tr><tr>
+        <td>
+          150
+        </td>
+        <td>
+          1065
+        </td>
+        <td>
+          6232
+          -
+          6249
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr[Boolean](ResultInterfaces.this.nullOr$default$1[Boolean])((ClassTag.Boolean: scala.reflect.ClassTag[Boolean]))
+        </td>
+      </tr><tr>
+        <td>
+          150
+        </td>
+        <td>
+          1066
+        </td>
+        <td>
+          6232
+          -
+          6249
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr[Boolean](ResultInterfaces.this.nullOr$default$1[Boolean])((ClassTag.Boolean: scala.reflect.ClassTag[Boolean]))
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          1067
+        </td>
+        <td>
+          6279
+          -
+          6279
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr$default$1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr$default$1[Double]
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          1068
+        </td>
+        <td>
+          6273
+          -
+          6289
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr[Double](ResultInterfaces.this.nullOr$default$1[Double])((ClassTag.Double: scala.reflect.ClassTag[Double]))
+        </td>
+      </tr><tr>
+        <td>
+          151
+        </td>
+        <td>
+          1069
+        </td>
+        <td>
+          6273
+          -
+          6289
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr[Double](ResultInterfaces.this.nullOr$default$1[Double])((ClassTag.Double: scala.reflect.ClassTag[Double]))
+        </td>
+      </tr><tr>
+        <td>
+          152
+        </td>
+        <td>
+          1070
+        </td>
+        <td>
+          6318
+          -
+          6318
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr$default$1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr$default$1[Float]
+        </td>
+      </tr><tr>
+        <td>
+          152
+        </td>
+        <td>
+          1071
+        </td>
+        <td>
+          6312
+          -
+          6327
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr[Float](ResultInterfaces.this.nullOr$default$1[Float])((ClassTag.Float: scala.reflect.ClassTag[Float]))
+        </td>
+      </tr><tr>
+        <td>
+          152
+        </td>
+        <td>
+          1072
+        </td>
+        <td>
+          6312
+          -
+          6327
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr[Float](ResultInterfaces.this.nullOr$default$1[Float])((ClassTag.Float: scala.reflect.ClassTag[Float]))
+        </td>
+      </tr><tr>
+        <td>
+          153
+        </td>
+        <td>
+          1073
+        </td>
+        <td>
+          6357
+          -
+          6357
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr$default$1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr$default$1[Array[Byte]]
+        </td>
+      </tr><tr>
+        <td>
+          153
+        </td>
+        <td>
+          1074
+        </td>
+        <td>
+          6351
+          -
+          6372
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr[Array[Byte]](ResultInterfaces.this.nullOr$default$1[Array[Byte]])((ClassTag.apply[Array[Byte]](scala.runtime.ScalaRunTime.arrayClass(classOf[scala.Byte])): scala.reflect.ClassTag[Array[Byte]]))
+        </td>
+      </tr><tr>
+        <td>
+          153
+        </td>
+        <td>
+          1075
+        </td>
+        <td>
+          6351
+          -
+          6372
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr[Array[Byte]](ResultInterfaces.this.nullOr$default$1[Array[Byte]])((ClassTag.apply[Array[Byte]](scala.runtime.ScalaRunTime.arrayClass(classOf[scala.Byte])): scala.reflect.ClassTag[Array[Byte]]))
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          1076
+        </td>
+        <td>
+          6400
+          -
+          6400
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr$default$1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr$default$1[Byte]
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          1077
+        </td>
+        <td>
+          6394
+          -
+          6408
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr[Byte](ResultInterfaces.this.nullOr$default$1[Byte])((ClassTag.Byte: scala.reflect.ClassTag[Byte]))
+        </td>
+      </tr><tr>
+        <td>
+          154
+        </td>
+        <td>
+          1078
+        </td>
+        <td>
+          6394
+          -
+          6408
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr[Byte](ResultInterfaces.this.nullOr$default$1[Byte])((ClassTag.Byte: scala.reflect.ClassTag[Byte]))
+        </td>
+      </tr><tr>
+        <td>
+          155
+        </td>
+        <td>
+          1079
+        </td>
+        <td>
+          6437
+          -
+          6437
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr$default$1
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr$default$1[Short]
+        </td>
+      </tr><tr>
+        <td>
+          155
+        </td>
+        <td>
+          1080
+        </td>
+        <td>
+          6431
+          -
+          6446
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr[Short](ResultInterfaces.this.nullOr$default$1[Short])((ClassTag.Short: scala.reflect.ClassTag[Short]))
+        </td>
+      </tr><tr>
+        <td>
+          155
+        </td>
+        <td>
+          1081
+        </td>
+        <td>
+          6431
+          -
+          6446
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr[Short](ResultInterfaces.this.nullOr$default$1[Short])((ClassTag.Short: scala.reflect.ClassTag[Short]))
+        </td>
+      </tr><tr>
+        <td>
+          157
+        </td>
+        <td>
+          1082
+        </td>
+        <td>
+          6495
+          -
+          6593
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.s
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.localDateToDays( (java.time.LocalDate) &quot;, &quot; )&quot;).s(path)
+        </td>
+      </tr><tr>
+        <td>
+          157
+        </td>
+        <td>
+          1083
+        </td>
+        <td>
+          6474
+          -
+          6594
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr[Int](((path: String) =&gt; scala.StringContext.apply(&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.localDateToDays( (java.time.LocalDate) &quot;, &quot; )&quot;).s(path)))((ClassTag.Int: scala.reflect.ClassTag[Int]))
+        </td>
+      </tr><tr>
+        <td>
+          157
+        </td>
+        <td>
+          1084
+        </td>
+        <td>
+          6474
+          -
+          6594
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr[Int](((path: String) =&gt; scala.StringContext.apply(&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.localDateToDays( (java.time.LocalDate) &quot;, &quot; )&quot;).s(path)))((ClassTag.Int: scala.reflect.ClassTag[Int]))
+        </td>
+      </tr><tr>
+        <td>
+          159
+        </td>
+        <td>
+          1085
+        </td>
+        <td>
+          6669
+          -
+          6777
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.s
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.localDateTimeToMicros( (java.time.LocalDateTime) &quot;, &quot; )&quot;).s(path)
+        </td>
+      </tr><tr>
+        <td>
+          159
+        </td>
+        <td>
+          1086
+        </td>
+        <td>
+          6647
+          -
+          6778
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr[Long](((path: String) =&gt; scala.StringContext.apply(&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.localDateTimeToMicros( (java.time.LocalDateTime) &quot;, &quot; )&quot;).s(path)))((ClassTag.Long: scala.reflect.ClassTag[Long]))
+        </td>
+      </tr><tr>
+        <td>
+          159
+        </td>
+        <td>
+          1087
+        </td>
+        <td>
+          6647
+          -
+          6778
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr[Long](((path: String) =&gt; scala.StringContext.apply(&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.localDateTimeToMicros( (java.time.LocalDateTime) &quot;, &quot; )&quot;).s(path)))((ClassTag.Long: scala.reflect.ClassTag[Long]))
+        </td>
+      </tr><tr>
+        <td>
+          161
+        </td>
+        <td>
+          1088
+        </td>
+        <td>
+          6837
+          -
+          6912
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.s
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;org.apache.spark.sql.types.Decimal.apply( (java.math.BigDecimal) &quot;, &quot; )&quot;).s(path)
+        </td>
+      </tr><tr>
+        <td>
+          161
+        </td>
+        <td>
+          1089
+        </td>
+        <td>
+          6812
+          -
+          6913
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr[org.apache.spark.sql.types.Decimal](((path: String) =&gt; scala.StringContext.apply(&quot;org.apache.spark.sql.types.Decimal.apply( (java.math.BigDecimal) &quot;, &quot; )&quot;).s(path)))((ClassTag.apply[org.apache.spark.sql.types.Decimal](classOf[org.apache.spark.sql.types.Decimal]): scala.reflect.ClassTag[org.apache.spark.sql.types.Decimal]))
+        </td>
+      </tr><tr>
+        <td>
+          161
+        </td>
+        <td>
+          1090
+        </td>
+        <td>
+          6812
+          -
+          6913
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.nullOr
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.nullOr[org.apache.spark.sql.types.Decimal](((path: String) =&gt; scala.StringContext.apply(&quot;org.apache.spark.sql.types.Decimal.apply( (java.math.BigDecimal) &quot;, &quot; )&quot;).s(path)))((ClassTag.apply[org.apache.spark.sql.types.Decimal](classOf[org.apache.spark.sql.types.Decimal]): scala.reflect.ClassTag[org.apache.spark.sql.types.Decimal]))
+        </td>
+      </tr><tr>
+        <td>
+          162
+        </td>
+        <td>
+          1107
+        </td>
+        <td>
+          6941
+          -
+          7999
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val arrCode: com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen = ResultInterfaces.this.forTypeCodeGen(typ);
+  ((ctx: org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, pathName: String) =&gt; {
+    val expr: org.apache.spark.sql.catalyst.expressions.codegen.ExprCode = com.sparkutils.dmn.kogito.types.Utils.exprCode(classOf[org.apache.spark.sql.catalyst.util.GenericArrayData], ctx);
+    val iar: org.apache.spark.sql.catalyst.expressions.codegen.VariableValue = ctx.freshVariable(&quot;ar&quot;, classOf[java.util.List]);
+    val i: org.apache.spark.sql.catalyst.expressions.codegen.VariableValue = ctx.freshVariable(&quot;i&quot;, classOf[scala.Int]);
+    val arrRes: org.apache.spark.sql.catalyst.expressions.codegen.VariableValue = ctx.freshVariable(&quot;arr&quot;, classOf[[Ljava.lang.Object;]);
+    val typCode: org.apache.spark.sql.catalyst.expressions.codegen.ExprCode = arrCode.forPath(ctx, scala.StringContext.apply(&quot;&quot;, &quot;[&quot;, &quot;]&quot;).s(arrRes, i));
+    expr.copy(org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;\n            org.apache.spark.sql.catalyst.util.GenericArrayData &quot;, &quot; = null;\n            java.util.List &quot;, &quot; = (java.util.List&lt;Object&gt;)&quot;, &quot;;\n            boolean &quot;, &quot; = (&quot;, &quot; == null);\n            if (!&quot;, &quot;) {\n              Object[] &quot;, &quot; = &quot;, &quot;.toArray();\n\n              for (int &quot;, &quot; = 0; &quot;, &quot; &lt; &quot;, &quot;.length; &quot;, &quot;++) {\n                &quot;, &quot;\n                &quot;, &quot;[&quot;, &quot;] = &quot;, &quot;;\n              }\n              &quot;, &quot; = new org.apache.spark.sql.catalyst.util.GenericArrayData(&quot;, &quot;);\n            }\n            &quot;)).code(expr.value, iar, pathName, expr.isNull, iar, expr.isNull, arrRes, iar, i, i, arrRes, i, typCode.code, arrRes, i, typCode.value, expr.value, arrRes), expr.copy$default$2, expr.copy$default$3)
+  })
+}
+        </td>
+      </tr><tr>
+        <td>
+          163
+        </td>
+        <td>
+          1091
+        </td>
+        <td>
+          6964
+          -
+          6983
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.forTypeCodeGen
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.forTypeCodeGen(typ)
+        </td>
+      </tr><tr>
+        <td>
+          165
+        </td>
+        <td>
+          1092
+        </td>
+        <td>
+          7054
+          -
+          7093
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.Utils.exprCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.kogito.types.Utils.exprCode(classOf[org.apache.spark.sql.catalyst.util.GenericArrayData], ctx)
+        </td>
+      </tr><tr>
+        <td>
+          167
+        </td>
+        <td>
+          1093
+        </td>
+        <td>
+          7113
+          -
+          7164
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext.freshVariable
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ctx.freshVariable(&quot;ar&quot;, classOf[java.util.List])
+        </td>
+      </tr><tr>
+        <td>
+          169
+        </td>
+        <td>
+          1094
+        </td>
+        <td>
+          7182
+          -
+          7218
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext.freshVariable
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ctx.freshVariable(&quot;i&quot;, classOf[scala.Int])
+        </td>
+      </tr><tr>
+        <td>
+          171
+        </td>
+        <td>
+          1095
+        </td>
+        <td>
+          7241
+          -
+          7289
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext.freshVariable
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ctx.freshVariable(&quot;arr&quot;, classOf[[Ljava.lang.Object;])
+        </td>
+      </tr><tr>
+        <td>
+          173
+        </td>
+        <td>
+          1096
+        </td>
+        <td>
+          7334
+          -
+          7348
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.s
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;&quot;, &quot;[&quot;, &quot;]&quot;).s(arrRes, i)
+        </td>
+      </tr><tr>
+        <td>
+          173
+        </td>
+        <td>
+          1097
+        </td>
+        <td>
+          7313
+          -
+          7349
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen.forPath
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          arrCode.forPath(ctx, scala.StringContext.apply(&quot;&quot;, &quot;[&quot;, &quot;]&quot;).s(arrRes, i))
+        </td>
+      </tr><tr>
+        <td>
+          175
+        </td>
+        <td>
+          1106
+        </td>
+        <td>
+          7359
+          -
+          7991
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          expr.copy(org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;\n            org.apache.spark.sql.catalyst.util.GenericArrayData &quot;, &quot; = null;\n            java.util.List &quot;, &quot; = (java.util.List&lt;Object&gt;)&quot;, &quot;;\n            boolean &quot;, &quot; = (&quot;, &quot; == null);\n            if (!&quot;, &quot;) {\n              Object[] &quot;, &quot; = &quot;, &quot;.toArray();\n\n              for (int &quot;, &quot; = 0; &quot;, &quot; &lt; &quot;, &quot;.length; &quot;, &quot;++) {\n                &quot;, &quot;\n                &quot;, &quot;[&quot;, &quot;] = &quot;, &quot;;\n              }\n              &quot;, &quot; = new org.apache.spark.sql.catalyst.util.GenericArrayData(&quot;, &quot;);\n            }\n            &quot;)).code(expr.value, iar, pathName, expr.isNull, iar, expr.isNull, arrRes, iar, i, i, arrRes, i, typCode.code, arrRes, i, typCode.value, expr.value, arrRes), expr.copy$default$2, expr.copy$default$3)
+        </td>
+      </tr><tr>
+        <td>
+          177
+        </td>
+        <td>
+          1098
+        </td>
+        <td>
+          7399
+          -
+          7981
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;\n            org.apache.spark.sql.catalyst.util.GenericArrayData &quot;, &quot; = null;\n            java.util.List &quot;, &quot; = (java.util.List&lt;Object&gt;)&quot;, &quot;;\n            boolean &quot;, &quot; = (&quot;, &quot; == null);\n            if (!&quot;, &quot;) {\n              Object[] &quot;, &quot; = &quot;, &quot;.toArray();\n\n              for (int &quot;, &quot; = 0; &quot;, &quot; &lt; &quot;, &quot;.length; &quot;, &quot;++) {\n                &quot;, &quot;\n                &quot;, &quot;[&quot;, &quot;] = &quot;, &quot;;\n              }\n              &quot;, &quot; = new org.apache.spark.sql.catalyst.util.GenericArrayData(&quot;, &quot;);\n            }\n            &quot;)
+        </td>
+      </tr><tr>
+        <td>
+          177
+        </td>
+        <td>
+          1105
+        </td>
+        <td>
+          7399
+          -
+          7981
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper.code
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;\n            org.apache.spark.sql.catalyst.util.GenericArrayData &quot;, &quot; = null;\n            java.util.List &quot;, &quot; = (java.util.List&lt;Object&gt;)&quot;, &quot;;\n            boolean &quot;, &quot; = (&quot;, &quot; == null);\n            if (!&quot;, &quot;) {\n              Object[] &quot;, &quot; = &quot;, &quot;.toArray();\n\n              for (int &quot;, &quot; = 0; &quot;, &quot; &lt; &quot;, &quot;.length; &quot;, &quot;++) {\n                &quot;, &quot;\n                &quot;, &quot;[&quot;, &quot;] = &quot;, &quot;;\n              }\n              &quot;, &quot; = new org.apache.spark.sql.catalyst.util.GenericArrayData(&quot;, &quot;);\n            }\n            &quot;)).code(expr.value, iar, pathName, expr.isNull, iar, expr.isNull, arrRes, iar, i, i, arrRes, i, typCode.code, arrRes, i, typCode.value, expr.value, arrRes)
+        </td>
+      </tr><tr>
+        <td>
+          178
+        </td>
+        <td>
+          1099
+        </td>
+        <td>
+          7473
+          -
+          7483
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          expr.value
+        </td>
+      </tr><tr>
+        <td>
+          180
+        </td>
+        <td>
+          1100
+        </td>
+        <td>
+          7584
+          -
+          7595
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.isNull
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          expr.isNull
+        </td>
+      </tr><tr>
+        <td>
+          181
+        </td>
+        <td>
+          1101
+        </td>
+        <td>
+          7634
+          -
+          7645
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.isNull
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          expr.isNull
+        </td>
+      </tr><tr>
+        <td>
+          185
+        </td>
+        <td>
+          1102
+        </td>
+        <td>
+          7778
+          -
+          7790
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.code
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          typCode.code
+        </td>
+      </tr><tr>
+        <td>
+          186
+        </td>
+        <td>
+          1103
+        </td>
+        <td>
+          7824
+          -
+          7837
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          typCode.value
+        </td>
+      </tr><tr>
+        <td>
+          188
+        </td>
+        <td>
+          1104
+        </td>
+        <td>
+          7872
+          -
+          7882
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          expr.value
+        </td>
+      </tr><tr>
+        <td>
+          193
+        </td>
+        <td>
+          1132
+        </td>
+        <td>
+          8026
+          -
+          10119
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val kCode: com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen = ResultInterfaces.this.forTypeCodeGen(k);
+  val vCode: com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen = ResultInterfaces.this.forTypeCodeGen(v);
+  ((ctx: org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, pathName: String) =&gt; {
+    val expr: org.apache.spark.sql.catalyst.expressions.codegen.ExprCode = com.sparkutils.dmn.kogito.types.Utils.exprCode(classOf[org.apache.spark.sql.catalyst.util.ArrayBasedMapData], ctx);
+    val map: org.apache.spark.sql.catalyst.expressions.codegen.VariableValue = ctx.freshVariable(&quot;map&quot;, classOf[java.util.Map]);
+    val i: org.apache.spark.sql.catalyst.expressions.codegen.VariableValue = ctx.freshVariable(&quot;i&quot;, classOf[scala.Int]);
+    val entry: org.apache.spark.sql.catalyst.expressions.codegen.VariableValue = ctx.freshVariable(&quot;entry&quot;, classOf[java.util.Map$Entry]);
+    val typCodeK: org.apache.spark.sql.catalyst.expressions.codegen.ExprCode = kCode.forPath(ctx, scala.StringContext.apply(&quot;&quot;, &quot;.getKey()&quot;).s(entry));
+    val typCodeV: org.apache.spark.sql.catalyst.expressions.codegen.ExprCode = vCode.forPath(ctx, scala.StringContext.apply(&quot;&quot;, &quot;.getValue()&quot;).s(entry));
+    val arrKeyRes: org.apache.spark.sql.catalyst.expressions.codegen.VariableValue = ctx.freshVariable(&quot;arrKey&quot;, classOf[[Ljava.lang.Object;]);
+    val arrValueRes: org.apache.spark.sql.catalyst.expressions.codegen.VariableValue = ctx.freshVariable(&quot;arrValue&quot;, classOf[[Ljava.lang.Object;]);
+    val itr: String = ctx.freshName(&quot;itr&quot;);
+    expr.copy(org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;\n            org.apache.spark.sql.catalyst.util.ArrayBasedMapData &quot;, &quot; = null;\n            java.util.Map &quot;, &quot; = (java.util.Map&lt;String, Object&gt;)&quot;, &quot;;\n            boolean &quot;, &quot; = (&quot;, &quot; == null);\n            if (!&quot;, &quot;) {\n              Object[] &quot;, &quot; = new Object[&quot;, &quot;.size()];\n              Object[] &quot;, &quot; = new Object[&quot;, &quot;.size()];\n              java.util.Iterator&lt;java.util.Map.Entry&lt;String, Object&gt;&gt; &quot;, &quot; = &quot;, &quot;.entrySet().iterator();\n              int &quot;, &quot; = 0;\n              while (&quot;, &quot;.hasNext()){\n                java.util.Map.Entry&lt;String, Object&gt; &quot;, &quot; = (java.util.Map.Entry&lt;String, Object&gt;) &quot;, &quot;.next();\n                &quot;, &quot;\n                &quot;, &quot;\n                &quot;, &quot;[&quot;, &quot;] = &quot;, &quot;;\n                &quot;, &quot;[&quot;, &quot;] = &quot;, &quot;;\n                &quot;, &quot; = &quot;, &quot; + 1;\n              }\n\n              &quot;, &quot; = new org.apache.spark.sql.catalyst.util.ArrayBasedMapData(\n                new org.apache.spark.sql.catalyst.util.GenericArrayData(&quot;, &quot;),\n                new org.apache.spark.sql.catalyst.util.GenericArrayData(&quot;, &quot;)\n                );\n            }\n            &quot;)).code(expr.value, map, pathName, expr.isNull, map, expr.isNull, arrKeyRes, map, arrValueRes, map, itr, map, i, itr, entry, itr, typCodeK.code, typCodeV.code, arrKeyRes, i, typCodeK.value, arrValueRes, i, typCodeV.value, i, i, expr.value, arrKeyRes, arrValueRes), expr.copy$default$2, expr.copy$default$3)
+  })
+}
+        </td>
+      </tr><tr>
+        <td>
+          194
+        </td>
+        <td>
+          1108
+        </td>
+        <td>
+          8047
+          -
+          8064
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.forTypeCodeGen
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.forTypeCodeGen(k)
+        </td>
+      </tr><tr>
+        <td>
+          195
+        </td>
+        <td>
+          1109
+        </td>
+        <td>
+          8083
+          -
+          8100
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.forTypeCodeGen
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ResultInterfaces.this.forTypeCodeGen(v)
+        </td>
+      </tr><tr>
+        <td>
+          197
+        </td>
+        <td>
+          1110
+        </td>
+        <td>
+          8171
+          -
+          8212
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.Utils.exprCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.kogito.types.Utils.exprCode(classOf[org.apache.spark.sql.catalyst.util.ArrayBasedMapData], ctx)
+        </td>
+      </tr><tr>
+        <td>
+          199
+        </td>
+        <td>
+          1111
+        </td>
+        <td>
+          8232
+          -
+          8291
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext.freshVariable
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ctx.freshVariable(&quot;map&quot;, classOf[java.util.Map])
+        </td>
+      </tr><tr>
+        <td>
+          201
+        </td>
+        <td>
+          1112
+        </td>
+        <td>
+          8309
+          -
+          8345
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext.freshVariable
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ctx.freshVariable(&quot;i&quot;, classOf[scala.Int])
+        </td>
+      </tr><tr>
+        <td>
+          203
+        </td>
+        <td>
+          1113
+        </td>
+        <td>
+          8367
+          -
+          8434
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext.freshVariable
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ctx.freshVariable(&quot;entry&quot;, classOf[java.util.Map$Entry])
+        </td>
+      </tr><tr>
+        <td>
+          205
+        </td>
+        <td>
+          1114
+        </td>
+        <td>
+          8478
+          -
+          8496
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.s
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;&quot;, &quot;.getKey()&quot;).s(entry)
+        </td>
+      </tr><tr>
+        <td>
+          205
+        </td>
+        <td>
+          1115
+        </td>
+        <td>
+          8459
+          -
+          8497
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen.forPath
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          kCode.forPath(ctx, scala.StringContext.apply(&quot;&quot;, &quot;.getKey()&quot;).s(entry))
+        </td>
+      </tr><tr>
+        <td>
+          206
+        </td>
+        <td>
+          1116
+        </td>
+        <td>
+          8540
+          -
+          8560
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.s
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;&quot;, &quot;.getValue()&quot;).s(entry)
+        </td>
+      </tr><tr>
+        <td>
+          206
+        </td>
+        <td>
+          1117
+        </td>
+        <td>
+          8521
+          -
+          8561
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ResultInterfaces.GetterCodeGen.forPath
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          vCode.forPath(ctx, scala.StringContext.apply(&quot;&quot;, &quot;.getValue()&quot;).s(entry))
+        </td>
+      </tr><tr>
+        <td>
+          208
+        </td>
+        <td>
+          1118
+        </td>
+        <td>
+          8587
+          -
+          8638
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext.freshVariable
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ctx.freshVariable(&quot;arrKey&quot;, classOf[[Ljava.lang.Object;])
+        </td>
+      </tr><tr>
+        <td>
+          209
+        </td>
+        <td>
+          1119
+        </td>
+        <td>
+          8665
+          -
+          8718
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext.freshVariable
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ctx.freshVariable(&quot;arrValue&quot;, classOf[[Ljava.lang.Object;])
+        </td>
+      </tr><tr>
+        <td>
+          211
+        </td>
+        <td>
+          1120
+        </td>
+        <td>
+          8738
+          -
+          8758
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext.freshName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ctx.freshName(&quot;itr&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          213
+        </td>
+        <td>
+          1131
+        </td>
+        <td>
+          8873
+          -
+          10111
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          expr.copy(org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;\n            org.apache.spark.sql.catalyst.util.ArrayBasedMapData &quot;, &quot; = null;\n            java.util.Map &quot;, &quot; = (java.util.Map&lt;String, Object&gt;)&quot;, &quot;;\n            boolean &quot;, &quot; = (&quot;, &quot; == null);\n            if (!&quot;, &quot;) {\n              Object[] &quot;, &quot; = new Object[&quot;, &quot;.size()];\n              Object[] &quot;, &quot; = new Object[&quot;, &quot;.size()];\n              java.util.Iterator&lt;java.util.Map.Entry&lt;String, Object&gt;&gt; &quot;, &quot; = &quot;, &quot;.entrySet().iterator();\n              int &quot;, &quot; = 0;\n              while (&quot;, &quot;.hasNext()){\n                java.util.Map.Entry&lt;String, Object&gt; &quot;, &quot; = (java.util.Map.Entry&lt;String, Object&gt;) &quot;, &quot;.next();\n                &quot;, &quot;\n                &quot;, &quot;\n                &quot;, &quot;[&quot;, &quot;] = &quot;, &quot;;\n                &quot;, &quot;[&quot;, &quot;] = &quot;, &quot;;\n                &quot;, &quot; = &quot;, &quot; + 1;\n              }\n\n              &quot;, &quot; = new org.apache.spark.sql.catalyst.util.ArrayBasedMapData(\n                new org.apache.spark.sql.catalyst.util.GenericArrayData(&quot;, &quot;),\n                new org.apache.spark.sql.catalyst.util.GenericArrayData(&quot;, &quot;)\n                );\n            }\n            &quot;)).code(expr.value, map, pathName, expr.isNull, map, expr.isNull, arrKeyRes, map, arrValueRes, map, itr, map, i, itr, entry, itr, typCodeK.code, typCodeV.code, arrKeyRes, i, typCodeK.value, arrValueRes, i, typCodeV.value, i, i, expr.value, arrKeyRes, arrValueRes), expr.copy$default$2, expr.copy$default$3)
+        </td>
+      </tr><tr>
+        <td>
+          215
+        </td>
+        <td>
+          1121
+        </td>
+        <td>
+          8913
+          -
+          10101
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;\n            org.apache.spark.sql.catalyst.util.ArrayBasedMapData &quot;, &quot; = null;\n            java.util.Map &quot;, &quot; = (java.util.Map&lt;String, Object&gt;)&quot;, &quot;;\n            boolean &quot;, &quot; = (&quot;, &quot; == null);\n            if (!&quot;, &quot;) {\n              Object[] &quot;, &quot; = new Object[&quot;, &quot;.size()];\n              Object[] &quot;, &quot; = new Object[&quot;, &quot;.size()];\n              java.util.Iterator&lt;java.util.Map.Entry&lt;String, Object&gt;&gt; &quot;, &quot; = &quot;, &quot;.entrySet().iterator();\n              int &quot;, &quot; = 0;\n              while (&quot;, &quot;.hasNext()){\n                java.util.Map.Entry&lt;String, Object&gt; &quot;, &quot; = (java.util.Map.Entry&lt;String, Object&gt;) &quot;, &quot;.next();\n                &quot;, &quot;\n                &quot;, &quot;\n                &quot;, &quot;[&quot;, &quot;] = &quot;, &quot;;\n                &quot;, &quot;[&quot;, &quot;] = &quot;, &quot;;\n                &quot;, &quot; = &quot;, &quot; + 1;\n              }\n\n              &quot;, &quot; = new org.apache.spark.sql.catalyst.util.ArrayBasedMapData(\n                new org.apache.spark.sql.catalyst.util.GenericArrayData(&quot;, &quot;),\n                new org.apache.spark.sql.catalyst.util.GenericArrayData(&quot;, &quot;)\n                );\n            }\n            &quot;)
+        </td>
+      </tr><tr>
+        <td>
+          215
+        </td>
+        <td>
+          1130
+        </td>
+        <td>
+          8913
+          -
+          10101
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper.code
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper(scala.StringContext.apply(&quot;\n            org.apache.spark.sql.catalyst.util.ArrayBasedMapData &quot;, &quot; = null;\n            java.util.Map &quot;, &quot; = (java.util.Map&lt;String, Object&gt;)&quot;, &quot;;\n            boolean &quot;, &quot; = (&quot;, &quot; == null);\n            if (!&quot;, &quot;) {\n              Object[] &quot;, &quot; = new Object[&quot;, &quot;.size()];\n              Object[] &quot;, &quot; = new Object[&quot;, &quot;.size()];\n              java.util.Iterator&lt;java.util.Map.Entry&lt;String, Object&gt;&gt; &quot;, &quot; = &quot;, &quot;.entrySet().iterator();\n              int &quot;, &quot; = 0;\n              while (&quot;, &quot;.hasNext()){\n                java.util.Map.Entry&lt;String, Object&gt; &quot;, &quot; = (java.util.Map.Entry&lt;String, Object&gt;) &quot;, &quot;.next();\n                &quot;, &quot;\n                &quot;, &quot;\n                &quot;, &quot;[&quot;, &quot;] = &quot;, &quot;;\n                &quot;, &quot;[&quot;, &quot;] = &quot;, &quot;;\n                &quot;, &quot; = &quot;, &quot; + 1;\n              }\n\n              &quot;, &quot; = new org.apache.spark.sql.catalyst.util.ArrayBasedMapData(\n                new org.apache.spark.sql.catalyst.util.GenericArrayData(&quot;, &quot;),\n                new org.apache.spark.sql.catalyst.util.GenericArrayData(&quot;, &quot;)\n                );\n            }\n            &quot;)).code(expr.value, map, pathName, expr.isNull, map, expr.isNull, arrKeyRes, map, arrValueRes, map, itr, map, i, itr, entry, itr, typCodeK.code, typCodeV.code, arrKeyRes, i, typCodeK.value, arrValueRes, i, typCodeV.value, i, i, expr.value, arrKeyRes, arrValueRes)
+        </td>
+      </tr><tr>
+        <td>
+          216
+        </td>
+        <td>
+          1122
+        </td>
+        <td>
+          8988
+          -
+          8998
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          expr.value
+        </td>
+      </tr><tr>
+        <td>
+          218
+        </td>
+        <td>
+          1123
+        </td>
+        <td>
+          9105
+          -
+          9116
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.isNull
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          expr.isNull
+        </td>
+      </tr><tr>
+        <td>
+          219
+        </td>
+        <td>
+          1124
+        </td>
+        <td>
+          9155
+          -
+          9166
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.isNull
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          expr.isNull
+        </td>
+      </tr><tr>
+        <td>
+          226
+        </td>
+        <td>
+          1125
+        </td>
+        <td>
+          9594
+          -
+          9607
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.code
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          typCodeK.code
+        </td>
+      </tr><tr>
+        <td>
+          227
+        </td>
+        <td>
+          1126
+        </td>
+        <td>
+          9627
+          -
+          9640
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.code
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          typCodeV.code
+        </td>
+      </tr><tr>
+        <td>
+          228
+        </td>
+        <td>
+          1127
+        </td>
+        <td>
+          9677
+          -
+          9691
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          typCodeK.value
+        </td>
+      </tr><tr>
+        <td>
+          229
+        </td>
+        <td>
+          1128
+        </td>
+        <td>
+          9731
+          -
+          9745
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          typCodeV.value
+        </td>
+      </tr><tr>
+        <td>
+          233
+        </td>
+        <td>
+          1129
+        </td>
+        <td>
+          9810
+          -
+          9820
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.ExprCode.value
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          expr.value
+        </td>
+      </tr><tr>
+        <td>
+          241
+        </td>
+        <td>
+          1133
+        </td>
+        <td>
+          10134
+          -
+          10221
+        </td>
+        <td>
+          Throw
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          throw new com.sparkutils.dmn.DMNException(scala.StringContext.apply(&quot;Could not load Kogito Result Provider for dataType &quot;, &quot;&quot;).s(dataType))
+        </td>
+      </tr><tr>
+        <td>
+          241
+        </td>
+        <td>
+          1134
+        </td>
+        <td>
+          10134
+          -
+          10221
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          throw new com.sparkutils.dmn.DMNException(scala.StringContext.apply(&quot;Could not load Kogito Result Provider for dataType &quot;, &quot;&quot;).s(dataType))
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

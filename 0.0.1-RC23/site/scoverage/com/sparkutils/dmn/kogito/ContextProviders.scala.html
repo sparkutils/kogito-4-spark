@@ -1,0 +1,2706 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          com/sparkutils/dmn/kogito/ContextProviders.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>package com.sparkutils.dmn.kogito
+</span>2 <span style=''>
+</span>3 <span style=''>import com.sparkutils.dmn.{DMNContextPath, DMNException, DMNInputField, UnaryDMNContextProvider}
+</span>4 <span style=''>import com.sparkutils.dmn.impl.{SimpleContextProvider, StringContextProvider, StringWithIOProcessorContextProvider}
+</span>5 <span style=''>import com.sparkutils.dmn.kogito.types.ContextInterfaces
+</span>6 <span style=''>import org.apache.spark.sql.catalyst.InternalRow
+</span>7 <span style=''>import org.apache.spark.sql.catalyst.expressions.Expression
+</span>8 <span style=''>import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
+</span>9 <span style=''>import org.apache.spark.sql.catalyst.util.DateTimeUtils
+</span>10 <span style=''>import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DataType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, MapType, ObjectType, ShortType, StringType, StructType, TimestampNTZType, TimestampType}
+</span>11 <span style=''>import org.kie.dmn.feel.lang.types.impl.ComparablePeriod
+</span>12 <span style=''>import org.kie.kogito.dmn.rest.DMNFEELComparablePeriodSerializer
+</span>13 <span style=''>import sparkutilsKogito.com.fasterxml.jackson.databind.module.SimpleModule
+</span>14 <span style=''>import sparkutilsKogito.com.fasterxml.jackson.databind.{ObjectMapper, SerializationFeature}
+</span>15 <span style=''>
+</span>16 <span style=''>import java.time.{LocalDate, LocalDateTime}
+</span>17 <span style=''>import java.util
+</span>18 <span style=''>
+</span>19 <span style=''>case class KogitoJSONContextProvider(contextPath: DMNContextPath, stillSetWhenNull: Boolean, child: Expression,
+</span>20 <span style=''>                                     providedType: Option[DataType]) extends StringWithIOProcessorContextProvider[java.util.Map[String, Object]] {
+</span>21 <span style=''>
+</span>22 <span style=''>  @transient
+</span>23 <span style=''>  lazy val mapper =
+</span>24 <span style=''>    new ObjectMapper()
+</span>25 <span style=''>      .registerModule(
+</span>26 <span style=''>        new SimpleModule()
+</span>27 <span style=''>          .addSerializer(classOf[ComparablePeriod], new DMNFEELComparablePeriodSerializer())
+</span>28 <span style=''>      )
+</span>29 <span style=''>      .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+</span>30 <span style=''>
+</span>31 <span style=''>  def withNewChildInternal(newChild: Expression): Expression = {
+</span>32 <span style=''>    </span><span style='background: #AEF1AE'>verifyDataTypes(newChild)</span><span style=''>
+</span>33 <span style=''>    </span><span style='background: #AEF1AE'>copy(child = newChild)</span><span style=''>
+</span>34 <span style=''>  }
+</span>35 <span style=''>
+</span>36 <span style=''>//  override def readValue(str: InputStreamReader): java.util.Map[String, Object] = mapper.readValue(str, classOf[java.util.Map[String, Object]])
+</span>37 <span style=''>  override def readValue(str: String): java.util.Map[String, Object] = </span><span style='background: #AEF1AE'>mapper.readValue(str, classOf[java.util.Map[String, Object]])</span><span style=''>
+</span>38 <span style=''>
+</span>39 <span style=''>  override def codeGen(inputStreamReaderVal: String, ctx: CodegenContext): String = {
+</span>40 <span style=''>    val mapperName = </span><span style='background: #AEF1AE'>ctx.addMutableState(classOf[ObjectMapper].getName, &quot;mapper&quot;, v =&gt;
+</span>41 <span style=''></span><span style='background: #AEF1AE'>      s&quot;&quot;&quot;
+</span>42 <span style=''></span><span style='background: #AEF1AE'>         $v = new ${classOf[ObjectMapper].getName}().registerModule(
+</span>43 <span style=''></span><span style='background: #AEF1AE'>            new ${classOf[SimpleModule].getName}()
+</span>44 <span style=''></span><span style='background: #AEF1AE'>              .addSerializer(${classOf[ComparablePeriod].getName}.class, new ${classOf[DMNFEELComparablePeriodSerializer].getName}())
+</span>45 <span style=''></span><span style='background: #AEF1AE'>          )
+</span>46 <span style=''></span><span style='background: #AEF1AE'>          .disable(${classOf[SerializationFeature].getName}.FAIL_ON_EMPTY_BEANS);
+</span>47 <span style=''></span><span style='background: #AEF1AE'>         &quot;&quot;&quot;)</span><span style=''>
+</span>48 <span style=''>
+</span>49 <span style=''>    </span><span style='background: #AEF1AE'>s&quot;$mapperName.readValue($inputStreamReaderVal, java.util.Map.class)&quot;</span><span style=''>
+</span>50 <span style=''>  }
+</span>51 <span style=''>
+</span>52 <span style=''>  val resultType: Class[util.Map[String, Object]] = </span><span style='background: #AEF1AE'>classOf[util.Map[String, Object]]</span><span style=''>
+</span>53 <span style=''>}
+</span>54 <span style=''>
+</span>55 <span style=''>/**
+</span>56 <span style=''> * When a type is not provided attempt to late bind the type
+</span>57 <span style=''> * @param contextPath
+</span>58 <span style=''> * @param stillSetWhenNull
+</span>59 <span style=''> * @param child
+</span>60 <span style=''> * @param child
+</span>61 <span style=''> * @param config
+</span>62 <span style=''> */
+</span>63 <span style=''>case class ContextProviderProxy(contextPath: DMNContextPath, stillSetWhenNull: Boolean,
+</span>64 <span style=''>                                child: Expression, config: Map[String, String], providedType: Option[DataType]) extends UnaryDMNContextProvider[Any] {
+</span>65 <span style=''>
+</span>66 <span style=''>  override def eval(input: InternalRow): Any = </span><span style='background: #AEF1AE'>child.eval(input)</span><span style=''>
+</span>67 <span style=''>
+</span>68 <span style=''>  // $COVERAGE-OFF$
+</span>69 <span style=''>  override protected def nullSafeContextEval(input: Any): Any = ???
+</span>70 <span style=''>  // $COVERAGE-ON$
+</span>71 <span style=''>
+</span>72 <span style=''>  override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = </span><span style='background: #AEF1AE'>child.genCode(ctx)</span><span style=''>
+</span>73 <span style=''>
+</span>74 <span style=''>  override protected def withNewChildInternal(newChild: Expression): Expression = {
+</span>75 <span style=''>    val nchild = {
+</span>76 <span style=''>      // object types are either because we already substituted or due to literal constant folds
+</span>77 <span style=''>      if (</span><span style='background: #AEF1AE'>newChild.resolved &amp;&amp; !newChild.dataType.isInstanceOf[ObjectType]</span><span style=''>)
+</span>78 <span style=''>        </span><span style='background: #AEF1AE'>ContextProviders.contextProviderFromDDL(stillSetWhenNull, contextPath.asInstanceOf[KogitoDMNContextPath], newChild, config, newChild.dataType)</span><span style=''>
+</span>79 <span style=''>      else
+</span>80 <span style=''>        </span><span style='background: #AEF1AE'>newChild</span><span style=''>
+</span>81 <span style=''>    }
+</span>82 <span style=''>    </span><span style='background: #AEF1AE'>verifyDataTypes(newChild)</span><span style=''>
+</span>83 <span style=''>    </span><span style='background: #AEF1AE'>copy(child = nchild)</span><span style=''>
+</span>84 <span style=''>  }
+</span>85 <span style=''>
+</span>86 <span style=''>  override val resultType: Class[Any] = </span><span style='background: #AEF1AE'>classOf[Any]</span><span style=''>
+</span>87 <span style=''>}
+</span>88 <span style=''>
+</span>89 <span style=''>object ContextProviders {
+</span>90 <span style=''>  private[kogito] def contextProviderFromDDL(stillSetWhenNull: Boolean, path: KogitoDMNContextPath, expr: Expression, config: Map[String, String], dataType: DataType) = 
+</span>91 <span style=''>    dataType match {
+</span>92 <span style=''>      case StringType =&gt; </span><span style='background: #AEF1AE'>StringContextProvider(path, stillSetWhenNull, expr, providedType = Some(dataType))</span><span style=''>
+</span>93 <span style=''>      case IntegerType =&gt; </span><span style='background: #AEF1AE'>SimpleContextProvider[Integer](path, stillSetWhenNull, expr, providedType = Some(dataType))</span><span style=''>
+</span>94 <span style=''>      case LongType =&gt; </span><span style='background: #AEF1AE'>SimpleContextProvider[Long](path, stillSetWhenNull, expr, providedType = Some(dataType))</span><span style=''>
+</span>95 <span style=''>      case BooleanType =&gt; </span><span style='background: #AEF1AE'>SimpleContextProvider[Boolean](path, stillSetWhenNull, expr, providedType = Some(dataType))</span><span style=''>
+</span>96 <span style=''>      case DoubleType =&gt; </span><span style='background: #AEF1AE'>SimpleContextProvider[Double](path, stillSetWhenNull, expr, providedType = Some(dataType))</span><span style=''>
+</span>97 <span style=''>      case FloatType =&gt; </span><span style='background: #AEF1AE'>SimpleContextProvider[Float](path, stillSetWhenNull, expr, providedType = Some(dataType))</span><span style=''>
+</span>98 <span style=''>      case BinaryType =&gt; </span><span style='background: #AEF1AE'>SimpleContextProvider[Array[Byte]](path, stillSetWhenNull, expr, providedType = Some(dataType))</span><span style=''>
+</span>99 <span style=''>      case ByteType =&gt; </span><span style='background: #AEF1AE'>SimpleContextProvider[Byte](path, stillSetWhenNull, expr, providedType = Some(dataType))</span><span style=''>
+</span>100 <span style=''>      case ShortType =&gt; </span><span style='background: #AEF1AE'>SimpleContextProvider[Short](path, stillSetWhenNull, expr, providedType = Some(dataType))</span><span style=''>
+</span>101 <span style=''>      case DateType =&gt; </span><span style='background: #AEF1AE'>SimpleContextProvider[LocalDate](path, stillSetWhenNull, expr,
+</span>102 <span style=''></span><span style='background: #AEF1AE'>        converter = Some(((t: Any) =&gt; DateTimeUtils.daysToLocalDate(t.asInstanceOf[Int]),
+</span>103 <span style=''></span><span style='background: #AEF1AE'>          (codegen, input) =&gt; s&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate((int)$input)&quot;)),
+</span>104 <span style=''></span><span style='background: #AEF1AE'>        providedType = Some(dataType)
+</span>105 <span style=''></span><span style='background: #AEF1AE'>      )</span><span style=''> // an int
+</span>106 <span style=''>      case TimestampType | TimestampNTZType =&gt; </span><span style='background: #AEF1AE'>SimpleContextProvider[LocalDateTime](path, stillSetWhenNull, expr,
+</span>107 <span style=''></span><span style='background: #AEF1AE'>        converter = Some(((t: Any) =&gt; DateTimeUtils.microsToLocalDateTime(t.asInstanceOf[Long]),
+</span>108 <span style=''></span><span style='background: #AEF1AE'>          (codegen, input) =&gt; s&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime((long)$input)&quot;))
+</span>109 <span style=''></span><span style='background: #AEF1AE'>        , providedType = Some(dataType)
+</span>110 <span style=''></span><span style='background: #AEF1AE'>      )</span><span style=''> // a long
+</span>111 <span style=''>      case _: DecimalType =&gt; </span><span style='background: #AEF1AE'>SimpleContextProvider[java.math.BigDecimal](path, stillSetWhenNull, expr,
+</span>112 <span style=''></span><span style='background: #AEF1AE'>        converter = Some(((t: Any) =&gt; t.asInstanceOf[Decimal].toJavaBigDecimal,
+</span>113 <span style=''></span><span style='background: #AEF1AE'>          (codegen, input) =&gt; s&quot;((${classOf[Decimal].getName})$input).toJavaBigDecimal()&quot;))
+</span>114 <span style=''></span><span style='background: #AEF1AE'>        , providedType = Some(dataType)
+</span>115 <span style=''></span><span style='background: #AEF1AE'>      )</span><span style=''>
+</span>116 <span style=''>      case structType: StructType =&gt; </span><span style='background: #AEF1AE'>ContextInterfaces.structProvider(structType, path, expr, stillSetWhenNull, config)</span><span style=''>
+</span>117 <span style=''>      case mapType: MapType =&gt; </span><span style='background: #AEF1AE'>ContextInterfaces.mapProvider(mapType, path, expr, stillSetWhenNull, config)</span><span style=''>
+</span>118 <span style=''>      case arrayType: ArrayType =&gt; </span><span style='background: #AEF1AE'>ContextInterfaces.arrayProvider(arrayType, path, expr, stillSetWhenNull, config)</span><span style=''>
+</span>119 <span style=''>      // calendar interval?
+</span>120 <span style=''>      case t =&gt; </span><span style='background: #AEF1AE'>throw new DMNException(s&quot;Provider type $t is not supported&quot;)</span><span style=''>
+</span>121 <span style=''>    }
+</span>122 <span style=''>
+</span>123 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Tests</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          1
+        </td>
+        <td>
+          1758
+          -
+          1783
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.UnaryDMNContextProvider.verifyDataTypes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoJSONContextProvider.this.verifyDataTypes(newChild)
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          2
+        </td>
+        <td>
+          1788
+          -
+          1810
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.KogitoJSONContextProvider.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoJSONContextProvider.this.copy(x$2, x$3, x$1, x$4)
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          3
+        </td>
+        <td>
+          2033
+          -
+          2094
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          sparkutilsKogito.com.fasterxml.jackson.databind.ObjectMapper.readValue
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          KogitoJSONContextProvider.this.mapper.readValue[java.util.Map[String,Object]](str, classOf[java.util.Map])
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          4
+        </td>
+        <td>
+          2223
+          -
+          2252
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Class.getName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          classOf[sparkutilsKogito.com.fasterxml.jackson.databind.ObjectMapper].getName()
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          5
+        </td>
+        <td>
+          2254
+          -
+          2262
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;mapper&quot;
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          19
+        </td>
+        <td>
+          2203
+          -
+          2641
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext.addMutableState
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ctx.addMutableState(classOf[sparkutilsKogito.com.fasterxml.jackson.databind.ObjectMapper].getName(), &quot;mapper&quot;, ((v: String) =&gt; scala.StringContext.apply(&quot;\n         &quot;, &quot; = new &quot;, &quot;().registerModule(\n            new &quot;, &quot;()\n              .addSerializer(&quot;, &quot;.class, new &quot;, &quot;())\n          )\n          .disable(&quot;, &quot;.FAIL_ON_EMPTY_BEANS);\n         &quot;).s(v, classOf[sparkutilsKogito.com.fasterxml.jackson.databind.ObjectMapper].getName(), classOf[sparkutilsKogito.com.fasterxml.jackson.databind.module.SimpleModule].getName(), classOf[org.kie.dmn.feel.lang.types.impl.ComparablePeriod].getName(), classOf[org.kie.kogito.dmn.rest.DMNFEELComparablePeriodSerializer].getName(), classOf[sparkutilsKogito.com.fasterxml.jackson.databind.SerializationFeature].getName())), ctx.addMutableState$default$4, ctx.addMutableState$default$5)
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          6
+        </td>
+        <td>
+          2279
+          -
+          2290
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;\n         &quot;
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          18
+        </td>
+        <td>
+          2275
+          -
+          2640
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.s
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;\n         &quot;, &quot; = new &quot;, &quot;().registerModule(\n            new &quot;, &quot;()\n              .addSerializer(&quot;, &quot;.class, new &quot;, &quot;())\n          )\n          .disable(&quot;, &quot;.FAIL_ON_EMPTY_BEANS);\n         &quot;).s(v, classOf[sparkutilsKogito.com.fasterxml.jackson.databind.ObjectMapper].getName(), classOf[sparkutilsKogito.com.fasterxml.jackson.databind.module.SimpleModule].getName(), classOf[org.kie.dmn.feel.lang.types.impl.ComparablePeriod].getName(), classOf[org.kie.kogito.dmn.rest.DMNFEELComparablePeriodSerializer].getName(), classOf[sparkutilsKogito.com.fasterxml.jackson.databind.SerializationFeature].getName())
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          7
+        </td>
+        <td>
+          2291
+          -
+          2299
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot; = new &quot;
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          8
+        </td>
+        <td>
+          2330
+          -
+          2366
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;().registerModule(\n            new &quot;
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          13
+        </td>
+        <td>
+          2300
+          -
+          2329
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Class.getName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          classOf[sparkutilsKogito.com.fasterxml.jackson.databind.ObjectMapper].getName()
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          9
+        </td>
+        <td>
+          2397
+          -
+          2430
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;()\n              .addSerializer(&quot;
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          14
+        </td>
+        <td>
+          2367
+          -
+          2396
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Class.getName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          classOf[sparkutilsKogito.com.fasterxml.jackson.databind.module.SimpleModule].getName()
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          10
+        </td>
+        <td>
+          2465
+          -
+          2478
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;.class, new &quot;
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          11
+        </td>
+        <td>
+          2530
+          -
+          2566
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;())\n          )\n          .disable(&quot;
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          15
+        </td>
+        <td>
+          2431
+          -
+          2464
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Class.getName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          classOf[org.kie.dmn.feel.lang.types.impl.ComparablePeriod].getName()
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          16
+        </td>
+        <td>
+          2479
+          -
+          2529
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Class.getName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          classOf[org.kie.kogito.dmn.rest.DMNFEELComparablePeriodSerializer].getName()
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          12
+        </td>
+        <td>
+          2605
+          -
+          2640
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;.FAIL_ON_EMPTY_BEANS);\n         &quot;
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          17
+        </td>
+        <td>
+          2567
+          -
+          2604
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Class.getName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          classOf[sparkutilsKogito.com.fasterxml.jackson.databind.SerializationFeature].getName()
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          20
+        </td>
+        <td>
+          2647
+          -
+          2715
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.s
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;&quot;, &quot;.readValue(&quot;, &quot;, java.util.Map.class)&quot;).s(mapperName, inputStreamReaderVal)
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          21
+        </td>
+        <td>
+          2773
+          -
+          2806
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          classOf[java.util.Map]
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          22
+        </td>
+        <td>
+          3264
+          -
+          3281
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.Expression.eval
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ContextProviderProxy.this.child.eval(input)
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          24
+        </td>
+        <td>
+          3473
+          -
+          3491
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.Expression.genCode
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ContextProviderProxy.this.child.genCode(ctx)
+        </td>
+      </tr><tr>
+        <td>
+          77
+        </td>
+        <td>
+          25
+        </td>
+        <td>
+          3724
+          -
+          3767
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          newChild.dataType.isInstanceOf[org.apache.spark.sql.types.ObjectType].unary_!
+        </td>
+      </tr><tr>
+        <td>
+          77
+        </td>
+        <td>
+          26
+        </td>
+        <td>
+          3703
+          -
+          3767
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          newChild.resolved.&amp;&amp;(newChild.dataType.isInstanceOf[org.apache.spark.sql.types.ObjectType].unary_!)
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          27
+        </td>
+        <td>
+          3817
+          -
+          3833
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.ContextProviderProxy.stillSetWhenNull
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ContextProviderProxy.this.stillSetWhenNull
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          28
+        </td>
+        <td>
+          3835
+          -
+          3881
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ContextProviderProxy.this.contextPath.asInstanceOf[com.sparkutils.dmn.kogito.KogitoDMNContextPath]
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          29
+        </td>
+        <td>
+          3893
+          -
+          3899
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.ContextProviderProxy.config
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ContextProviderProxy.this.config
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          30
+        </td>
+        <td>
+          3901
+          -
+          3918
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.expressions.Expression.dataType
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          newChild.dataType
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          31
+        </td>
+        <td>
+          3777
+          -
+          3919
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.ContextProviders.contextProviderFromDDL
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ContextProviders.contextProviderFromDDL(ContextProviderProxy.this.stillSetWhenNull, ContextProviderProxy.this.contextPath.asInstanceOf[com.sparkutils.dmn.kogito.KogitoDMNContextPath], newChild, ContextProviderProxy.this.config, newChild.dataType)
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          32
+        </td>
+        <td>
+          3777
+          -
+          3919
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.ContextProviders.contextProviderFromDDL
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ContextProviders.contextProviderFromDDL(ContextProviderProxy.this.stillSetWhenNull, ContextProviderProxy.this.contextPath.asInstanceOf[com.sparkutils.dmn.kogito.KogitoDMNContextPath], newChild, ContextProviderProxy.this.config, newChild.dataType)
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          33
+        </td>
+        <td>
+          3939
+          -
+          3947
+        </td>
+        <td>
+          Ident
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.ContextProviderProxy.newChild
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          newChild
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          34
+        </td>
+        <td>
+          3958
+          -
+          3983
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.UnaryDMNContextProvider.verifyDataTypes
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ContextProviderProxy.this.verifyDataTypes(newChild)
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          35
+        </td>
+        <td>
+          3988
+          -
+          4008
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.ContextProviderProxy.copy
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          ContextProviderProxy.this.copy(x$2, x$3, x$1, x$4, x$5)
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          36
+        </td>
+        <td>
+          4054
+          -
+          4066
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          classOf[scala.Any]
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          37
+        </td>
+        <td>
+          4379
+          -
+          4393
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[org.apache.spark.sql.types.DataType](dataType)
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          38
+        </td>
+        <td>
+          4312
+          -
+          4394
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.StringContextProvider.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.StringContextProvider.apply(path, stillSetWhenNull, expr, scala.Some.apply[org.apache.spark.sql.types.DataType](dataType))
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          39
+        </td>
+        <td>
+          4312
+          -
+          4394
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.StringContextProvider.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.StringContextProvider.apply(path, stillSetWhenNull, expr, scala.Some.apply[org.apache.spark.sql.types.DataType](dataType))
+        </td>
+      </tr><tr>
+        <td>
+          93
+        </td>
+        <td>
+          40
+        </td>
+        <td>
+          4497
+          -
+          4511
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[org.apache.spark.sql.types.DataType](dataType)
+        </td>
+      </tr><tr>
+        <td>
+          93
+        </td>
+        <td>
+          41
+        </td>
+        <td>
+          4442
+          -
+          4442
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5[Integer]
+        </td>
+      </tr><tr>
+        <td>
+          93
+        </td>
+        <td>
+          42
+        </td>
+        <td>
+          4421
+          -
+          4512
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply[Integer](path, stillSetWhenNull, expr, scala.Some.apply[org.apache.spark.sql.types.DataType](dataType), com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5[Integer])((ClassTag.apply[Integer](classOf[java.lang.Integer]): scala.reflect.ClassTag[Integer]))
+        </td>
+      </tr><tr>
+        <td>
+          93
+        </td>
+        <td>
+          43
+        </td>
+        <td>
+          4421
+          -
+          4512
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply[Integer](path, stillSetWhenNull, expr, scala.Some.apply[org.apache.spark.sql.types.DataType](dataType), com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5[Integer])((ClassTag.apply[Integer](classOf[java.lang.Integer]): scala.reflect.ClassTag[Integer]))
+        </td>
+      </tr><tr>
+        <td>
+          94
+        </td>
+        <td>
+          44
+        </td>
+        <td>
+          4609
+          -
+          4623
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[org.apache.spark.sql.types.DataType](dataType)
+        </td>
+      </tr><tr>
+        <td>
+          94
+        </td>
+        <td>
+          45
+        </td>
+        <td>
+          4557
+          -
+          4557
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5[Long]
+        </td>
+      </tr><tr>
+        <td>
+          94
+        </td>
+        <td>
+          46
+        </td>
+        <td>
+          4536
+          -
+          4624
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply[Long](path, stillSetWhenNull, expr, scala.Some.apply[org.apache.spark.sql.types.DataType](dataType), com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5[Long])((ClassTag.Long: scala.reflect.ClassTag[Long]))
+        </td>
+      </tr><tr>
+        <td>
+          94
+        </td>
+        <td>
+          47
+        </td>
+        <td>
+          4536
+          -
+          4624
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply[Long](path, stillSetWhenNull, expr, scala.Some.apply[org.apache.spark.sql.types.DataType](dataType), com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5[Long])((ClassTag.Long: scala.reflect.ClassTag[Long]))
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          48
+        </td>
+        <td>
+          4727
+          -
+          4741
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[org.apache.spark.sql.types.DataType](dataType)
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          49
+        </td>
+        <td>
+          4672
+          -
+          4672
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5[Boolean]
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          50
+        </td>
+        <td>
+          4651
+          -
+          4742
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply[Boolean](path, stillSetWhenNull, expr, scala.Some.apply[org.apache.spark.sql.types.DataType](dataType), com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5[Boolean])((ClassTag.Boolean: scala.reflect.ClassTag[Boolean]))
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          51
+        </td>
+        <td>
+          4651
+          -
+          4742
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply[Boolean](path, stillSetWhenNull, expr, scala.Some.apply[org.apache.spark.sql.types.DataType](dataType), com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5[Boolean])((ClassTag.Boolean: scala.reflect.ClassTag[Boolean]))
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          52
+        </td>
+        <td>
+          4843
+          -
+          4857
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[org.apache.spark.sql.types.DataType](dataType)
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          53
+        </td>
+        <td>
+          4789
+          -
+          4789
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5[Double]
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          54
+        </td>
+        <td>
+          4768
+          -
+          4858
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply[Double](path, stillSetWhenNull, expr, scala.Some.apply[org.apache.spark.sql.types.DataType](dataType), com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5[Double])((ClassTag.Double: scala.reflect.ClassTag[Double]))
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          55
+        </td>
+        <td>
+          4768
+          -
+          4858
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply[Double](path, stillSetWhenNull, expr, scala.Some.apply[org.apache.spark.sql.types.DataType](dataType), com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5[Double])((ClassTag.Double: scala.reflect.ClassTag[Double]))
+        </td>
+      </tr><tr>
+        <td>
+          97
+        </td>
+        <td>
+          56
+        </td>
+        <td>
+          4957
+          -
+          4971
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[org.apache.spark.sql.types.DataType](dataType)
+        </td>
+      </tr><tr>
+        <td>
+          97
+        </td>
+        <td>
+          57
+        </td>
+        <td>
+          4904
+          -
+          4904
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5[Float]
+        </td>
+      </tr><tr>
+        <td>
+          97
+        </td>
+        <td>
+          58
+        </td>
+        <td>
+          4883
+          -
+          4972
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply[Float](path, stillSetWhenNull, expr, scala.Some.apply[org.apache.spark.sql.types.DataType](dataType), com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5[Float])((ClassTag.Float: scala.reflect.ClassTag[Float]))
+        </td>
+      </tr><tr>
+        <td>
+          97
+        </td>
+        <td>
+          59
+        </td>
+        <td>
+          4883
+          -
+          4972
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply[Float](path, stillSetWhenNull, expr, scala.Some.apply[org.apache.spark.sql.types.DataType](dataType), com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5[Float])((ClassTag.Float: scala.reflect.ClassTag[Float]))
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          60
+        </td>
+        <td>
+          5078
+          -
+          5092
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[org.apache.spark.sql.types.DataType](dataType)
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          61
+        </td>
+        <td>
+          5019
+          -
+          5019
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5[Array[Byte]]
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          62
+        </td>
+        <td>
+          4998
+          -
+          5093
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply[Array[Byte]](path, stillSetWhenNull, expr, scala.Some.apply[org.apache.spark.sql.types.DataType](dataType), com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5[Array[Byte]])((ClassTag.apply[Array[Byte]](scala.runtime.ScalaRunTime.arrayClass(classOf[scala.Byte])): scala.reflect.ClassTag[Array[Byte]]))
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          63
+        </td>
+        <td>
+          4998
+          -
+          5093
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply[Array[Byte]](path, stillSetWhenNull, expr, scala.Some.apply[org.apache.spark.sql.types.DataType](dataType), com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5[Array[Byte]])((ClassTag.apply[Array[Byte]](scala.runtime.ScalaRunTime.arrayClass(classOf[scala.Byte])): scala.reflect.ClassTag[Array[Byte]]))
+        </td>
+      </tr><tr>
+        <td>
+          99
+        </td>
+        <td>
+          64
+        </td>
+        <td>
+          5190
+          -
+          5204
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[org.apache.spark.sql.types.DataType](dataType)
+        </td>
+      </tr><tr>
+        <td>
+          99
+        </td>
+        <td>
+          65
+        </td>
+        <td>
+          5138
+          -
+          5138
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5[Byte]
+        </td>
+      </tr><tr>
+        <td>
+          99
+        </td>
+        <td>
+          66
+        </td>
+        <td>
+          5117
+          -
+          5205
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply[Byte](path, stillSetWhenNull, expr, scala.Some.apply[org.apache.spark.sql.types.DataType](dataType), com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5[Byte])((ClassTag.Byte: scala.reflect.ClassTag[Byte]))
+        </td>
+      </tr><tr>
+        <td>
+          99
+        </td>
+        <td>
+          67
+        </td>
+        <td>
+          5117
+          -
+          5205
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply[Byte](path, stillSetWhenNull, expr, scala.Some.apply[org.apache.spark.sql.types.DataType](dataType), com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5[Byte])((ClassTag.Byte: scala.reflect.ClassTag[Byte]))
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          68
+        </td>
+        <td>
+          5304
+          -
+          5318
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[org.apache.spark.sql.types.DataType](dataType)
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          69
+        </td>
+        <td>
+          5251
+          -
+          5251
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5[Short]
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          70
+        </td>
+        <td>
+          5230
+          -
+          5319
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply[Short](path, stillSetWhenNull, expr, scala.Some.apply[org.apache.spark.sql.types.DataType](dataType), com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5[Short])((ClassTag.Short: scala.reflect.ClassTag[Short]))
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          71
+        </td>
+        <td>
+          5230
+          -
+          5319
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply[Short](path, stillSetWhenNull, expr, scala.Some.apply[org.apache.spark.sql.types.DataType](dataType), com.sparkutils.dmn.impl.SimpleContextProvider.apply$default$5[Short])((ClassTag.Short: scala.reflect.ClassTag[Short]))
+        </td>
+      </tr><tr>
+        <td>
+          101
+        </td>
+        <td>
+          78
+        </td>
+        <td>
+          5343
+          -
+          5655
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply[java.time.LocalDate](x$1, x$2, x$3, x$5, x$4)((ClassTag.apply[java.time.LocalDate](classOf[java.time.LocalDate]): scala.reflect.ClassTag[java.time.LocalDate]))
+        </td>
+      </tr><tr>
+        <td>
+          101
+        </td>
+        <td>
+          79
+        </td>
+        <td>
+          5343
+          -
+          5655
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  &lt;artifact&gt; val x$1: com.sparkutils.dmn.kogito.KogitoDMNContextPath = path;
+  &lt;artifact&gt; val x$2: Boolean = stillSetWhenNull;
+  &lt;artifact&gt; val x$3: org.apache.spark.sql.catalyst.expressions.Expression = expr;
+  &lt;artifact&gt; val x$4: Some[(Any =&gt; java.time.LocalDate, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String)] @scala.reflect.internal.annotations.uncheckedBounds = scala.Some.apply[(Any =&gt; java.time.LocalDate, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String)](scala.Tuple2.apply[Any =&gt; java.time.LocalDate, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String](((t: Any) =&gt; org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate(t.asInstanceOf[Int])), ((codegen: org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, input: String) =&gt; scala.StringContext.apply(&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate((int)&quot;, &quot;)&quot;).s(input))));
+  &lt;artifact&gt; val x$5: Some[org.apache.spark.sql.types.DataType] @scala.reflect.internal.annotations.uncheckedBounds = scala.Some.apply[org.apache.spark.sql.types.DataType](dataType);
+  com.sparkutils.dmn.impl.SimpleContextProvider.apply[java.time.LocalDate](x$1, x$2, x$3, x$5, x$4)((ClassTag.apply[java.time.LocalDate](classOf[java.time.LocalDate]): scala.reflect.ClassTag[java.time.LocalDate]))
+}
+        </td>
+      </tr><tr>
+        <td>
+          102
+        </td>
+        <td>
+          72
+        </td>
+        <td>
+          5474
+          -
+          5493
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          t.asInstanceOf[Int]
+        </td>
+      </tr><tr>
+        <td>
+          102
+        </td>
+        <td>
+          73
+        </td>
+        <td>
+          5444
+          -
+          5494
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.util.SparkDateTimeUtils.daysToLocalDate
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate(t.asInstanceOf[Int])
+        </td>
+      </tr><tr>
+        <td>
+          102
+        </td>
+        <td>
+          75
+        </td>
+        <td>
+          5431
+          -
+          5607
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[Any =&gt; java.time.LocalDate, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String](((t: Any) =&gt; org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate(t.asInstanceOf[Int])), ((codegen: org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, input: String) =&gt; scala.StringContext.apply(&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate((int)&quot;, &quot;)&quot;).s(input)))
+        </td>
+      </tr><tr>
+        <td>
+          102
+        </td>
+        <td>
+          76
+        </td>
+        <td>
+          5426
+          -
+          5608
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[(Any =&gt; java.time.LocalDate, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String)](scala.Tuple2.apply[Any =&gt; java.time.LocalDate, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String](((t: Any) =&gt; org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate(t.asInstanceOf[Int])), ((codegen: org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, input: String) =&gt; scala.StringContext.apply(&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate((int)&quot;, &quot;)&quot;).s(input))))
+        </td>
+      </tr><tr>
+        <td>
+          103
+        </td>
+        <td>
+          74
+        </td>
+        <td>
+          5526
+          -
+          5606
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.s
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate((int)&quot;, &quot;)&quot;).s(input)
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          77
+        </td>
+        <td>
+          5633
+          -
+          5647
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[org.apache.spark.sql.types.DataType](dataType)
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          86
+        </td>
+        <td>
+          5713
+          -
+          6044
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply[java.time.LocalDateTime](x$6, x$7, x$8, x$10, x$9)((ClassTag.apply[java.time.LocalDateTime](classOf[java.time.LocalDateTime]): scala.reflect.ClassTag[java.time.LocalDateTime]))
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          87
+        </td>
+        <td>
+          5713
+          -
+          6044
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  &lt;artifact&gt; val x$6: com.sparkutils.dmn.kogito.KogitoDMNContextPath = path;
+  &lt;artifact&gt; val x$7: Boolean = stillSetWhenNull;
+  &lt;artifact&gt; val x$8: org.apache.spark.sql.catalyst.expressions.Expression = expr;
+  &lt;artifact&gt; val x$9: Some[(Any =&gt; java.time.LocalDateTime, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String)] @scala.reflect.internal.annotations.uncheckedBounds = scala.Some.apply[(Any =&gt; java.time.LocalDateTime, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String)](scala.Tuple2.apply[Any =&gt; java.time.LocalDateTime, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String](((t: Any) =&gt; org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime(t.asInstanceOf[Long])), ((codegen: org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, input: String) =&gt; scala.StringContext.apply(&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime((long)&quot;, &quot;)&quot;).s(input))));
+  &lt;artifact&gt; val x$10: Some[org.apache.spark.sql.types.DataType] @scala.reflect.internal.annotations.uncheckedBounds = scala.Some.apply[org.apache.spark.sql.types.DataType](dataType);
+  com.sparkutils.dmn.impl.SimpleContextProvider.apply[java.time.LocalDateTime](x$6, x$7, x$8, x$10, x$9)((ClassTag.apply[java.time.LocalDateTime](classOf[java.time.LocalDateTime]): scala.reflect.ClassTag[java.time.LocalDateTime]))
+}
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          80
+        </td>
+        <td>
+          5854
+          -
+          5874
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          t.asInstanceOf[Long]
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          81
+        </td>
+        <td>
+          5818
+          -
+          5875
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.catalyst.util.SparkDateTimeUtils.microsToLocalDateTime
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime(t.asInstanceOf[Long])
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          83
+        </td>
+        <td>
+          5805
+          -
+          5995
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[Any =&gt; java.time.LocalDateTime, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String](((t: Any) =&gt; org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime(t.asInstanceOf[Long])), ((codegen: org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, input: String) =&gt; scala.StringContext.apply(&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime((long)&quot;, &quot;)&quot;).s(input)))
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          84
+        </td>
+        <td>
+          5800
+          -
+          5996
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[(Any =&gt; java.time.LocalDateTime, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String)](scala.Tuple2.apply[Any =&gt; java.time.LocalDateTime, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String](((t: Any) =&gt; org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime(t.asInstanceOf[Long])), ((codegen: org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, input: String) =&gt; scala.StringContext.apply(&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime((long)&quot;, &quot;)&quot;).s(input))))
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          82
+        </td>
+        <td>
+          5907
+          -
+          5994
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.s
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime((long)&quot;, &quot;)&quot;).s(input)
+        </td>
+      </tr><tr>
+        <td>
+          109
+        </td>
+        <td>
+          85
+        </td>
+        <td>
+          6022
+          -
+          6036
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[org.apache.spark.sql.types.DataType](dataType)
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          97
+        </td>
+        <td>
+          6084
+          -
+          6377
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.impl.SimpleContextProvider.apply[java.math.BigDecimal](x$11, x$12, x$13, x$15, x$14)((ClassTag.apply[java.math.BigDecimal](classOf[java.math.BigDecimal]): scala.reflect.ClassTag[java.math.BigDecimal]))
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          98
+        </td>
+        <td>
+          6084
+          -
+          6377
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  &lt;artifact&gt; val x$11: com.sparkutils.dmn.kogito.KogitoDMNContextPath = path;
+  &lt;artifact&gt; val x$12: Boolean = stillSetWhenNull;
+  &lt;artifact&gt; val x$13: org.apache.spark.sql.catalyst.expressions.Expression = expr;
+  &lt;artifact&gt; val x$14: Some[(Any =&gt; java.math.BigDecimal, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String)] @scala.reflect.internal.annotations.uncheckedBounds = scala.Some.apply[(Any =&gt; java.math.BigDecimal, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String)](scala.Tuple2.apply[Any =&gt; java.math.BigDecimal, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String](((t: Any) =&gt; t.asInstanceOf[org.apache.spark.sql.types.Decimal].toJavaBigDecimal), ((codegen: org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, input: String) =&gt; scala.StringContext.apply(&quot;((&quot;, &quot;)&quot;, &quot;).toJavaBigDecimal()&quot;).s(classOf[org.apache.spark.sql.types.Decimal].getName(), input))));
+  &lt;artifact&gt; val x$15: Some[org.apache.spark.sql.types.DataType] @scala.reflect.internal.annotations.uncheckedBounds = scala.Some.apply[org.apache.spark.sql.types.DataType](dataType);
+  com.sparkutils.dmn.impl.SimpleContextProvider.apply[java.math.BigDecimal](x$11, x$12, x$13, x$15, x$14)((ClassTag.apply[java.math.BigDecimal](classOf[java.math.BigDecimal]): scala.reflect.ClassTag[java.math.BigDecimal]))
+}
+        </td>
+      </tr><tr>
+        <td>
+          112
+        </td>
+        <td>
+          88
+        </td>
+        <td>
+          6196
+          -
+          6236
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.types.Decimal.toJavaBigDecimal
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          t.asInstanceOf[org.apache.spark.sql.types.Decimal].toJavaBigDecimal
+        </td>
+      </tr><tr>
+        <td>
+          112
+        </td>
+        <td>
+          94
+        </td>
+        <td>
+          6183
+          -
+          6328
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[Any =&gt; java.math.BigDecimal, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String](((t: Any) =&gt; t.asInstanceOf[org.apache.spark.sql.types.Decimal].toJavaBigDecimal), ((codegen: org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, input: String) =&gt; scala.StringContext.apply(&quot;((&quot;, &quot;)&quot;, &quot;).toJavaBigDecimal()&quot;).s(classOf[org.apache.spark.sql.types.Decimal].getName(), input)))
+        </td>
+      </tr><tr>
+        <td>
+          112
+        </td>
+        <td>
+          95
+        </td>
+        <td>
+          6178
+          -
+          6329
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[(Any =&gt; java.math.BigDecimal, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String)](scala.Tuple2.apply[Any =&gt; java.math.BigDecimal, (org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, String) =&gt; String](((t: Any) =&gt; t.asInstanceOf[org.apache.spark.sql.types.Decimal].toJavaBigDecimal), ((codegen: org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext, input: String) =&gt; scala.StringContext.apply(&quot;((&quot;, &quot;)&quot;, &quot;).toJavaBigDecimal()&quot;).s(classOf[org.apache.spark.sql.types.Decimal].getName(), input))))
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          89
+        </td>
+        <td>
+          6270
+          -
+          6273
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;((&quot;
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          90
+        </td>
+        <td>
+          6299
+          -
+          6301
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;)&quot;
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          91
+        </td>
+        <td>
+          6306
+          -
+          6327
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;).toJavaBigDecimal()&quot;
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          92
+        </td>
+        <td>
+          6274
+          -
+          6298
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Class.getName
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          classOf[org.apache.spark.sql.types.Decimal].getName()
+        </td>
+      </tr><tr>
+        <td>
+          113
+        </td>
+        <td>
+          93
+        </td>
+        <td>
+          6268
+          -
+          6327
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.StringContext.s
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.StringContext.apply(&quot;((&quot;, &quot;)&quot;, &quot;).toJavaBigDecimal()&quot;).s(classOf[org.apache.spark.sql.types.Decimal].getName(), input)
+        </td>
+      </tr><tr>
+        <td>
+          114
+        </td>
+        <td>
+          96
+        </td>
+        <td>
+          6355
+          -
+          6369
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[org.apache.spark.sql.types.DataType](dataType)
+        </td>
+      </tr><tr>
+        <td>
+          116
+        </td>
+        <td>
+          99
+        </td>
+        <td>
+          6415
+          -
+          6497
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ContextInterfaces.structProvider
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.kogito.types.ContextInterfaces.structProvider(structType, path, expr, stillSetWhenNull, config)
+        </td>
+      </tr><tr>
+        <td>
+          116
+        </td>
+        <td>
+          100
+        </td>
+        <td>
+          6415
+          -
+          6497
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ContextInterfaces.structProvider
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.kogito.types.ContextInterfaces.structProvider(structType, path, expr, stillSetWhenNull, config)
+        </td>
+      </tr><tr>
+        <td>
+          117
+        </td>
+        <td>
+          101
+        </td>
+        <td>
+          6529
+          -
+          6605
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ContextInterfaces.mapProvider
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.kogito.types.ContextInterfaces.mapProvider(mapType, path, expr, stillSetWhenNull, config)
+        </td>
+      </tr><tr>
+        <td>
+          117
+        </td>
+        <td>
+          102
+        </td>
+        <td>
+          6529
+          -
+          6605
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ContextInterfaces.mapProvider
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.kogito.types.ContextInterfaces.mapProvider(mapType, path, expr, stillSetWhenNull, config)
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          103
+        </td>
+        <td>
+          6641
+          -
+          6721
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ContextInterfaces.arrayProvider
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.kogito.types.ContextInterfaces.arrayProvider(arrayType, path, expr, stillSetWhenNull, config)
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          104
+        </td>
+        <td>
+          6641
+          -
+          6721
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.sparkutils.dmn.kogito.types.ContextInterfaces.arrayProvider
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          com.sparkutils.dmn.kogito.types.ContextInterfaces.arrayProvider(arrayType, path, expr, stillSetWhenNull, config)
+        </td>
+      </tr><tr>
+        <td>
+          120
+        </td>
+        <td>
+          105
+        </td>
+        <td>
+          6766
+          -
+          6826
+        </td>
+        <td>
+          Throw
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          throw new com.sparkutils.dmn.DMNException(scala.StringContext.apply(&quot;Provider type &quot;, &quot; is not supported&quot;).s(t))
+        </td>
+      </tr><tr>
+        <td>
+          120
+        </td>
+        <td>
+          106
+        </td>
+        <td>
+          6766
+          -
+          6826
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td>
+          
+        </td>
+        <td style="background: #AEF1AE">
+          throw new com.sparkutils.dmn.DMNException(scala.StringContext.apply(&quot;Provider type &quot;, &quot; is not supported&quot;).s(t))
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>
