@@ -16,7 +16,8 @@ import sparkutilsKogito.com.fasterxml.jackson.databind.{ObjectMapper, Serializat
 import java.time.{LocalDate, LocalDateTime}
 import java.util
 
-case class KogitoJSONContextProvider(contextPath: DMNContextPath, stillSetWhenNull: Boolean, child: Expression) extends StringWithIOProcessorContextProvider[java.util.Map[String, Object]] {
+case class KogitoJSONContextProvider(contextPath: DMNContextPath, stillSetWhenNull: Boolean, child: Expression,
+                                     providedType: Option[DataType]) extends StringWithIOProcessorContextProvider[java.util.Map[String, Object]] {
 
   @transient
   lazy val mapper =
@@ -27,7 +28,10 @@ case class KogitoJSONContextProvider(contextPath: DMNContextPath, stillSetWhenNu
       )
       .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
 
-  def withNewChildInternal(newChild: Expression): Expression = copy(child = newChild)
+  def withNewChildInternal(newChild: Expression): Expression = {
+    verifyDataTypes(newChild)
+    copy(child = newChild)
+  }
 
 //  override def readValue(str: InputStreamReader): java.util.Map[String, Object] = mapper.readValue(str, classOf[java.util.Map[String, Object]])
   override def readValue(str: String): java.util.Map[String, Object] = mapper.readValue(str, classOf[java.util.Map[String, Object]])
@@ -57,7 +61,7 @@ case class KogitoJSONContextProvider(contextPath: DMNContextPath, stillSetWhenNu
  * @param config
  */
 case class ContextProviderProxy(contextPath: DMNContextPath, stillSetWhenNull: Boolean,
-                                child: Expression, config: Map[String, String]) extends UnaryDMNContextProvider[Any] {
+                                child: Expression, config: Map[String, String], providedType: Option[DataType]) extends UnaryDMNContextProvider[Any] {
 
   override def eval(input: InternalRow): Any = child.eval(input)
 
@@ -75,6 +79,7 @@ case class ContextProviderProxy(contextPath: DMNContextPath, stillSetWhenNull: B
       else
         newChild
     }
+    verifyDataTypes(newChild)
     copy(child = nchild)
   }
 
@@ -84,26 +89,29 @@ case class ContextProviderProxy(contextPath: DMNContextPath, stillSetWhenNull: B
 object ContextProviders {
   private[kogito] def contextProviderFromDDL(stillSetWhenNull: Boolean, path: KogitoDMNContextPath, expr: Expression, config: Map[String, String], dataType: DataType) = 
     dataType match {
-      case StringType => StringContextProvider(path, stillSetWhenNull, expr)
-      case IntegerType => SimpleContextProvider[Integer](path, stillSetWhenNull, expr)
-      case LongType => SimpleContextProvider[Long](path, stillSetWhenNull, expr)
-      case BooleanType => SimpleContextProvider[Boolean](path, stillSetWhenNull, expr)
-      case DoubleType => SimpleContextProvider[Double](path, stillSetWhenNull, expr)
-      case FloatType => SimpleContextProvider[Float](path, stillSetWhenNull, expr)
-      case BinaryType => SimpleContextProvider[Array[Byte]](path, stillSetWhenNull, expr)
-      case ByteType => SimpleContextProvider[Byte](path, stillSetWhenNull, expr)
-      case ShortType => SimpleContextProvider[Short](path, stillSetWhenNull, expr)
+      case StringType => StringContextProvider(path, stillSetWhenNull, expr, providedType = Some(dataType))
+      case IntegerType => SimpleContextProvider[Integer](path, stillSetWhenNull, expr, providedType = Some(dataType))
+      case LongType => SimpleContextProvider[Long](path, stillSetWhenNull, expr, providedType = Some(dataType))
+      case BooleanType => SimpleContextProvider[Boolean](path, stillSetWhenNull, expr, providedType = Some(dataType))
+      case DoubleType => SimpleContextProvider[Double](path, stillSetWhenNull, expr, providedType = Some(dataType))
+      case FloatType => SimpleContextProvider[Float](path, stillSetWhenNull, expr, providedType = Some(dataType))
+      case BinaryType => SimpleContextProvider[Array[Byte]](path, stillSetWhenNull, expr, providedType = Some(dataType))
+      case ByteType => SimpleContextProvider[Byte](path, stillSetWhenNull, expr, providedType = Some(dataType))
+      case ShortType => SimpleContextProvider[Short](path, stillSetWhenNull, expr, providedType = Some(dataType))
       case DateType => SimpleContextProvider[LocalDate](path, stillSetWhenNull, expr,
-        Some(((t: Any) => DateTimeUtils.daysToLocalDate(t.asInstanceOf[Int]),
-          (codegen, input) => s"org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate((int)$input)"))
+        converter = Some(((t: Any) => DateTimeUtils.daysToLocalDate(t.asInstanceOf[Int]),
+          (codegen, input) => s"org.apache.spark.sql.catalyst.util.DateTimeUtils.daysToLocalDate((int)$input)")),
+        providedType = Some(dataType)
       ) // an int
       case TimestampType | TimestampNTZType => SimpleContextProvider[LocalDateTime](path, stillSetWhenNull, expr,
-        Some(((t: Any) => DateTimeUtils.microsToLocalDateTime(t.asInstanceOf[Long]),
+        converter = Some(((t: Any) => DateTimeUtils.microsToLocalDateTime(t.asInstanceOf[Long]),
           (codegen, input) => s"org.apache.spark.sql.catalyst.util.DateTimeUtils.microsToLocalDateTime((long)$input)"))
+        , providedType = Some(dataType)
       ) // a long
       case _: DecimalType => SimpleContextProvider[java.math.BigDecimal](path, stillSetWhenNull, expr,
-        Some(((t: Any) => t.asInstanceOf[Decimal].toJavaBigDecimal,
+        converter = Some(((t: Any) => t.asInstanceOf[Decimal].toJavaBigDecimal,
           (codegen, input) => s"((${classOf[Decimal].getName})$input).toJavaBigDecimal()"))
+        , providedType = Some(dataType)
       )
       case structType: StructType => ContextInterfaces.structProvider(structType, path, expr, stillSetWhenNull, config)
       case mapType: MapType => ContextInterfaces.mapProvider(mapType, path, expr, stillSetWhenNull, config)

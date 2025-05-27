@@ -7,7 +7,7 @@ import com.sparkutils.dmn.kogito.ContextProviders.contextProviderFromDDL
 import com.sparkutils.dmn.kogito.Errors.CONTEXT_PROVIDER_PARSE
 import com.sparkutils.dmn.kogito.Types.MAP
 import org.apache.spark.sql.catalyst.parser.ParseException
-import org.apache.spark.sql.types.{DataType, StructType}
+import org.apache.spark.sql.types.{DataType, StringType, StructType}
 import org.kie.dmn.core.internal.utils.DMNRuntimeBuilder
 import org.kie.internal.io.ResourceFactory
 
@@ -69,8 +69,8 @@ class KogitoDMNRepository() extends DMNRepository {
     val config = configMap(dmnConfiguration)
 
     inputField.providerType match {
-      case "" => ContextProviderProxy(path, inputField.stillSetWhenNull, expr, config)
-      case "JSON" => KogitoJSONContextProvider(path, inputField.stillSetWhenNull, expr)
+      case "" => ContextProviderProxy(path, inputField.stillSetWhenNull, expr, config, providedType = None)
+      case "JSON" => KogitoJSONContextProvider(path, inputField.stillSetWhenNull, expr, providedType = Some(StringType))
       case t if Try(DataType.fromDDL(t)).isSuccess =>
         val dataType = DataType.fromDDL(t)
         contextProviderFromDDL(inputField.stillSetWhenNull, path, expr, config, dataType)

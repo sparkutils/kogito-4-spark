@@ -353,14 +353,16 @@ object ContextInterfaces {
 
   // NOTE -1 must be provided for top level as we don't know the index the data is taken from
 
-  def mapProvider(mapType: MapType, path: DMNContextPath, expr: Expression, stillSetWhenNull: Boolean, dmnConfiguration: Map[String,String]): DMNContextProvider[util.Map[String, Object]] = {
+  def mapProvider(mapType: MapType, path: DMNContextPath, expr: Expression, stillSetWhenNull: Boolean,
+                  dmnConfiguration: Map[String,String]): DMNContextProvider[util.Map[String, Object]] = {
     val ma = forType(mapType, dmnConfiguration)
-    ComplexContextProvider[util.Map[String, Object]](mapType, dmnConfiguration, ma, path, stillSetWhenNull, expr)
+    ComplexContextProvider[util.Map[String, Object]](mapType, dmnConfiguration, ma, path, stillSetWhenNull, expr, Some(mapType))
   }
 
-  def arrayProvider(arrayType: ArrayType, path: DMNContextPath, expr: Expression, stillSetWhenNull: Boolean, dmnConfiguration: Map[String,String]): DMNContextProvider[util.List[Object]] = {
+  def arrayProvider(arrayType: ArrayType, path: DMNContextPath, expr: Expression, stillSetWhenNull: Boolean,
+                    dmnConfiguration: Map[String,String]): DMNContextProvider[util.List[Object]] = {
     val aa = forType(arrayType, dmnConfiguration)
-    ComplexContextProvider[util.List[Object]](arrayType, dmnConfiguration, aa, path, stillSetWhenNull, expr)
+    ComplexContextProvider[util.List[Object]](arrayType, dmnConfiguration, aa, path, stillSetWhenNull, expr, Some(arrayType))
   }
 
   /**
@@ -368,14 +370,20 @@ object ContextInterfaces {
    * @param structType
    * @return
    */
-  def structProvider(structType: StructType, path: DMNContextPath, expr: Expression, stillSetWhenNull: Boolean, dmnConfiguration: Map[String,String]): DMNContextProvider[util.Map[String, Object]] = {
+  def structProvider(structType: StructType, path: DMNContextPath, expr: Expression, stillSetWhenNull: Boolean,
+                     dmnConfiguration: Map[String,String]): DMNContextProvider[util.Map[String, Object]] = {
     val sa = forType(structType, dmnConfiguration)
-    ComplexContextProvider[util.Map[String, Object]](structType, dmnConfiguration, sa, path, stillSetWhenNull, expr)
+    ComplexContextProvider[util.Map[String, Object]](structType, dmnConfiguration, sa, path, stillSetWhenNull, expr, Some(structType))
   }
 
-  case class ComplexContextProvider[T: ClassTag](actualDataType: DataType, dmnConfiguration: Map[String,String], accessor: Accessor[_], contextPath: DMNContextPath, stillSetWhenNull: Boolean, child: Expression) extends UnaryDMNContextProvider[T] {
+  case class ComplexContextProvider[T: ClassTag](actualDataType: DataType, dmnConfiguration: Map[String,String],
+                                                 accessor: Accessor[_], contextPath: DMNContextPath, stillSetWhenNull: Boolean,
+                                                 child: Expression, providedType: Option[DataType]) extends UnaryDMNContextProvider[T] {
 
-    def withNewChildInternal(newChild: Expression): Expression = copy(child = newChild)
+    def withNewChildInternal(newChild: Expression): Expression = {
+      verifyDataTypes(newChild)
+      copy(child = newChild)
+    }
 
     override def nullSafeContextEval(input: Any): Any =
       accessor.forPath(input, -1).asInstanceOf[T]

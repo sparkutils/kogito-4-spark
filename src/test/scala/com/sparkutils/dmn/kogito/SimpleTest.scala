@@ -1,7 +1,7 @@
 package com.sparkutils.dmn.kogito
 
 import com.sparkutils.dmn.kogito.types.ResultInterfaces.{SUCCEEDED, evalStatusEnding}
-import com.sparkutils.dmn.{DMNConfiguration, DMNExecution, DMNFile, DMNInputField, DMNModelService}
+import com.sparkutils.dmn.{DMNConfiguration, DMNException, DMNExecution, DMNFile, DMNInputField, DMNModelService}
 import frameless.{TypedDataset, TypedEncoder, TypedExpressionEncoder}
 import org.apache.spark.sql.{DataFrame, SaveMode}
 import org.junit.runner.RunWith
@@ -353,4 +353,26 @@ class SimpleTest extends FunSuite with Matchers with TestUtils {
     testOneToOne(null: String, scala.collection.immutable.Seq(DMNInputField("value","","inputData")), "string", "")
   }
 
+  test("useful error message with incorrect input types") {
+    import sparkSession.implicits._
+
+    val service = dmnModel
+    val ds = Seq(dataBasis).toDS.selectExpr("explode(value) as f").selectExpr("f.*")
+
+    val exec = DMNExecution(dmnFiles, service,
+      scala.collection.immutable.Seq(
+        DMNInputField("location", "String", "testData.location"),
+        DMNInputField("idPrefix", "String", "testData.idPrefix"),
+        DMNInputField("id", "String", "testData.id"),
+        DMNInputField("page", "String", "testData.page"),
+        DMNInputField("department", "String", "testData.department")
+      )) //location: String, idPrefix: String, id: Int, page: Long, department: String)
+
+    val e = intercept[DMNException] {
+      testResults(ds, exec)
+    }
+    e.message shouldBe
+      "Provided type 'STRING' for context 'KogitoDMNContextPath(testData.id)' does not match the child expression type 'INT'"
+
+  }
 }
