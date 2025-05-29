@@ -46,6 +46,7 @@ jobs:
     secrets: inherit
 
   publish_2_13_16:
+    if: false
     uses: sparkutils/building/.github/workflows/publish_build.yml@main
     with:
       theMatrix: |
