@@ -43,6 +43,14 @@
             </properties>
         </profile>
         <profile>
+            <id>scala_2.13.16</id><!-- spark4 dbr 17 -->
+            <properties>
+                <scalaVersion>2.13.16</scalaVersion>
+                <scalaCompatVersion>2.13</scalaCompatVersion>
+                <scalatestVersion>3.0.9</scalatestVersion>
+            </properties>
+        </profile>
+        <profile>
             <id>Spark350</id>
             <properties>
                 <shimRuntime>3.5.0.oss</shimRuntime>
@@ -69,8 +77,8 @@
                 <shimRuntime>4.0.0.oss</shimRuntime>
                 <shimCompilationRuntime>4.0.0.oss</shimCompilationRuntime>
                 <dbrCompatVersion>4.0.0.oss_</dbrCompatVersion>
-                <sparkVersion>4.1.0-SNAPSHOT</sparkVersion>
-                <sparkCompatVersion>4.1</sparkCompatVersion>
+                <sparkVersion>4.0.0</sparkVersion>
+                <sparkCompatVersion>4.0</sparkCompatVersion>
                 <profileDir>4.0.0</profileDir>
                 <jacksonVersion>2.15.2</jacksonVersion> <!-- scalameter dependency is 2.9.10 so perf tests runs need to change it -->
                 <guavaVersion>15.0</guavaVersion> <!-- databricks runtime version -->
@@ -80,6 +88,8 @@
                 <deltaCoreVersion>3.0.0</deltaCoreVersion>
                 <deltaArtifact>spark</deltaArtifact>
                 <snakeVersion>2.0</snakeVersion>
+
+                <framelessVersion>1.0.0-RC1</framelessVersion>
 
                 <!--<scalatestVersion>3.2.15</scalatestVersion>  databricks runtime version -->
             </properties>
@@ -191,8 +201,8 @@
         <!-- for oss builds -->
         <snakeVersion>1.33</snakeVersion>
 
-        <shimCompilationVersion>0.2.0-RC2</shimCompilationVersion>
-        <shimRuntimeVersion>0.2.0-RC2</shimRuntimeVersion>
+        <shimCompilationVersion>0.2.0-RC5</shimCompilationVersion>
+        <shimRuntimeVersion>0.2.0-RC5</shimRuntimeVersion>
 
         <dmn4SparkVersion>0.0.1-RC10</dmn4SparkVersion>
         <shadedKogitoVersion>0.0.12</shadedKogitoVersion>
