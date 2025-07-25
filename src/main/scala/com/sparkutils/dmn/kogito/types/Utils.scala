@@ -1,9 +1,11 @@
 package com.sparkutils.dmn.kogito.types
 
 import com.sparkutils.dmn.kogito.types.ContextInterfaces.Accessor
+import org.apache.commons.math3.stat.descriptive.rank.PSquarePercentile
 import org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper
 import org.apache.spark.sql.catalyst.expressions.codegen.{Block, CodegenContext, ExprCode, JavaCode}
 import org.kie.dmn.api.core.DMNDecisionResult
+import org.slf4j.{Logger, LoggerFactory => SLF4JLoggerFactory}
 
 import java.util
 import java.util.Map
@@ -312,4 +314,25 @@ class ArraySet[E](backed: Array[E]) extends java.util.Set[E] {
   override def clear(): Unit = ???
 
   // $COVERAGE-ON$
+}
+
+trait Logging {
+  protected lazy val logger: Logger = SLF4JLoggerFactory.getLogger(this.getClass)
+}
+
+class ThreadSafeMedianEstimator {
+  private val lock = new Object()
+  private val estimator = new PSquarePercentile(50.0)
+
+  def add(value: Double): Unit = lock.synchronized {
+    estimator.increment(value)
+  }
+
+  def median: Option[Double] = lock.synchronized {
+    if (estimator.getN < 5) None else Some(estimator.getResult)
+  }
+
+  def count: Long = lock.synchronized {
+    estimator.getN
+  }
 }
