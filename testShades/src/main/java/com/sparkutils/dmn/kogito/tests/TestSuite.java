@@ -8,6 +8,7 @@ import com.sparkutils.dmn.kogito.EvalAllResultsTest;
 import com.sparkutils.dmn.kogito.SimpleTest;
 import com.sparkutils.dmn.kogito.ExceptionsTest;
 import com.sparkutils.dmn.kogito.ContextTest;
+import com.sparkutils.dmn.kogito.StaticDataTest;
 
 /**
  * The test suite
@@ -23,7 +24,8 @@ public class TestSuite {
                 EvalAllResultsTest.class,
                 SimpleTest.class,
                 ExceptionsTest.class,
-                ContextTest.class
+                ContextTest.class,
+                StaticDataTest.class
         );
 
         resultReport(result);

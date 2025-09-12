@@ -47,7 +47,7 @@ val dmnModel = DMNModelService(name, namespace, Some("DQService"), "struct<evalu
 
 when the DecisionService is provided, DQService the above example, only it will be executed, using None will trigger evaluateAll semantics.  The struct definition at the end defines your output structure, use JSON to serialize the DMNResult into JSON.  You can also use the serialization.readVersionedModelServicesFromDF to load models.
 
-Define the DMNInputfields:
+Define the DMNInputFields:
 
 ```scala
 val inputFields = Seq(
@@ -60,6 +60,19 @@ val inputFields = Seq(
 ```
 
 this use the fields location, idPrefix, id, page and department to set entries in the "testData" DMNContext map.  Input fields can also be loaded via the serialization.readVersionedProvidersFromDF function.  The input type can be left as an empty string and the ddl type of the output expression will be used, JSON must however be explicitly provided.
+
+!!! note "Static configuration can be passed via uncorrelated subqueries"
+    
+    Although you can use DMNInputField expressions with correlated subqueries to simulate configurable joins, you can also use uncorrelated subqueries to load static configuration data into the input context:
+    
+    ```scala
+    DMNInputField("(select collect_set(key) from baseData)","","listConfig"),
+    DMNInputField("(select map_from_entries( collect_list(struct(string(key), value)) ) from baseData)","","mapConfig"),
+    ```
+    
+    The first listConfig creates a simple array in the listConfig context entry, suitable for "list contains", whereas mapConfig represents a JavaMap suitable for "get value" calls.  All key entries in maps must be strings for "get value" to work, not providing a string will cause an error about the GetValueFunction "get value" not being found.
+
+    Uncorrelated subqueries are only loaded once per partition.
 
 Then combine the variables into the DMNExecution you wish to run with any additional configuration (currently ignored by kogito-4-spark):
 
