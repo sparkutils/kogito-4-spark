@@ -25,7 +25,7 @@ class ContextTest extends FunSuite with Matchers with TestUtils {
   )
   val odmnModel = DMNModelService(ons, ons, None, s"struct<evaluate: ${Others.ddl}>")
 
-  lazy val runtime = new KogitoDMNRepository().dmnRuntimeFor(odmnFiles, DMNConfiguration.empty)
+  lazy val runtime = new KogitoDMNRepository().dmnRuntimeFor(odmnFiles, DMNConfiguration.empty, debug = false)
 
   def get(ctx: KogitoDMNContext, path: String): Any = {
     val bits = path.split('.')

@@ -6,10 +6,12 @@ import com.sparkutils.dmn.impl.utils.configMap
 import com.sparkutils.dmn.kogito.ContextProviders.contextProviderFromDDL
 import com.sparkutils.dmn.kogito.Errors.CONTEXT_PROVIDER_PARSE
 import com.sparkutils.dmn.kogito.Types.MAP
+import com.sparkutils.dmn.kogito.types.{Logging, ThreadSafeMedianEstimator}
 import org.apache.spark.sql.catalyst.parser.ParseException
 import org.apache.spark.sql.types.{DataType, StringType, StructType}
 import org.kie.dmn.core.internal.utils.DMNRuntimeBuilder
 import org.kie.internal.io.ResourceFactory
+import org.apache.log4j.Logger
 
 import java.util
 import scala.collection.JavaConverters._
@@ -22,39 +24,83 @@ case class KogitoDMNContextPath(path: String) extends DMNContextPath
 /**
  * Represents an executable DMN Model
  */
-case class KogitoDMNModel(model: org.kie.dmn.api.core.DMNModel, runtime: org.kie.dmn.api.core.DMNRuntime) extends DMNModel {
+case class KogitoDMNModel(model: org.kie.dmn.api.core.DMNModel, runtime: org.kie.dmn.api.core.DMNRuntime) extends DMNModel with Logging{
+  private val medianEstimator = new ThreadSafeMedianEstimator()
 
-  def evaluateAll(ctx: DMNContext): DMNResult =
-    KogitoDMNResult(runtime.evaluateAll(model, ctx.asInstanceOf[KogitoDMNContext].ctx))
+  def evaluateAll(ctx: DMNContext, debug: Boolean): DMNResult = {
+    val start = if(debug) System.nanoTime() else 0L
 
-  def evaluateDecisionService(ctx: DMNContext, service: String): DMNResult =
-    KogitoDMNResult(runtime.evaluateDecisionService(model, ctx.asInstanceOf[KogitoDMNContext].ctx, service))
+    val result = KogitoDMNResult(runtime.evaluateAll(model, ctx.asInstanceOf[KogitoDMNContext].ctx))
+
+    if(debug) {
+      logDuration(start, "evaluateAll")
+      logger.debug(s"Input and output context: ${result.result.getContext}")
+    }
+
+    result
+  }
+
+  def evaluateDecisionService(ctx: DMNContext, service: String, debug: Boolean): DMNResult = {
+    val start = if(debug) System.nanoTime() else 0L
+
+    val result = KogitoDMNResult(runtime.evaluateDecisionService(model, ctx.asInstanceOf[KogitoDMNContext].ctx, service))
+
+    if(debug) {
+      logDuration(start, "evaluateDecisionService")
+      logger.debug(s"Input and output context: ${result.result.getContext}")
+    }
+
+    result
+  }
+
+  private def logDuration(start: Long, method: String): Unit = {
+    val duration = (System.nanoTime() - start) / 1000000
+    medianEstimator.add(duration)
+
+    val count = medianEstimator.count
+    val medianOpt = medianEstimator.median
+    if (count == 1 || count == 5 || count == 10 || count % 50 == 0) {
+      if (medianOpt.isDefined) {
+        logger.debug(s"[$method] #$count took $duration ms, approx median: ${medianOpt.get} ms")
+      } else {
+        logger.debug(s"[$method] #$count took $duration ms)")
+      }
+    }
+  }
 
 }
 
 /**
  * Represents a repository of DMN, this is the actual root provider
  */
-class KogitoDMNRepository() extends DMNRepository {
+class KogitoDMNRepository() extends DMNRepository with Logging {
   /**
    * Throws DMNException if it can't be constructed
    * @param dmnFiles
    * @return
    */
-  def dmnRuntimeFor(dmnFiles: scala.collection.immutable.Seq[DMNFile], dmnConfiguration: DMNConfiguration): DMNRuntime = {
+  def dmnRuntimeFor(dmnFiles: scala.collection.immutable.Seq[DMNFile], dmnConfiguration: DMNConfiguration, debug: Boolean): DMNRuntime = {
+    val startOpt = if(debug) Some(System.nanoTime()) else None
 
-    val resources = dmnFiles.map{ f =>
+    val resources = dmnFiles.map { f =>
       val r = ResourceFactory.newByteArrayResource(f.bytes)
       f.locationURI -> r.setSourcePath(f.locationURI)
     }.toMap
 
-    KogitoDMNRuntime(
+    val runtime = KogitoDMNRuntime(
       DMNRuntimeBuilder.fromDefaults()
-        .setRelativeImportResolver((_,_, locationURI) => resources(locationURI).getReader)
+        .setRelativeImportResolver((_, _, locationURI) => resources(locationURI).getReader)
         .buildConfiguration()
         .fromResources(resources.values.asJavaCollection)
         .getOrElseThrow(p => new DMNException("Could not create Kogito DMNRuntime", p))
     )
+
+    startOpt.foreach { start =>
+      val total = (System.nanoTime() - start) / 1000000
+      logger.debug(s"Kogito DMN Model loading duration: $total ms")
+    }
+
+    runtime
   }
 
   override def supportsDecisionService: Boolean = true
@@ -77,10 +123,9 @@ class KogitoDMNRepository() extends DMNRepository {
       case _ =>
         utils.loadUnaryContextProvider(inputField.providerType, path, expr)
     }
-
   }
 
-  override def resultProviderForType(resultProviderType: String, debug: Boolean, dmnConfiguration: DMNConfiguration): DMNResultProvider =
+  override def resultProviderForType(resultProviderType: String, debug: Boolean, dmnConfiguration: DMNConfiguration): DMNResultProvider = {
     resultProviderType match {
       case _ if resultProviderType.toUpperCase == "JSON" =>
         KogitoJSONResultProvider(debug, configMap(dmnConfiguration))
@@ -94,6 +139,7 @@ class KogitoDMNRepository() extends DMNRepository {
       case _ =>
         utils.loadResultProvider(resultProviderType, debug)
     }
+  }
 }
 
 object Types {
