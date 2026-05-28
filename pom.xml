@@ -428,7 +428,7 @@
 
         <dependency>
             <groupId>com.sparkutils</groupId>
-            <artifactId>dmn-4-spark_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
+            <artifactId>dmn-4-spark_api_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
             <version>${dmn4SparkVersion}</version>
         </dependency>
 
