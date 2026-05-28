@@ -165,7 +165,7 @@
     </profiles>
 
     <properties>
-        <revision>0.0.1-RC23</revision>
+        <revision>0.0.1-RC24</revision>
 
         <mavenFlattenPluginVersion>1.2.7</mavenFlattenPluginVersion>
         <mavenProjectInfoReportsPluginVersion>3.4.5</mavenProjectInfoReportsPluginVersion>
@@ -205,7 +205,7 @@
         <shimRuntimeVersion>0.2.0-RC5</shimRuntimeVersion>
 
         <dmn4SparkVersion>0.0.1-RC10</dmn4SparkVersion>
-        <shadedKogitoVersion>0.0.12</shadedKogitoVersion>
+        <shadedKogitoVersion>0.1.0-RC2</shadedKogitoVersion>
 
         <framelessVersion>0.17.0</framelessVersion>
         <framelessRuntime>sparkutils_0.17.0-${sparkCompatVersion}</framelessRuntime>

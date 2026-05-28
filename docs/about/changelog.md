@@ -8,3 +8,4 @@ Initial implementation of the dmn-4-spark api, providing:
 * DMNInputFields can have non JSON type derived based on the fieldExpression
 * Context input null handling is configurable
 * WholestageCodegen support
+* Kogito 10.2 support
