@@ -561,7 +561,7 @@
                                     <Project-Git-Hash>${GITHUB_SHA}</Project-Git-Hash>
                                     <Project-CI-Branch>${GITHUB_BASE_REF}</Project-CI-Branch>
                                     <Project-CI-Run-ID>${GITHUB_RUN_ID}</Project-CI-Run-ID>
-                                    <Project-URL>${GITHUB_REPOSITORY}</Project-URL>
+                                    <Project-URL>${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}</Project-URL>
                                 </manifestEntries>
                             </manifestSection>
                         </manifestSections>
@@ -643,15 +643,15 @@
                 </executions>
             </plugin>
             <plugin>
-                <groupId>org.sonatype.plugins</groupId>
-                <artifactId>nexus-staging-maven-plugin</artifactId>
-                <version>1.6.13</version>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.7.0</version>
                 <extensions>true</extensions>
                 <configuration>
-                    <serverId>ossrh</serverId>
-                    <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                    <stagingProgressTimeoutMinutes>45</stagingProgressTimeoutMinutes>
+                    <publishingServerId>central</publishingServerId>
+                    <autoPublish>true</autoPublish>
+                    <waitUntil>published</waitUntil>
+                    <ignorePublishedComponents>true</ignorePublishedComponents>
                 </configuration>
             </plugin>
         </plugins>
