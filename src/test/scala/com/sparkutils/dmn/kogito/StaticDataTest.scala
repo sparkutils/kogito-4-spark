@@ -52,7 +52,7 @@ class StaticDataTest extends FunSuite with Matchers with TestUtils {
 
     val res = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(
       DMNExecution(dmnFiles = scala.collection.immutable.Seq() ++ dmnFiles, model = modelService,
-        contextProviders = inputFields,
+        contextProviders = inputFields.toVector,
         configuration = config
       )))
 
