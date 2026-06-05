@@ -12,7 +12,7 @@ import org.junit.Before
 import java.time.{LocalDate, LocalDateTime}
 import java.util.concurrent.atomic.AtomicReference
 
-trait TestUtils {
+trait TestUtils extends EncodingTestUtils {
   val hostMode = {
     val tmp = System.getenv("DMN_SPARK_HOSTS")
     if (tmp eq null)
@@ -113,55 +113,6 @@ trait TestUtils {
       }
     }
   }
-
-  implicit val sqlDate: TypedEncoder[LocalDate] = new TypedEncoder[LocalDate] {
-    def nullable: Boolean = false
-
-    def jvmRepr: DataType = ObjectType(classOf[LocalDate])
-    def catalystRepr: DataType = DateType
-
-    def toCatalyst(path: Expression): Expression =
-      StaticInvoke4(
-        DateTimeUtils.getClass,
-        DateType,
-        "localDateToDays",
-        path :: Nil,
-        returnNullable = false)
-
-    def fromCatalyst(path: Expression): Expression =
-      StaticInvoke4(
-        DateTimeUtils.getClass,
-        ObjectType(classOf[java.time.LocalDate]),
-        "daysToLocalDate",
-        path :: Nil,
-        returnNullable = false)
-  }
-
-  implicit val timestampEncoder: TypedEncoder[LocalDateTime] =
-    new TypedEncoder[LocalDateTime] {
-      def nullable: Boolean = false
-
-      def jvmRepr: DataType = ObjectType(classOf[LocalDateTime])
-      def catalystRepr: DataType = TimestampType
-
-      def toCatalyst(path: Expression): Expression =
-        StaticInvoke4(
-          DateTimeUtils.getClass,
-          TimestampNTZType,
-          "localDateTimeToMicros",
-          path :: Nil,
-          returnNullable = false)
-
-      def fromCatalyst(path: Expression): Expression =
-        StaticInvoke4(
-          DateTimeUtils.getClass,
-          ObjectType(classOf[java.time.LocalDateTime]),
-          "microsToLocalDateTime",
-          path :: Nil,
-          returnNullable = false)
-
-      override def toString: String = "timestampEncoder"
-    }
 
 }
 

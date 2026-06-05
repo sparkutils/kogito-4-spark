@@ -13,7 +13,7 @@ import java.time.temporal.ChronoUnit
 import java.time.{LocalDate, LocalDateTime, ZoneOffset}
 
 case class Pair(a: Boolean, b: Boolean) extends Serializable
-case class Deep[A,B](a: String, b: Option[java.math.BigDecimal], d: Pair, c: Map[A,B]) extends Serializable {
+case class Deep[A,B](a: String, b: Option[java.math.BigDecimal], d: Pair, c: Option[Map[A,B]]) extends Serializable {
   override def equals(obj: Any): Boolean = obj match {
     // precision isn't correct in frameless encoding
     case o: Deep[A,B] => a == o.a /* && b == o.b */ && d == o.d && c == o.c
@@ -28,7 +28,7 @@ case class Result[A,B](eval: Top[A,B]) extends Serializable
 
 case class Quality[A,B](quality: Result[A,B]) extends Serializable
 
-case class DebugResult[A,B](eval: Top[A,B], dmnDebugMode: Seq[KogitoResult], messages: Seq[KogitoMessage]) extends Serializable
+case class DebugResult[A,B](eval: Top[A,B], dmnDebugMode: Seq[KogitoResult], dmnMessages: Seq[KogitoMessage]) extends Serializable
 
 case class DebugQuality[A,B](quality: DebugResult[A,B]) extends Serializable
 
@@ -81,7 +81,7 @@ class DeepTest extends FunSuite with Matchers with TestUtils {
 
   def dataBasis[A,B](maps: Seq[Map[A,B]]): Seq[Wrapper[A, B]] = maps.zipWithIndex.map{ case (m, i) =>
     Wrapper(
-      Top(i.toString, Seq("a","b","c","d").map(_+i.toString), Seq(Deep(i.toString, Others.bd, Pair(true, true), m)))
+      Top(i.toString, Seq("a","b","c","d").map(_+i.toString), Seq(Deep(i.toString, Others.bd, Pair(true, true), Option(m))))
   )}
 
   def testResults[A: RecordFieldEncoder, B: RecordFieldEncoder, R: TypedEncoder](maps: Seq[Map[A,B]], mapType: String, outputProvider: String, dmnFiles: Seq[DMNFile], deriveContextTypes: Boolean = false, debug: Boolean = false, useTreeMap: Boolean = false, fullProxyDS: Boolean = true): Seq[R] = {
@@ -133,7 +133,7 @@ class DeepTest extends FunSuite with Matchers with TestUtils {
   test("Deep test JSON 1:1 Reply - String, String context - null entries") { evalCodeGens {
     import sparkSession.implicits._
 
-    val res = testResults[String, String, String]( (1 to 5). map( i => Map(s"a$i" -> null) ),
+    val res = testResults[String, Option[String], String]( (1 to 5). map( i => Map(s"a$i" -> null) ),
       "<String, String>", "JSON", deep_struct, useTreeMap = true)
     res.sorted shouldBe Seq(
       s"""{"eval":{"top1":"0a","strings":["a0i","b0i","c0i","d0i"],"structs":[{"a":"0","b":$oneDotZero,"d":{"a":true,"b":true},"c":{"a1":null}}]}}""",
@@ -428,7 +428,7 @@ class DeepTest extends FunSuite with Matchers with TestUtils {
     import sparkSession.implicits._
 
     testDebugStructs(s"<String, ${deepType("<int, int>")}>",  (1 to 5). map( i => Map(
-      s"a$i" -> Deep(i.toString, null, Pair(true, true), Map(1 -> 2)) )),
+      s"a$i" -> Deep(i.toString, null, Pair(true, true), Option(Map(1 -> 2))) )),
       fullProxyDS = false, deriveContextTypes = true)
   }
 
