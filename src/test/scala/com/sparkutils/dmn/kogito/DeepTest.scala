@@ -478,6 +478,6 @@ object Others {
 
   val nulls = Others(None,None,None,None,None,None,None,None,None,None,None,None,None)
   val vals = Others(Some(""),Some(1l),Some(true),Some(0.2),Some(0.2f),Some(0),
-    Some(Array(0: Byte)),Some(1),Some(date), Some(dateTime), Some(Map(1 -> 1)), Some(Array(1,2)),
+    Some(Array(0: Byte)),Some(1),Some(date), Some(dateTime), Some(Map(1 -> 1)), Some(Seq(1,2)),
     bd)
 }

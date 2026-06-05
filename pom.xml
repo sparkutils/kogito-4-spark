@@ -76,6 +76,11 @@
                 <deltaArtifact>spark</deltaArtifact>
                 <snakeVersion>2.0</snakeVersion>
 
+                <framelessVersion>0.17.0</framelessVersion>
+                <framelessCoreCompatVersion>_3.5</framelessCoreCompatVersion>
+                <framelessCompatVersion>_3.5</framelessCompatVersion>
+                <framelessOrg>com.sparkutils</framelessOrg>
+
                 <!--<scalatestVersion>3.2.15</scalatestVersion>  databricks runtime version -->
             </properties>
         </profile>
@@ -97,7 +102,11 @@
                 <deltaArtifact>spark</deltaArtifact>
                 <snakeVersion>2.0</snakeVersion>
 
-                <framelessVersion>1.0.0-RC1</framelessVersion>
+
+                <framelessVersion>2.0.0-agEnc-baseline</framelessVersion>
+                <framelessCoreCompatVersion>_4.0</framelessCoreCompatVersion>
+                <framelessCompatVersion>_4.0</framelessCompatVersion>
+                <framelessOrg>com.sparkutils</framelessOrg>
 
                 <encodingDir>agnosticEncoding</encodingDir>
 
@@ -148,6 +157,11 @@
                 <elidebelow>2</elidebelow>
                 <refinedVersion>0.9.28</refinedVersion>
                 <snakeVersion>2.0</snakeVersion>
+
+                <framelessVersion>0.17.0</framelessVersion>
+                <framelessCoreCompatVersion>_3.5</framelessCoreCompatVersion>
+                <framelessCompatVersion>_3.5</framelessCompatVersion>
+                <framelessOrg>com.sparkutils</framelessOrg>
             </properties>
         </profile>
         <profile>
@@ -165,6 +179,11 @@
                 <elidebelow>2</elidebelow>
                 <refinedVersion>0.9.28</refinedVersion>
                 <snakeVersion>2.0</snakeVersion>
+
+                <framelessVersion>0.17.0</framelessVersion>
+                <framelessCoreCompatVersion>_3.5</framelessCoreCompatVersion>
+                <framelessCompatVersion>_3.5</framelessCompatVersion>
+                <framelessOrg>com.sparkutils</framelessOrg>
             </properties>
         </profile>
         <profile>
@@ -182,6 +201,11 @@
                 <elidebelow>2</elidebelow>
                 <refinedVersion>0.9.28</refinedVersion>
                 <snakeVersion>2.0</snakeVersion>
+
+                <framelessVersion>0.17.0</framelessVersion>
+                <framelessCoreCompatVersion>_3.5</framelessCoreCompatVersion>
+                <framelessCompatVersion>_3.5</framelessCompatVersion>
+                <framelessOrg>com.sparkutils</framelessOrg>
             </properties>
         </profile>
         <profile>
@@ -238,7 +262,7 @@
     </profiles>
 
     <properties>
-        <revision>0.1.0-DONT</revision>
+        <revision>0.1.0-baseline</revision>
 
         <mavenFlattenPluginVersion>1.2.7</mavenFlattenPluginVersion>
         <mavenProjectInfoReportsPluginVersion>3.4.5</mavenProjectInfoReportsPluginVersion>
@@ -277,13 +301,11 @@
         <shimCompilationVersion>0.3.0-baseline3.5</shimCompilationVersion>
         <shimRuntimeVersion>0.3.0-baseline3.5</shimRuntimeVersion>
 
-        <dmn4SparkVersion>0.1.0-DONT</dmn4SparkVersion>
+        <dmn4SparkVersion>0.1.0-baseline</dmn4SparkVersion>
         <shadedKogitoVersion>0.1.0-RC2</shadedKogitoVersion>
 
-        <framelessVersion>2.0.0-agEnc-baseline</framelessVersion>
-        <framelessCoreCompatVersion>_4.0</framelessCoreCompatVersion>
-        <framelessCompatVersion>_4.0</framelessCompatVersion>
-        <framelessOrg>com.sparkutils</framelessOrg>
+        <framelessCoreCompatVersion></framelessCoreCompatVersion>
+        <framelessOrg>org.typelevel</framelessOrg>
 
         <encodingDir>classic</encodingDir>
     </properties>

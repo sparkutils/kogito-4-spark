@@ -2,9 +2,11 @@ package com.sparkutils.dmn.kogito
 
 import frameless.TypedEncoder
 import org.apache.spark.sql.catalyst.expressions.Expression
-import org.apache.spark.sql.catalyst.util.DateTimeUtils
+import org.apache.spark.sql.catalyst.expressions.objects.StaticInvoke
+import org.apache.spark.sql.catalyst.util.{DateTimeUtils, IntervalUtils}
 import org.apache.spark.sql.shim.StaticInvoke4
-import org.apache.spark.sql.types.{DataType, DateType, ObjectType, TimestampNTZType, TimestampType}
+import org.apache.spark.sql.types.{CalendarIntervalType, DataType, DateType, ObjectType, TimestampNTZType, TimestampType, YearMonthIntervalType}
+import org.drools.modelcompiler.dsl.pattern.D
 
 import java.time.{LocalDate, LocalDateTime}
 
@@ -57,5 +59,30 @@ trait EncodingTestUtils {
           returnNullable = false)
 
       override def toString: String = "timestampEncoder"
+    }
+
+  implicit val yearMonthIntervalTypeEncoder: TypedEncoder[java.time.Period] =
+    new TypedEncoder[java.time.Period]() {
+      override def nullable: Boolean = false
+
+      override def jvmRepr: DataType = ObjectType(classOf[java.time.Period])
+
+      override def catalystRepr: DataType = YearMonthIntervalType()
+
+      override def fromCatalyst(path: Expression): Expression =
+        StaticInvoke4(
+          IntervalUtils.getClass,
+          YearMonthIntervalType(),
+          "periodToMonths",
+          path :: Nil,
+          returnNullable = false)
+
+      override def toCatalyst(path: Expression): Expression =
+        StaticInvoke4(
+          IntervalUtils.getClass,
+          ObjectType(classOf[java.time.Period]),
+          "monthsToPeriod",
+          path :: Nil,
+          returnNullable = false)
     }
 }

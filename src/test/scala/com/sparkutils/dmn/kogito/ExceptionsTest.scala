@@ -4,6 +4,7 @@ import com.sparkutils.dmn.kogito.Errors.CONTEXT_PROVIDER_PARSE
 import com.sparkutils.dmn.{DMNException, DMNExecution, DMNFile, DMNInputField, DMNModelService}
 import frameless.{TypedDataset, TypedEncoder, TypedExpressionEncoder}
 import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.types.YearMonthIntervalType
 import org.junit.runner.RunWith
 import org.scalatest.{FunSuite, Matchers}
 import org.scalatestplus.junit.JUnitRunner
@@ -109,22 +110,21 @@ class ExceptionsTest extends FunSuite with Matchers with TestUtils {
     e.message should include("ResultProvider type string is not supported,")
   }
 
-
   test("incompatible nested ddl should throw"){
     evalCodeGens {
       implicit val spark = sparkSession
       val tds = TypedDataset.create(Seq(testData)).dataset
       val ds = if (inCodegen) tds.repartition(4) else tds
 
-      val exec = DMNExecution(badImportDmnFiles, dmnModel.copy(resultProvider = "struct<evaluate: interval>"),
+      val exec = DMNExecution(badImportDmnFiles, dmnModel.copy(resultProvider = "struct<evaluate: INTERVAL YEAR>"),
         scala.collection.immutable.Seq(
           DMNInputField("location", "", "")
         ))
       val e = intercept[DMNException] {
         val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec))
-        dres.select("quality.evaluate").as[Seq[Boolean]](TypedExpressionEncoder[Seq[Boolean]]).collect()
+        dres.select("quality.evaluate").as[java.time.Period](TypedExpressionEncoder[java.time.Period]).collect()
       }
-      e.message should include("Could not load Kogito Result Provider for dataType CalendarIntervalType")
+      e.message should include("Could not load Kogito Result Provider for dataType YearMonthIntervalType(0,0)")
     }
   }
 
