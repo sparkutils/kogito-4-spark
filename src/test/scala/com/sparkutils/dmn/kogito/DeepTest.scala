@@ -427,6 +427,8 @@ class DeepTest extends FunSuite with Matchers with TestUtils {
   test("Deep test struct 1:1 Reply - String, Pair context - debug - derive context types - deep deep with nulls") {
     import sparkSession.implicits._
 
+    implicit val oenc = TypedEncoder[Deep[Int, Int]]
+
     testDebugStructs(s"<String, ${deepType("<int, int>")}>",  (1 to 5). map( i => Map(
       s"a$i" -> Deep(i.toString, null, Pair(true, true), Option(Map(1 -> 2))) )),
       fullProxyDS = false, deriveContextTypes = true)
