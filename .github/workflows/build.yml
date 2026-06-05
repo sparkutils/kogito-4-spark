@@ -138,11 +138,11 @@ jobs:
             chmod u+x dott
 
             export DMN_SPARK_HOSTS=1
-            mvn $MAVEN_CLI_OPTS clean scoverage:test -P Spark350,scala_2.12.18
+            mvn $MAVEN_CLI_OPTS clean scoverage:test -P Spark41,scala_2.13.18
 
-            mvn $MAVEN_CLI_OPTS site -P Spark350,scala_2.12.18
+            mvn $MAVEN_CLI_OPTS site -P Spark41,scala_2.13.18
 
-            echo $(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -P Spark350,scala_2.12.18) > target/version.txt
+            echo $(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -P Spark41,scala_2.13.18) > target/version.txt
 
             grep -A 3 'Statement coverage:' target/site/scoverage/overview.html | tail -1 | sed 's/[[:space:]]\+//g' > target/coverage.txt
             grep -A 3 'Branch coverage:' target/site/scoverage/overview.html | tail -1 | sed 's/[[:space:]]\+//g' >> target/coverage.txt
