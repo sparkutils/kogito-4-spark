@@ -244,7 +244,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">KogitoJSONContextProvider</span><span class="params">(<span name="contextPath">contextPath: <span class="extype" name="com.sparkutils.dmn.DMNContextPath">DMNContextPath</span></span>, <span name="stillSetWhenNull">stillSetWhenNull: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="child">child: <span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span></span>, <span name="providedType">providedType: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.types.DataType">DataType</span>]</span>)</span><span class="result"> extends <span class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</span> with <span class="extype" name="com.sparkutils.dmn.impl.StringWithIOProcessorContextProvider">StringWithIOProcessorContextProvider</span>[<span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>]] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">KogitoJSONContextProvider</span><span class="params">(<span name="contextPath">contextPath: <span class="extype" name="com.sparkutils.dmn.impl.DMNContextPath">DMNContextPath</span></span>, <span name="stillSetWhenNull">stillSetWhenNull: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="child">child: <span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span></span>, <span name="providedType">providedType: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.types.DataType">DataType</span>]</span>)</span><span class="result"> extends <span class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</span> with <span class="extype" name="com.sparkutils.dmn.impl.StringWithIOProcessorContextProvider">StringWithIOProcessorContextProvider</span>[<span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>]] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
 
@@ -253,7 +253,7 @@
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="com.sparkutils.dmn.impl.StringWithIOProcessorContextProvider">StringWithIOProcessorContextProvider</span>[<span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>]], <span class="extype" name="com.sparkutils.dmn.UnaryDMNContextProvider">UnaryDMNContextProvider</span>[<span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>]], <span class="extype" name="com.sparkutils.dmn.DMNContextProvider">DMNContextProvider</span>[<span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>]], <span class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</span>, <span class="extype" name="org.apache.spark.sql.catalyst.trees.UnaryLike">UnaryLike</span>[<span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span>], <span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span>, <span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</span>[<span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span>], <span class="extype" name="org.apache.spark.sql.catalyst.trees.WithOrigin">WithOrigin</span>, <span class="extype" name="org.apache.spark.sql.catalyst.trees.TreePatternBits">TreePatternBits</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="com.sparkutils.dmn.impl.StringWithIOProcessorContextProvider">StringWithIOProcessorContextProvider</span>[<span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>]], <span class="extype" name="com.sparkutils.dmn.impl.UnaryDMNContextProvider">UnaryDMNContextProvider</span>[<span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>]], <span class="extype" name="com.sparkutils.dmn.impl.DMNContextProvider">DMNContextProvider</span>[<span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>]], <span class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</span>, <span class="extype" name="org.apache.spark.sql.catalyst.trees.UnaryLike">UnaryLike</span>[<span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span>], <span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span>, <span class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</span>[<span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span>], <span class="extype" name="org.apache.spark.sql.catalyst.trees.WithOrigin">WithOrigin</span>, <span class="extype" name="org.apache.spark.sql.catalyst.trees.TreePatternBits">TreePatternBits</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block diagram-container" id="inheritance-diagram-container">
                 <span class="toggle diagram-link">
                   Type Hierarchy
@@ -289,7 +289,7 @@
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="com.sparkutils.dmn.kogito.KogitoJSONContextProvider"><span>KogitoJSONContextProvider</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="com.sparkutils.dmn.impl.StringWithIOProcessorContextProvider"><span>StringWithIOProcessorContextProvider</span></li><li class="in" name="com.sparkutils.dmn.UnaryDMNContextProvider"><span>UnaryDMNContextProvider</span></li><li class="in" name="com.sparkutils.dmn.DMNContextProvider"><span>DMNContextProvider</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression"><span>UnaryExpression</span></li><li class="in" name="org.apache.spark.sql.catalyst.trees.UnaryLike"><span>UnaryLike</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.Expression"><span>Expression</span></li><li class="in" name="org.apache.spark.sql.catalyst.trees.TreeNode"><span>TreeNode</span></li><li class="in" name="org.apache.spark.sql.catalyst.trees.WithOrigin"><span>WithOrigin</span></li><li class="in" name="org.apache.spark.sql.catalyst.trees.TreePatternBits"><span>TreePatternBits</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="com.sparkutils.dmn.kogito.KogitoJSONContextProvider"><span>KogitoJSONContextProvider</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="com.sparkutils.dmn.impl.StringWithIOProcessorContextProvider"><span>StringWithIOProcessorContextProvider</span></li><li class="in" name="com.sparkutils.dmn.impl.UnaryDMNContextProvider"><span>UnaryDMNContextProvider</span></li><li class="in" name="com.sparkutils.dmn.impl.DMNContextProvider"><span>DMNContextProvider</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression"><span>UnaryExpression</span></li><li class="in" name="org.apache.spark.sql.catalyst.trees.UnaryLike"><span>UnaryLike</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.Expression"><span>Expression</span></li><li class="in" name="org.apache.spark.sql.catalyst.trees.TreeNode"><span>TreeNode</span></li><li class="in" name="org.apache.spark.sql.catalyst.trees.WithOrigin"><span>WithOrigin</span></li><li class="in" name="org.apache.spark.sql.catalyst.trees.TreePatternBits"><span>TreePatternBits</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -310,9 +310,9 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="com.sparkutils.dmn.kogito.KogitoJSONContextProvider#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(contextPath:com.sparkutils.dmn.DMNContextPath,stillSetWhenNull:Boolean,child:org.apache.spark.sql.catalyst.expressions.Expression,providedType:Option[org.apache.spark.sql.types.DataType]):com.sparkutils.dmn.kogito.KogitoJSONContextProvider"></a><a id="&lt;init&gt;:KogitoJSONContextProvider"></a>
+      <a id="&lt;init&gt;(contextPath:com.sparkutils.dmn.impl.DMNContextPath,stillSetWhenNull:Boolean,child:org.apache.spark.sql.catalyst.expressions.Expression,providedType:Option[org.apache.spark.sql.types.DataType]):com.sparkutils.dmn.kogito.KogitoJSONContextProvider"></a><a id="&lt;init&gt;:KogitoJSONContextProvider"></a>
       <span class="permalink">
-      <a href="../../../../com/sparkutils/dmn/kogito/KogitoJSONContextProvider.html#&lt;init&gt;(contextPath:com.sparkutils.dmn.DMNContextPath,stillSetWhenNull:Boolean,child:org.apache.spark.sql.catalyst.expressions.Expression,providedType:Option[org.apache.spark.sql.types.DataType]):com.sparkutils.dmn.kogito.KogitoJSONContextProvider" title="Permalink">
+      <a href="../../../../com/sparkutils/dmn/kogito/KogitoJSONContextProvider.html#&lt;init&gt;(contextPath:com.sparkutils.dmn.impl.DMNContextPath,stillSetWhenNull:Boolean,child:org.apache.spark.sql.catalyst.expressions.Expression,providedType:Option[org.apache.spark.sql.types.DataType]):com.sparkutils.dmn.kogito.KogitoJSONContextProvider" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -321,7 +321,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">KogitoJSONContextProvider</span><span class="params">(<span name="contextPath">contextPath: <span class="extype" name="com.sparkutils.dmn.DMNContextPath">DMNContextPath</span></span>, <span name="stillSetWhenNull">stillSetWhenNull: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="child">child: <span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span></span>, <span name="providedType">providedType: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.types.DataType">DataType</span>]</span>)</span>
+        <span class="name">KogitoJSONContextProvider</span><span class="params">(<span name="contextPath">contextPath: <span class="extype" name="com.sparkutils.dmn.impl.DMNContextPath">DMNContextPath</span></span>, <span name="stillSetWhenNull">stillSetWhenNull: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="child">child: <span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span></span>, <span name="providedType">providedType: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.types.DataType">DataType</span>]</span>)</span>
       </span>
       
       
@@ -678,9 +678,9 @@
               
         </dd></dl></div>
     </li><li name="com.sparkutils.dmn.kogito.KogitoJSONContextProvider#contextPath" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="contextPath:com.sparkutils.dmn.DMNContextPath"></a><a id="contextPath:DMNContextPath"></a>
+      <a id="contextPath:com.sparkutils.dmn.impl.DMNContextPath"></a><a id="contextPath:DMNContextPath"></a>
       <span class="permalink">
-      <a href="../../../../com/sparkutils/dmn/kogito/KogitoJSONContextProvider.html#contextPath:com.sparkutils.dmn.DMNContextPath" title="Permalink">
+      <a href="../../../../com/sparkutils/dmn/kogito/KogitoJSONContextProvider.html#contextPath:com.sparkutils.dmn.impl.DMNContextPath" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -689,7 +689,7 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">contextPath</span><span class="result">: <span class="extype" name="com.sparkutils.dmn.DMNContextPath">DMNContextPath</span></span>
+        <span class="name">contextPath</span><span class="result">: <span class="extype" name="com.sparkutils.dmn.impl.DMNContextPath">DMNContextPath</span></span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.sparkutils.dmn.kogito.KogitoJSONContextProvider">KogitoJSONContextProvider</a> → DMNContextProvider</dd></dl></div>
@@ -709,7 +709,7 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
-    </li><li name="com.sparkutils.dmn.DMNContextProvider#dataType" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="com.sparkutils.dmn.impl.DMNContextProvider#dataType" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="dataType:org.apache.spark.sql.types.DataType"></a><a id="dataType:DataType"></a>
       <span class="permalink">
       <a href="../../../../com/sparkutils/dmn/kogito/KogitoJSONContextProvider.html#dataType:org.apache.spark.sql.types.DataType" title="Permalink">
@@ -789,7 +789,7 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="com.sparkutils.dmn.UnaryDMNContextProvider#equalsIgnoreNull" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="com.sparkutils.dmn.impl.UnaryDMNContextProvider#equalsIgnoreNull" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="equalsIgnoreNull(left:org.apache.spark.sql.types.DataType,right:org.apache.spark.sql.types.DataType):Boolean"></a><a id="equalsIgnoreNull(DataType,DataType):Boolean"></a>
       <span class="permalink">
       <a href="../../../../com/sparkutils/dmn/kogito/KogitoJSONContextProvider.html#equalsIgnoreNull(left:org.apache.spark.sql.types.DataType,right:org.apache.spark.sql.types.DataType):Boolean" title="Permalink">
@@ -805,7 +805,7 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>UnaryDMNContextProvider</dd></dl></div>
-    </li><li name="com.sparkutils.dmn.UnaryDMNContextProvider#eval" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="com.sparkutils.dmn.impl.UnaryDMNContextProvider#eval" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eval(input:org.apache.spark.sql.catalyst.InternalRow):Any"></a><a id="eval(InternalRow):Any"></a>
       <span class="permalink">
       <a href="../../../../com/sparkutils/dmn/kogito/KogitoJSONContextProvider.html#eval(input:org.apache.spark.sql.catalyst.InternalRow):Any" title="Permalink">
@@ -901,7 +901,7 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
-    </li><li name="com.sparkutils.dmn.DMNContextProvider#foldable" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="com.sparkutils.dmn.impl.DMNContextProvider#foldable" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="foldable:Boolean"></a>
       <span class="permalink">
       <a href="../../../../com/sparkutils/dmn/kogito/KogitoJSONContextProvider.html#foldable:Boolean" title="Permalink">
@@ -981,7 +981,7 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Expression</dd></dl></div>
-    </li><li name="com.sparkutils.dmn.DMNContextProvider#genContext" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="com.sparkutils.dmn.impl.DMNContextProvider#genContext" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="genContext(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext):(String,String)"></a><a id="genContext(CodegenContext):(String,String)"></a>
       <span class="permalink">
       <a href="../../../../com/sparkutils/dmn/kogito/KogitoJSONContextProvider.html#genContext(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext):(String,String)" title="Permalink">
@@ -1399,7 +1399,7 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>UnaryExpression</dd></dl></div>
-    </li><li name="com.sparkutils.dmn.DMNContextProvider#nullSafeContextCodeGen" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="com.sparkutils.dmn.impl.DMNContextProvider#nullSafeContextCodeGen" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="nullSafeContextCodeGen(child:org.apache.spark.sql.catalyst.expressions.Expression,ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,ev:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode,contextPath:String,f:String=&gt;String):org.apache.spark.sql.catalyst.expressions.codegen.ExprCode"></a><a id="nullSafeContextCodeGen(Expression,CodegenContext,ExprCode,String,(String)⇒String):ExprCode"></a>
       <span class="permalink">
       <a href="../../../../com/sparkutils/dmn/kogito/KogitoJSONContextProvider.html#nullSafeContextCodeGen(child:org.apache.spark.sql.catalyst.expressions.Expression,ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,ev:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode,contextPath:String,f:String=&gt;String):org.apache.spark.sql.catalyst.expressions.codegen.ExprCode" title="Permalink">
@@ -1431,7 +1431,7 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>StringWithIOProcessorContextProvider → DMNContextProvider</dd></dl></div>
-    </li><li name="com.sparkutils.dmn.DMNContextProvider#nullSafeContextEval" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="com.sparkutils.dmn.impl.DMNContextProvider#nullSafeContextEval" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="nullSafeContextEval(child:org.apache.spark.sql.catalyst.expressions.Expression,input:Any):Any"></a><a id="nullSafeContextEval(Expression,Any):Any"></a>
       <span class="permalink">
       <a href="../../../../com/sparkutils/dmn/kogito/KogitoJSONContextProvider.html#nullSafeContextEval(child:org.apache.spark.sql.catalyst.expressions.Expression,input:Any):Any" title="Permalink">
@@ -2087,7 +2087,7 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TreeNode</dd></dl></div>
-    </li><li name="com.sparkutils.dmn.UnaryDMNContextProvider#verifyDataTypes" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="com.sparkutils.dmn.impl.UnaryDMNContextProvider#verifyDataTypes" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="verifyDataTypes(child:org.apache.spark.sql.catalyst.expressions.Expression):Unit"></a><a id="verifyDataTypes(Expression):Unit"></a>
       <span class="permalink">
       <a href="../../../../com/sparkutils/dmn/kogito/KogitoJSONContextProvider.html#verifyDataTypes(child:org.apache.spark.sql.catalyst.expressions.Expression):Unit" title="Permalink">
@@ -2276,10 +2276,10 @@
               <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
             </div><div class="parent" name="com.sparkutils.dmn.impl.StringWithIOProcessorContextProvider">
               <h3>Inherited from <span class="extype" name="com.sparkutils.dmn.impl.StringWithIOProcessorContextProvider">StringWithIOProcessorContextProvider</span>[<span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>]]</h3>
-            </div><div class="parent" name="com.sparkutils.dmn.UnaryDMNContextProvider">
-              <h3>Inherited from <span class="extype" name="com.sparkutils.dmn.UnaryDMNContextProvider">UnaryDMNContextProvider</span>[<span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>]]</h3>
-            </div><div class="parent" name="com.sparkutils.dmn.DMNContextProvider">
-              <h3>Inherited from <span class="extype" name="com.sparkutils.dmn.DMNContextProvider">DMNContextProvider</span>[<span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>]]</h3>
+            </div><div class="parent" name="com.sparkutils.dmn.impl.UnaryDMNContextProvider">
+              <h3>Inherited from <span class="extype" name="com.sparkutils.dmn.impl.UnaryDMNContextProvider">UnaryDMNContextProvider</span>[<span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>]]</h3>
+            </div><div class="parent" name="com.sparkutils.dmn.impl.DMNContextProvider">
+              <h3>Inherited from <span class="extype" name="com.sparkutils.dmn.impl.DMNContextProvider">DMNContextProvider</span>[<span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>]]</h3>
             </div><div class="parent" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">
               <h3>Inherited from <span class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</span></h3>
             </div><div class="parent" name="org.apache.spark.sql.catalyst.trees.UnaryLike">

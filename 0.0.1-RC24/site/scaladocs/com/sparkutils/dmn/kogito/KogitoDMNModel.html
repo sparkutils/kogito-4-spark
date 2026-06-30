@@ -244,7 +244,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">KogitoDMNModel</span><span class="params">(<span name="model">model: <span class="extype" name="org.kie.dmn.api.core.DMNModel">org.kie.dmn.api.core.DMNModel</span></span>, <span name="runtime">runtime: <span class="extype" name="org.kie.dmn.api.core.DMNRuntime">org.kie.dmn.api.core.DMNRuntime</span></span>)</span><span class="result"> extends <span class="extype" name="com.sparkutils.dmn.DMNModel">DMNModel</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">KogitoDMNModel</span><span class="params">(<span name="model">model: <span class="extype" name="org.kie.dmn.api.core.DMNModel">DMNModel</span></span>, <span name="runtime">runtime: <span class="extype" name="org.kie.dmn.api.core.DMNRuntime">DMNRuntime</span></span>)</span><span class="result"> extends <span class="extype" name="com.sparkutils.dmn.impl.DMNModel">DMNModel</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
 
@@ -254,12 +254,12 @@
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <span class="extype" name="com.sparkutils.dmn.DMNModel">DMNModel</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <span class="extype" name="com.sparkutils.dmn.impl.DMNModel">DMNModel</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block diagram-container" id="inheritance-diagram-container">
                 <span class="toggle diagram-link">
                   Type Hierarchy
                 </span>
-                <div class="diagram" id="inheritance-diagram"><svg class="class-diagram" id="graph1" width="304pt" height="118pt" viewBox="0.00 0.00 304.00 118.00" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><g id="page0,1_graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 114)"><polygon fill="white" stroke="transparent" points="-4,4 -4,-114 300,-114 300,4 -4,4"></polygon><g id="clust1" class="cluster"></g><g id="clust2" class="cluster"></g><!-- node0 --><g class="node this class" id="graph1_0"><g id="a_this class|graph1_0"><a xlink:href="#inheritance-diagram" xlink:title="com.sparkutils.dmn.kogito.KogitoDMNModel (this class)"><path fill="#418565" stroke="#418565" d="M185.17,-49C185.17,-49 92.83,-49 92.83,-49 88.67,-49 84.5,-44.83 84.5,-40.67 84.5,-40.67 84.5,-32.33 84.5,-32.33 84.5,-28.17 88.67,-24 92.83,-24 92.83,-24 185.17,-24 185.17,-24 189.33,-24 193.5,-28.17 193.5,-32.33 193.5,-32.33 193.5,-40.67 193.5,-40.67 193.5,-44.83 189.33,-49 185.17,-49"></path><image xlink:href="../../../../lib/class_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="95" y="-43.5"></image><text text-anchor="start" x="116" y="-34.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">KogitoDMNModel</text></a></g></g><!-- node1 --><g class="node trait" id="graph1_1"><g id="a_trait|graph1_1"><a xlink:title="com.sparkutils.dmn.DMNModel"><path fill="#2e6d82" stroke="#2e6d82" d="M73.67,-110C73.67,-110 8.33,-110 8.33,-110 4.17,-110 0,-105.83 0,-101.67 0,-101.67 0,-93.33 0,-93.33 0,-89.17 4.17,-85 8.33,-85 8.33,-85 73.67,-85 73.67,-85 77.83,-85 82,-89.17 82,-93.33 82,-93.33 82,-101.67 82,-101.67 82,-105.83 77.83,-110 73.67,-110"></path><image xlink:href="../../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="10" y="-104.5"></image><text text-anchor="start" x="31" y="-95.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">DMNModel</text></a></g></g><!-- node1&#45;&gt;node0 --><g class="edge inheritance" id="graph1_1_0"><g id="a_inheritance|graph1_1_0"><a xlink:title="KogitoDMNModel is a subtype of DMNModel"><path fill="none" stroke="#d4d4d4" d="M66.7,-81.03C83.29,-71.04 104.52,-58.26 119.68,-49.13"></path><polygon fill="none" stroke="#d4d4d4" points="65.1,-79.13 60.36,-84.84 67.62,-83.33 65.1,-79.13"></polygon></a></g></g><!-- node2 --><g class="node trait" id="graph1_2"><g id="a_trait|graph1_2"><a xlink:title="scala.Product"><path fill="#2e6d82" stroke="#2e6d82" d="M169.67,-110C169.67,-110 108.33,-110 108.33,-110 104.17,-110 100,-105.83 100,-101.67 100,-101.67 100,-93.33 100,-93.33 100,-89.17 104.17,-85 108.33,-85 108.33,-85 169.67,-85 169.67,-85 173.83,-85 178,-89.17 178,-93.33 178,-93.33 178,-101.67 178,-101.67 178,-105.83 173.83,-110 169.67,-110"></path><image xlink:href="../../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="110" y="-104.5"></image><text text-anchor="start" x="131" y="-95.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">Product</text></a></g></g><!-- node2&#45;&gt;node0 --><g class="edge inheritance" id="graph1_2_0"><g id="a_inheritance|graph1_2_0"><a xlink:title="KogitoDMNModel is a subtype of Product"><path fill="none" stroke="#d4d4d4" d="M139,-77.76C139,-68.37 139,-57.29 139,-49.13"></path><polygon fill="none" stroke="#d4d4d4" points="136.55,-77.84 139,-84.84 141.45,-77.84 136.55,-77.84"></polygon></a></g></g><!-- node3 --><g class="node trait" id="graph1_3"><g id="a_trait|graph1_3"><a xlink:title="scala.Serializable"><path fill="#2e6d82" stroke="#2e6d82" d="M287.67,-110C287.67,-110 204.33,-110 204.33,-110 200.17,-110 196,-105.83 196,-101.67 196,-101.67 196,-93.33 196,-93.33 196,-89.17 200.17,-85 204.33,-85 204.33,-85 287.67,-85 287.67,-85 291.83,-85 296,-89.17 296,-93.33 296,-93.33 296,-101.67 296,-101.67 296,-105.83 291.83,-110 287.67,-110"></path><image xlink:href="../../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="206" y="-104.5"></image><text text-anchor="start" x="227" y="-95.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">Serializable</text></a></g></g><!-- node3&#45;&gt;node0 --><g class="edge inheritance" id="graph1_3_0"><g id="a_inheritance|graph1_3_0"><a xlink:title="KogitoDMNModel is a subtype of Serializable"><path fill="none" stroke="#d4d4d4" d="M218.68,-81.44C200.5,-71.41 176.97,-58.43 160.2,-49.19"></path><polygon fill="none" stroke="#d4d4d4" points="217.8,-83.75 225.12,-84.98 220.17,-79.46 217.8,-83.75"></polygon></a></g></g></g></svg></div>
+                <div class="diagram" id="inheritance-diagram"><svg class="class-diagram" id="graph1" width="304pt" height="118pt" viewBox="0.00 0.00 304.00 118.00" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><g id="page0,1_graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 114)"><polygon fill="white" stroke="transparent" points="-4,4 -4,-114 300,-114 300,4 -4,4"></polygon><g id="clust1" class="cluster"></g><g id="clust2" class="cluster"></g><!-- node0 --><g class="node this class" id="graph1_0"><g id="a_this class|graph1_0"><a xlink:href="#inheritance-diagram" xlink:title="com.sparkutils.dmn.kogito.KogitoDMNModel (this class)"><path fill="#418565" stroke="#418565" d="M185.17,-49C185.17,-49 92.83,-49 92.83,-49 88.67,-49 84.5,-44.83 84.5,-40.67 84.5,-40.67 84.5,-32.33 84.5,-32.33 84.5,-28.17 88.67,-24 92.83,-24 92.83,-24 185.17,-24 185.17,-24 189.33,-24 193.5,-28.17 193.5,-32.33 193.5,-32.33 193.5,-40.67 193.5,-40.67 193.5,-44.83 189.33,-49 185.17,-49"></path><image xlink:href="../../../../lib/class_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="95" y="-43.5"></image><text text-anchor="start" x="116" y="-34.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">KogitoDMNModel</text></a></g></g><!-- node1 --><g class="node trait" id="graph1_1"><g id="a_trait|graph1_1"><a xlink:title="com.sparkutils.dmn.impl.DMNModel"><path fill="#2e6d82" stroke="#2e6d82" d="M73.67,-110C73.67,-110 8.33,-110 8.33,-110 4.17,-110 0,-105.83 0,-101.67 0,-101.67 0,-93.33 0,-93.33 0,-89.17 4.17,-85 8.33,-85 8.33,-85 73.67,-85 73.67,-85 77.83,-85 82,-89.17 82,-93.33 82,-93.33 82,-101.67 82,-101.67 82,-105.83 77.83,-110 73.67,-110"></path><image xlink:href="../../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="10" y="-104.5"></image><text text-anchor="start" x="31" y="-95.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">DMNModel</text></a></g></g><!-- node1&#45;&gt;node0 --><g class="edge inheritance" id="graph1_1_0"><g id="a_inheritance|graph1_1_0"><a xlink:title="KogitoDMNModel is a subtype of DMNModel"><path fill="none" stroke="#d4d4d4" d="M66.7,-81.03C83.29,-71.04 104.52,-58.26 119.68,-49.13"></path><polygon fill="none" stroke="#d4d4d4" points="65.1,-79.13 60.36,-84.84 67.62,-83.33 65.1,-79.13"></polygon></a></g></g><!-- node2 --><g class="node trait" id="graph1_2"><g id="a_trait|graph1_2"><a xlink:title="scala.Product"><path fill="#2e6d82" stroke="#2e6d82" d="M169.67,-110C169.67,-110 108.33,-110 108.33,-110 104.17,-110 100,-105.83 100,-101.67 100,-101.67 100,-93.33 100,-93.33 100,-89.17 104.17,-85 108.33,-85 108.33,-85 169.67,-85 169.67,-85 173.83,-85 178,-89.17 178,-93.33 178,-93.33 178,-101.67 178,-101.67 178,-105.83 173.83,-110 169.67,-110"></path><image xlink:href="../../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="110" y="-104.5"></image><text text-anchor="start" x="131" y="-95.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">Product</text></a></g></g><!-- node2&#45;&gt;node0 --><g class="edge inheritance" id="graph1_2_0"><g id="a_inheritance|graph1_2_0"><a xlink:title="KogitoDMNModel is a subtype of Product"><path fill="none" stroke="#d4d4d4" d="M139,-77.76C139,-68.37 139,-57.29 139,-49.13"></path><polygon fill="none" stroke="#d4d4d4" points="136.55,-77.84 139,-84.84 141.45,-77.84 136.55,-77.84"></polygon></a></g></g><!-- node3 --><g class="node trait" id="graph1_3"><g id="a_trait|graph1_3"><a xlink:title="scala.Serializable"><path fill="#2e6d82" stroke="#2e6d82" d="M287.67,-110C287.67,-110 204.33,-110 204.33,-110 200.17,-110 196,-105.83 196,-101.67 196,-101.67 196,-93.33 196,-93.33 196,-89.17 200.17,-85 204.33,-85 204.33,-85 287.67,-85 287.67,-85 291.83,-85 296,-89.17 296,-93.33 296,-93.33 296,-101.67 296,-101.67 296,-105.83 291.83,-110 287.67,-110"></path><image xlink:href="../../../../lib/trait_diagram.png" width="15px" height="15px" preserveAspectRatio="xMinYMin meet" x="206" y="-104.5"></image><text text-anchor="start" x="227" y="-95.1" font-family="Source Code Pro" font-size="8.00" fill="#ffffff">Serializable</text></a></g></g><!-- node3&#45;&gt;node0 --><g class="edge inheritance" id="graph1_3_0"><g id="a_inheritance|graph1_3_0"><a xlink:title="KogitoDMNModel is a subtype of Serializable"><path fill="none" stroke="#d4d4d4" d="M218.68,-81.44C200.5,-71.41 176.97,-58.43 160.2,-49.19"></path><polygon fill="none" stroke="#d4d4d4" points="217.8,-83.75 225.12,-84.98 220.17,-79.46 217.8,-83.75"></polygon></a></g></g></g></svg></div>
                 <div id="diagram-controls" class="hiddenContent">
                   <button id="diagram-zoom-out" class="diagram-btn"><i class="material-icons"></i></button>
                   <button id="diagram-zoom-in" class="diagram-btn"><i class="material-icons"></i></button>
@@ -290,7 +290,7 @@
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="com.sparkutils.dmn.kogito.KogitoDMNModel"><span>KogitoDMNModel</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="com.sparkutils.dmn.DMNModel"><span>DMNModel</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="com.sparkutils.dmn.kogito.KogitoDMNModel"><span>KogitoDMNModel</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="com.sparkutils.dmn.impl.DMNModel"><span>DMNModel</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -322,7 +322,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">KogitoDMNModel</span><span class="params">(<span name="model">model: <span class="extype" name="org.kie.dmn.api.core.DMNModel">org.kie.dmn.api.core.DMNModel</span></span>, <span name="runtime">runtime: <span class="extype" name="org.kie.dmn.api.core.DMNRuntime">org.kie.dmn.api.core.DMNRuntime</span></span>)</span>
+        <span class="name">KogitoDMNModel</span><span class="params">(<span name="model">model: <span class="extype" name="org.kie.dmn.api.core.DMNModel">DMNModel</span></span>, <span name="runtime">runtime: <span class="extype" name="org.kie.dmn.api.core.DMNRuntime">DMNRuntime</span></span>)</span>
       </span>
       
       
@@ -443,9 +443,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
     </li><li name="com.sparkutils.dmn.kogito.KogitoDMNModel#evaluateAll" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="evaluateAll(ctx:com.sparkutils.dmn.DMNContext):com.sparkutils.dmn.DMNResult"></a><a id="evaluateAll(DMNContext):DMNResult"></a>
+      <a id="evaluateAll(ctx:com.sparkutils.dmn.impl.DMNContext):com.sparkutils.dmn.impl.DMNResult"></a><a id="evaluateAll(DMNContext):DMNResult"></a>
       <span class="permalink">
-      <a href="../../../../com/sparkutils/dmn/kogito/KogitoDMNModel.html#evaluateAll(ctx:com.sparkutils.dmn.DMNContext):com.sparkutils.dmn.DMNResult" title="Permalink">
+      <a href="../../../../com/sparkutils/dmn/kogito/KogitoDMNModel.html#evaluateAll(ctx:com.sparkutils.dmn.impl.DMNContext):com.sparkutils.dmn.impl.DMNResult" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -454,14 +454,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">evaluateAll</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="com.sparkutils.dmn.DMNContext">DMNContext</span></span>)</span><span class="result">: <span class="extype" name="com.sparkutils.dmn.DMNResult">DMNResult</span></span>
+        <span class="name">evaluateAll</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="com.sparkutils.dmn.impl.DMNContext">DMNContext</span></span>)</span><span class="result">: <span class="extype" name="com.sparkutils.dmn.impl.DMNResult">DMNResult</span></span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.sparkutils.dmn.kogito.KogitoDMNModel">KogitoDMNModel</a> → DMNModel</dd></dl></div>
     </li><li name="com.sparkutils.dmn.kogito.KogitoDMNModel#evaluateDecisionService" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="evaluateDecisionService(ctx:com.sparkutils.dmn.DMNContext,service:String):com.sparkutils.dmn.DMNResult"></a><a id="evaluateDecisionService(DMNContext,String):DMNResult"></a>
+      <a id="evaluateDecisionService(ctx:com.sparkutils.dmn.impl.DMNContext,service:String):com.sparkutils.dmn.impl.DMNResult"></a><a id="evaluateDecisionService(DMNContext,String):DMNResult"></a>
       <span class="permalink">
-      <a href="../../../../com/sparkutils/dmn/kogito/KogitoDMNModel.html#evaluateDecisionService(ctx:com.sparkutils.dmn.DMNContext,service:String):com.sparkutils.dmn.DMNResult" title="Permalink">
+      <a href="../../../../com/sparkutils/dmn/kogito/KogitoDMNModel.html#evaluateDecisionService(ctx:com.sparkutils.dmn.impl.DMNContext,service:String):com.sparkutils.dmn.impl.DMNResult" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -470,7 +470,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">evaluateDecisionService</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="com.sparkutils.dmn.DMNContext">DMNContext</span></span>, <span name="service">service: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="com.sparkutils.dmn.DMNResult">DMNResult</span></span>
+        <span class="name">evaluateDecisionService</span><span class="params">(<span name="ctx">ctx: <span class="extype" name="com.sparkutils.dmn.impl.DMNContext">DMNContext</span></span>, <span name="service">service: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="com.sparkutils.dmn.impl.DMNResult">DMNResult</span></span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.sparkutils.dmn.kogito.KogitoDMNModel">KogitoDMNModel</a> → DMNModel</dd></dl></div>
@@ -512,7 +512,7 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="com.sparkutils.dmn.kogito.KogitoDMNModel#model" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="model:org.kie.dmn.api.core.DMNModel"></a>
+      <a id="model:org.kie.dmn.api.core.DMNModel"></a><a id="model:DMNModel"></a>
       <span class="permalink">
       <a href="../../../../com/sparkutils/dmn/kogito/KogitoDMNModel.html#model:org.kie.dmn.api.core.DMNModel" title="Permalink">
         <i class="material-icons"></i>
@@ -523,7 +523,7 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">model</span><span class="result">: <span class="extype" name="org.kie.dmn.api.core.DMNModel">org.kie.dmn.api.core.DMNModel</span></span>
+        <span class="name">model</span><span class="result">: <span class="extype" name="org.kie.dmn.api.core.DMNModel">DMNModel</span></span>
       </span>
       
       
@@ -586,7 +586,7 @@
               
         </dd></dl></div>
     </li><li name="com.sparkutils.dmn.kogito.KogitoDMNModel#runtime" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="runtime:org.kie.dmn.api.core.DMNRuntime"></a>
+      <a id="runtime:org.kie.dmn.api.core.DMNRuntime"></a><a id="runtime:DMNRuntime"></a>
       <span class="permalink">
       <a href="../../../../com/sparkutils/dmn/kogito/KogitoDMNModel.html#runtime:org.kie.dmn.api.core.DMNRuntime" title="Permalink">
         <i class="material-icons"></i>
@@ -597,7 +597,7 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">runtime</span><span class="result">: <span class="extype" name="org.kie.dmn.api.core.DMNRuntime">org.kie.dmn.api.core.DMNRuntime</span></span>
+        <span class="name">runtime</span><span class="result">: <span class="extype" name="org.kie.dmn.api.core.DMNRuntime">DMNRuntime</span></span>
       </span>
       
       
@@ -728,8 +728,8 @@
               <h3>Inherited from <span class="extype" name="scala.Product">Product</span></h3>
             </div><div class="parent" name="scala.Equals">
               <h3>Inherited from <span class="extype" name="scala.Equals">Equals</span></h3>
-            </div><div class="parent" name="com.sparkutils.dmn.DMNModel">
-              <h3>Inherited from <span class="extype" name="com.sparkutils.dmn.DMNModel">DMNModel</span></h3>
+            </div><div class="parent" name="com.sparkutils.dmn.impl.DMNModel">
+              <h3>Inherited from <span class="extype" name="com.sparkutils.dmn.impl.DMNModel">DMNModel</span></h3>
             </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
             </div><div class="parent" name="scala.Any">

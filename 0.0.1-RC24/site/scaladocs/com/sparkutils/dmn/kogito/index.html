@@ -306,7 +306,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="When a type is not provided attempt to late bind the type" href="ContextProviderProxy.html"><span class="name">ContextProviderProxy</span></a><span class="params">(<span name="contextPath">contextPath: <span class="extype" name="com.sparkutils.dmn.DMNContextPath">DMNContextPath</span></span>, <span name="stillSetWhenNull">stillSetWhenNull: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="child">child: <span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span></span>, <span name="config">config: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="providedType">providedType: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.types.DataType">DataType</span>]</span>)</span><span class="result"> extends <span class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</span> with <span class="extype" name="com.sparkutils.dmn.UnaryDMNContextProvider">UnaryDMNContextProvider</span>[<span class="extype" name="scala.Any">Any</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a title="When a type is not provided attempt to late bind the type" href="ContextProviderProxy.html"><span class="name">ContextProviderProxy</span></a><span class="params">(<span name="contextPath">contextPath: <span class="extype" name="com.sparkutils.dmn.impl.DMNContextPath">DMNContextPath</span></span>, <span name="stillSetWhenNull">stillSetWhenNull: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="child">child: <span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span></span>, <span name="config">config: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="providedType">providedType: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.types.DataType">DataType</span>]</span>)</span><span class="result"> extends <span class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</span> with <span class="extype" name="com.sparkutils.dmn.impl.UnaryDMNContextProvider">UnaryDMNContextProvider</span>[<span class="extype" name="scala.Any">Any</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       
       <p class="shortcomment cmt">When a type is not provided attempt to late bind the type</p>
@@ -338,7 +338,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="" href="KogitoDMNContext.html"><span class="name">KogitoDMNContext</span></a><span class="params">(<span name="ctx">ctx: <span class="extype" name="org.kie.dmn.api.core.DMNContext">org.kie.dmn.api.core.DMNContext</span></span>)</span><span class="result"> extends <span class="extype" name="com.sparkutils.dmn.DMNContext">DMNContext</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a title="" href="KogitoDMNContext.html"><span class="name">KogitoDMNContext</span></a><span class="params">(<span name="ctx">ctx: <span class="extype" name="org.kie.dmn.api.core.DMNContext">DMNContext</span></span>)</span><span class="result"> extends <span class="extype" name="com.sparkutils.dmn.impl.DMNContext">DMNContext</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       
       
@@ -354,7 +354,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="" href="KogitoDMNContextPath.html"><span class="name">KogitoDMNContextPath</span></a><span class="params">(<span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="com.sparkutils.dmn.DMNContextPath">DMNContextPath</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a title="" href="KogitoDMNContextPath.html"><span class="name">KogitoDMNContextPath</span></a><span class="params">(<span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="com.sparkutils.dmn.impl.DMNContextPath">DMNContextPath</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       
       
@@ -370,7 +370,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="Represents an executable DMN Model" href="KogitoDMNModel.html"><span class="name">KogitoDMNModel</span></a><span class="params">(<span name="model">model: <span class="extype" name="org.kie.dmn.api.core.DMNModel">org.kie.dmn.api.core.DMNModel</span></span>, <span name="runtime">runtime: <span class="extype" name="org.kie.dmn.api.core.DMNRuntime">org.kie.dmn.api.core.DMNRuntime</span></span>)</span><span class="result"> extends <span class="extype" name="com.sparkutils.dmn.DMNModel">DMNModel</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a title="Represents an executable DMN Model" href="KogitoDMNModel.html"><span class="name">KogitoDMNModel</span></a><span class="params">(<span name="model">model: <span class="extype" name="org.kie.dmn.api.core.DMNModel">DMNModel</span></span>, <span name="runtime">runtime: <span class="extype" name="org.kie.dmn.api.core.DMNRuntime">DMNRuntime</span></span>)</span><span class="result"> extends <span class="extype" name="com.sparkutils.dmn.impl.DMNModel">DMNModel</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       
       <p class="shortcomment cmt">Represents an executable DMN Model
@@ -387,7 +387,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a title="Represents a repository of DMN, this is the actual root provider" href="KogitoDMNRepository.html"><span class="name">KogitoDMNRepository</span></a><span class="result"> extends <span class="extype" name="com.sparkutils.dmn.DMNRepository">DMNRepository</span></span>
+        <a title="Represents a repository of DMN, this is the actual root provider" href="KogitoDMNRepository.html"><span class="name">KogitoDMNRepository</span></a><span class="result"> extends <span class="extype" name="com.sparkutils.dmn.impl.DMNRepository">DMNRepository</span></span>
       </span>
       
       <p class="shortcomment cmt">Represents a repository of DMN, this is the actual root provider
@@ -404,7 +404,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="" href="KogitoDMNResult.html"><span class="name">KogitoDMNResult</span></a><span class="params">(<span name="result">result: <span class="extype" name="org.kie.dmn.api.core.DMNResult">org.kie.dmn.api.core.DMNResult</span></span>)</span><span class="result"> extends <span class="extype" name="com.sparkutils.dmn.DMNResult">DMNResult</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a title="" href="KogitoDMNResult.html"><span class="name">KogitoDMNResult</span></a><span class="params">(<span name="result">result: <span class="extype" name="org.kie.dmn.api.core.DMNResult">DMNResult</span></span>)</span><span class="result"> extends <span class="extype" name="com.sparkutils.dmn.impl.DMNResult">DMNResult</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       
       
@@ -420,7 +420,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="" href="KogitoDMNRuntime.html"><span class="name">KogitoDMNRuntime</span></a><span class="params">(<span name="runtime">runtime: <span class="extype" name="org.kie.dmn.api.core.DMNRuntime">org.kie.dmn.api.core.DMNRuntime</span></span>)</span><span class="result"> extends <span class="extype" name="com.sparkutils.dmn.DMNRuntime">DMNRuntime</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a title="" href="KogitoDMNRuntime.html"><span class="name">KogitoDMNRuntime</span></a><span class="params">(<span name="runtime">runtime: <span class="extype" name="org.kie.dmn.api.core.DMNRuntime">DMNRuntime</span></span>)</span><span class="result"> extends <span class="extype" name="com.sparkutils.dmn.impl.DMNRuntime">DMNRuntime</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       
       
@@ -452,7 +452,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="" href="KogitoJSONContextProvider.html"><span class="name">KogitoJSONContextProvider</span></a><span class="params">(<span name="contextPath">contextPath: <span class="extype" name="com.sparkutils.dmn.DMNContextPath">DMNContextPath</span></span>, <span name="stillSetWhenNull">stillSetWhenNull: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="child">child: <span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span></span>, <span name="providedType">providedType: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.types.DataType">DataType</span>]</span>)</span><span class="result"> extends <span class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</span> with <span class="extype" name="com.sparkutils.dmn.impl.StringWithIOProcessorContextProvider">StringWithIOProcessorContextProvider</span>[<span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>]] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a title="" href="KogitoJSONContextProvider.html"><span class="name">KogitoJSONContextProvider</span></a><span class="params">(<span name="contextPath">contextPath: <span class="extype" name="com.sparkutils.dmn.impl.DMNContextPath">DMNContextPath</span></span>, <span name="stillSetWhenNull">stillSetWhenNull: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="child">child: <span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span></span>, <span name="providedType">providedType: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.types.DataType">DataType</span>]</span>)</span><span class="result"> extends <span class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</span> with <span class="extype" name="com.sparkutils.dmn.impl.StringWithIOProcessorContextProvider">StringWithIOProcessorContextProvider</span>[<span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>]] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       
       
@@ -468,7 +468,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="" href="KogitoJSONResultProvider.html"><span class="name">KogitoJSONResultProvider</span></a><span class="params">(<span name="debug">debug: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="config">config: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <span class="extype" name="org.apache.spark.sql.catalyst.expressions.LeafExpression">LeafExpression</span> with <span class="extype" name="com.sparkutils.dmn.DMNResultProvider">DMNResultProvider</span> with <a href="KogitoProcess.html" class="extype" name="com.sparkutils.dmn.kogito.KogitoProcess">KogitoProcess</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a title="" href="KogitoJSONResultProvider.html"><span class="name">KogitoJSONResultProvider</span></a><span class="params">(<span name="debug">debug: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="config">config: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <span class="extype" name="org.apache.spark.sql.catalyst.expressions.LeafExpression">LeafExpression</span> with <span class="extype" name="com.sparkutils.dmn.impl.DMNResultProvider">DMNResultProvider</span> with <a href="KogitoProcess.html" class="extype" name="com.sparkutils.dmn.kogito.KogitoProcess">KogitoProcess</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       
       <p class="shortcomment cmt"></p>
@@ -500,7 +500,7 @@
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <a title="" href="KogitoProcess.html"><span class="name">KogitoProcess</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span> with <span class="extype" name="com.sparkutils.dmn.DMNResultProvider">DMNResultProvider</span></span>
+        <a title="" href="KogitoProcess.html"><span class="name">KogitoProcess</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</span> with <span class="extype" name="com.sparkutils.dmn.impl.DMNResultProvider">DMNResultProvider</span></span>
       </span>
       
       
