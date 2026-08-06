@@ -33,24 +33,25 @@
         <url>http://github.com/sparkutils/kogito-4-spark/tree/master</url>
     </scm>
 
-    <!--    <modules>-->
-    <!--        <module>client</module>-->
-    <!--        <module>server</module>-->
-    <!--    </modules>-->
-
     <profiles>
         <profile>
             <id>client</id>
             <properties>
                 <shadeSuffix>_connect</shadeSuffix>
             </properties>
+            <!-- pure api needed with tests, but no server components -->
             <dependencies>
                 <dependency>
-                    <groupId>org.apache.spark</groupId>
-                    <artifactId>spark-sql-api_${scalaCompatVersion}</artifactId>
-                    <version>${sparkVersion}</version>
-                    <scope>provided</scope>
-                    <optional>true</optional>
+                    <groupId>com.sparkutils</groupId>
+                    <artifactId>dmn-4-spark_api_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
+                    <version>${dmn4SparkVersion}</version>
+                </dependency>
+                <dependency>
+                    <groupId>com.sparkutils</groupId>
+                    <artifactId>kogito-4-spark_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
+                    <version>${revision}</version>
+                    <classifier>tests</classifier>
+                    <type>test-jar</type>
                 </dependency>
             </dependencies>
         </profile>
@@ -59,13 +60,19 @@
             <properties>
                 <shadeSuffix/>
             </properties>
+            <!-- server components only, kogito-4-spark already filters out the api_stub -->
             <dependencies>
                 <dependency>
-                    <groupId>org.apache.spark</groupId>
-                    <artifactId>spark-sql_${scalaCompatVersion}</artifactId>
-                    <version>${sparkVersion}</version>
-                    <scope>provided</scope>
-                    <optional>true</optional>
+                    <groupId>com.sparkutils</groupId>
+                    <artifactId>kogito-4-spark_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
+                    <version>${revision}</version>
+                </dependency>
+                <dependency>
+                    <groupId>com.sparkutils</groupId>
+                    <artifactId>kogito-4-spark_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
+                    <version>${revision}</version>
+                    <classifier>tests</classifier>
+                    <type>test-jar</type>
                 </dependency>
             </dependencies>
         </profile>
@@ -216,8 +223,7 @@
     </profiles>
 
     <properties>
-        <k4sRevision>0.0.1-RC25</k4sRevision>
-        <revision>0.0.1-RC27</revision>
+        <revision>0.1.0-RC1</revision>
 
         <mavenJarPluginVersion>3.2.0</mavenJarPluginVersion>
         <mavenShadePluginVersion>3.2.1</mavenShadePluginVersion>
@@ -544,28 +550,10 @@
     <dependencies>
         <dependency>
             <groupId>com.sparkutils</groupId>
-            <artifactId>kogito-4-spark_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
-            <version>${k4sRevision}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.spark</groupId>
-                    <artifactId>spark-sql_${scalaCompatVersion}</artifactId>
-                </exclusion>
-            </exclusions>
+            <artifactId>kogito-4-spark_api_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
+            <version>${revision}</version>
         </dependency>
-        <dependency>
-            <groupId>com.sparkutils</groupId>
-            <artifactId>kogito-4-spark_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
-            <version>${k4sRevision}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.spark</groupId>
-                    <artifactId>spark-sql_${scalaCompatVersion}</artifactId>
-                </exclusion>
-            </exclusions>
-            <classifier>tests</classifier>
-            <type>test-jar</type>
-        </dependency>
+
         <dependency>
             <groupId>com.sparkutils.</groupId>
             <artifactId>testing_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>

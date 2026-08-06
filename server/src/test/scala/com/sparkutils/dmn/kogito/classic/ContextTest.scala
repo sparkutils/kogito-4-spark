@@ -1,10 +1,13 @@
-package com.sparkutils.dmn.kogito.common
+package com.sparkutils.dmn.kogito.classic
 
 import com.sparkutils.dmn._
-import com.sparkutils.dmn.kogito.{KogitoDMNContext, KogitoDMNContextPath, KogitoDMNRepository, Others => O, Types => T}
+import com.sparkutils.dmn.kogito.common.SparkTests
+import com.sparkutils.dmn.kogito.infra.{Others => O}
+import com.sparkutils.dmn.kogito.{KogitoDMNContext, KogitoDMNContextPath, KogitoDMNRepository, Types => T}
 
 import java.util
 
+// uses internal dmn 'server' types not api as such it's ClassicOnly
 class ContextTest extends SparkTests {
 
   val ons = "onetoone"

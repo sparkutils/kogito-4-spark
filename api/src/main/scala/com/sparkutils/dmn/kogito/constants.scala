@@ -17,10 +17,6 @@ trait Constants {
 
 object Constants extends Constants
 
-object Types {
-  type MAP = java.util.Map[String, Object]
-}
-
 object Errors {
   val CONTEXT_PROVIDER_PARSE = "FieldExpression is invalid SQL"
 }

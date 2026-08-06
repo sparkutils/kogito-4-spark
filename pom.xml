@@ -32,7 +32,7 @@
     </scm>
 
     <modules>
-        <module>shared</module>
+        <module>api</module>
         <module>server</module>
     </modules>
 
@@ -181,10 +181,30 @@
                 <javaLangVersion>17</javaLangVersion>
             </properties>
         </profile>
+        <profile>
+            <id>Spark42</id>
+            <properties>
+                <shimRuntime>4.2.0.oss</shimRuntime>
+                <shimCompilationRuntime>4.2.0.oss</shimCompilationRuntime>
+                <dbrCompatVersion>4.2.0.oss_</dbrCompatVersion>
+                <sparkVersion>4.2.0</sparkVersion>
+                <sparkCompatVersion>4.2</sparkCompatVersion>
+                <profileDir>4.2.0</profileDir>
+                <encodingDir>agnosticEncoding</encodingDir>
+                <elidebelow>2</elidebelow>
+
+                <framelessVersion>2.0.0-agEnc-baseline</framelessVersion>
+                <framelessCoreCompatVersion>_4.0</framelessCoreCompatVersion>
+                <framelessCompatVersion>_4.0</framelessCompatVersion>
+                <framelessOrg>com.sparkutils</framelessOrg>
+
+                <javaLangVersion>17</javaLangVersion>
+            </properties>
+        </profile>
     </profiles>
 
     <properties>
-        <revision>0.0.1-RC25</revision>
+        <revision>0.1.0-RC1</revision>
 
         <mavenFlattenPluginVersion>1.2.7</mavenFlattenPluginVersion>
         <mavenProjectInfoReportsPluginVersion>3.4.5</mavenProjectInfoReportsPluginVersion>
@@ -206,7 +226,7 @@
         <shimCompilationVersion>0.3.0-baseline3.5</shimCompilationVersion>
         <shimRuntimeVersion>0.3.0-baseline3.5</shimRuntimeVersion>
 
-        <dmn4SparkVersion>0.1.0-RC4</dmn4SparkVersion>
+        <dmn4SparkVersion>0.1.0-RC5</dmn4SparkVersion>
         <shadedKogitoVersion>0.1.0-RC2</shadedKogitoVersion>
         <testingVersion>0.0.1-RC4</testingVersion>
     </properties>

@@ -8,7 +8,7 @@
         <artifactId>kogito-4-spark_root_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
         <version>${revision}</version>
     </parent>
-    <artifactId>kogito-4-spark_shared_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
+    <artifactId>kogito-4-spark_api_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
 
     <packaging>jar</packaging>
     <name>Kogito 4 Spark Shared</name>
@@ -22,24 +22,6 @@
             <scope>provided</scope>
         </dependency>
 
-        <dependency>
-            <groupId>com.sparkutils</groupId>
-            <artifactId>kogito_shaded</artifactId>
-            <version>${shadedKogitoVersion}</version>
-            <!--
-            <exclusions>
-                <exclusion>
-                    <groupId>org.antlr</groupId>
-                    <artifactId>antlr4-runtime</artifactId> <! - - 4.10.1 from here, 4.9.3 needed by spark - ->
-                </exclusion>
-            </exclusions>-->
-        </dependency>
-
-        <dependency>
-            <groupId>com.sparkutils</groupId>
-            <artifactId>dmn-4-spark_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
-            <version>${dmn4SparkVersion}</version>
-        </dependency>
     </dependencies>
 
     <build>

@@ -1,7 +1,7 @@
 package com.sparkutils.dmn.kogito.common
 
 import com.sparkutils.dmn
-import com.sparkutils.dmn.kogito.{Constants => C}
+import com.sparkutils.dmn.kogito.{Constants => C} // part of api
 import org.apache.spark.sql.SaveMode
 
 case class AllTest(badInputAndOutput: String, badInputAndOutput_dmnEvalStatus: Byte,

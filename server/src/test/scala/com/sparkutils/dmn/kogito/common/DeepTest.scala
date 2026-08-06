@@ -1,7 +1,8 @@
 package com.sparkutils.dmn.kogito.common
 
 import com.sparkutils.dmn._
-import com.sparkutils.dmn.kogito._
+import com.sparkutils.dmn.kogito.KogitoResult // part of api
+import com.sparkutils.dmn.kogito.infra.{DebugQuality, DebugResult, Deep, Others, Pair, Quality, Result, Top, Wrapper}
 import frameless._
 import org.apache.spark.sql.Encoder
 

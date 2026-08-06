@@ -1,8 +1,8 @@
 package com.sparkutils.dmn.kogito.common
 
 import com.sparkutils.dmn
-import com.sparkutils.dmn.kogito
-import com.sparkutils.dmn.kogito.{Errors => E, Others => O}
+import com.sparkutils.dmn.kogito.infra.{Others => O}
+import com.sparkutils.dmn.kogito.{KogitoFeelEvent, KogitoMessage, Errors => E} // api not impl
 import frameless.{TypedDataset, TypedExpressionEncoder}
 
 class ExceptionsTest extends SparkTests {
@@ -213,10 +213,11 @@ class ExceptionsTest extends SparkTests {
       ))
     val dres = ds.withColumn("quality", dmnEval(exec, debug = true))
     dres.show
-    val messages = dres.select("quality.messages").as[Seq[kogito.KogitoMessage]].collect
+    val messages = dres.select("quality.messages").as[Seq[KogitoMessage]].collect
     messages.length shouldBe 1
     messages.head.length should be >= 1
-    messages.head.head shouldBe kogito.KogitoMessage("_EEA70EE7-2AD0-4466-B326-8C0514EE2E6E","sqrt(\"my name\")",null, kogito.KogitoFeelEvent("ERROR","Unable to find function 'sqrt( lass org.kie.dmn.feel.runtime.functions.SqrtFunctio )'",-1,-1,null,null))
+    messages.head.head shouldBe KogitoMessage("_EEA70EE7-2AD0-4466-B326-8C0514EE2E6E","sqrt(\"my name\")",null,
+      KogitoFeelEvent("ERROR","Unable to find function 'sqrt( lass org.kie.dmn.feel.runtime.functions.SqrtFunctio )'",-1,-1,null,null))
   }
 
 }

@@ -1,10 +1,14 @@
 package com.sparkutils.dmn.kogito
 
 import com.sparkutils.dmn
-import org.kie.dmn.api.{core => kogito}
 import com.sparkutils.dmn.kogito.{Types => T}
+import org.kie.dmn.api.{core => kogito}
 
 import java.util
+
+object Types {
+  type MAP = java.util.Map[String, Object]
+}
 
 case class KogitoDMNResult(result: kogito.DMNResult) extends dmn.DMNResult
 
@@ -82,19 +86,3 @@ case class KogitoDMNRuntime(runtime: kogito.DMNRuntime) extends dmn.DMNRuntime {
 
   def context(): dmn.DMNContext = KogitoDMNContext(runtime.newContext())
 }
-
-@SerialVersionUID(1L)
-case class KogitoFeelEvent(severity: String, message: String, line: Int, column: Int, sourceException: String, offendingSymbol: String) extends Serializable
-
-@SerialVersionUID(1L)
-case class KogitoMessage(sourceId: String, sourceReference: String, exception: String, feelEvent: KogitoFeelEvent) extends Serializable
-
-/**
- * Represents the DDL provider output type for debugMode
- * @param decisionId
- * @param decisionName
- * @param hasErrors
- * @param messages
- */
- @SerialVersionUID(1L)
-case class KogitoResult(decisionId: String, decisionName: String, hasErrors: Boolean, messages: Seq[KogitoMessage], evaluationStatus: String) extends Serializable

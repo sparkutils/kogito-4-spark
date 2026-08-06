@@ -57,6 +57,26 @@
                 </dependency>
             </dependencies>
         </profile>
+        <profile>
+            <id>Spark42</id>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.spark</groupId>
+                    <artifactId>spark-connect-client-jvm_${scalaCompatVersion}</artifactId>
+                    <version>${sparkVersion}</version>
+                    <classifier>tests</classifier>
+                    <scope>test</scope>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.apache.spark</groupId>
+                    <artifactId>spark-connect_${scalaCompatVersion}</artifactId>
+                    <version>${sparkVersion}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
     </profiles>
 
     <dependencies>
@@ -179,11 +199,36 @@
 
         <dependency>
             <groupId>com.sparkutils</groupId>
-            <artifactId>kogito-4-spark_shared_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
+            <artifactId>kogito-4-spark_api_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
             <version>${revision}</version>
-
         </dependency>
 
+        <dependency>
+            <groupId>com.sparkutils</groupId>
+            <artifactId>kogito_shaded</artifactId>
+            <version>${shadedKogitoVersion}</version>
+            <!--
+            <exclusions>
+                <exclusion>
+                    <groupId>org.antlr</groupId>
+                    <artifactId>antlr4-runtime</artifactId> <! - - 4.10.1 from here, 4.9.3 needed by spark - ->
+                </exclusion>
+            </exclusions>-->
+        </dependency>
+
+        <dependency>
+            <groupId>com.sparkutils</groupId>
+            <artifactId>dmn-4-spark_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
+            <version>${dmn4SparkVersion}</version>
+            <exclusions>
+                <!-- exclude the default remote call, only api and server are needed, dependents on 0.1.0 Spark4 should be dmn-4-spark only -->
+                <exclusion>
+                    <groupId>com.sparkutils</groupId>
+                    <artifactId>dmn-4-spark_api_stub_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+<!--
         <dependency>
             <groupId>com.sparkutils</groupId>
             <artifactId>dmn-4-spark_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
@@ -195,7 +240,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
+-->
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-sql_${scalaCompatVersion}</artifactId>

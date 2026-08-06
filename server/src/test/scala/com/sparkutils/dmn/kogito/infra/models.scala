@@ -1,7 +1,8 @@
-package com.sparkutils.dmn.kogito
+package com.sparkutils.dmn.kogito.infra // separate package to make sure we don't include kogito server impl in connect tests
 
 import com.sparkutils.dmn.DMNInputField
 import com.sparkutils.dmn.kogito.types.{Utils => U}
+import com.sparkutils.dmn.kogito.{KogitoMessage, KogitoResult}
 
 import java.time.temporal.ChronoUnit
 import java.time.{LocalDate, LocalDateTime, ZoneOffset}
