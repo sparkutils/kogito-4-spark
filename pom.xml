@@ -72,7 +72,7 @@
                 <framelessCompatVersion>_3.5</framelessCompatVersion>
                 <framelessOrg>com.sparkutils</framelessOrg>
 
-                <javaLangVersion>17</javaLangVersion>
+                <javaLangVersion>9</javaLangVersion>
             </properties>
         </profile>
         <profile>
@@ -94,8 +94,6 @@
                 <framelessCoreCompatVersion>_4.0</framelessCoreCompatVersion>
                 <framelessCompatVersion>_4.0</framelessCompatVersion>
                 <framelessOrg>com.sparkutils</framelessOrg>
-
-                <javaLangVersion>17</javaLangVersion>
             </properties>
         </profile>
         <profile>
@@ -117,8 +115,6 @@
                 <framelessCoreCompatVersion>_4.0</framelessCoreCompatVersion>
                 <framelessCompatVersion>_4.0</framelessCompatVersion>
                 <framelessOrg>com.sparkutils</framelessOrg>
-
-                <javaLangVersion>17</javaLangVersion>
             </properties>
         </profile>
         <profile>
@@ -138,7 +134,7 @@
                 <framelessCompatVersion>_3.5</framelessCompatVersion>
                 <framelessOrg>com.sparkutils</framelessOrg>
 
-                <javaLangVersion>17</javaLangVersion>
+                <javaLangVersion>9</javaLangVersion>
             </properties>
         </profile>
         <profile>
@@ -157,8 +153,6 @@
                 <framelessCoreCompatVersion>_4.0</framelessCoreCompatVersion>
                 <framelessCompatVersion>_4.0</framelessCompatVersion>
                 <framelessOrg>com.sparkutils</framelessOrg>
-
-                <javaLangVersion>17</javaLangVersion>
             </properties>
         </profile>
         <profile>
@@ -177,8 +171,6 @@
                 <framelessCoreCompatVersion>_4.0</framelessCoreCompatVersion>
                 <framelessCompatVersion>_4.0</framelessCompatVersion>
                 <framelessOrg>com.sparkutils</framelessOrg>
-
-                <javaLangVersion>17</javaLangVersion>
             </properties>
         </profile>
         <profile>
@@ -197,8 +189,6 @@
                 <framelessCoreCompatVersion>_4.0</framelessCoreCompatVersion>
                 <framelessCompatVersion>_4.0</framelessCompatVersion>
                 <framelessOrg>com.sparkutils</framelessOrg>
-
-                <javaLangVersion>17</javaLangVersion>
             </properties>
         </profile>
     </profiles>
@@ -229,6 +219,8 @@
         <dmn4SparkVersion>0.1.0-RC5</dmn4SparkVersion>
         <shadedKogitoVersion>0.1.0-RC2</shadedKogitoVersion>
         <testingVersion>0.0.1-RC4</testingVersion>
+
+        <javaLangVersion>17</javaLangVersion>
     </properties>
 
     <build>
@@ -336,6 +328,8 @@
                                 </args>
                                 <recompileMode>all</recompileMode>
                                 <scalaCompatVersion>${scalaCompatVersion}</scalaCompatVersion>
+                                <release>${javaLangVersion}</release>
+
                             </configuration>
                         </execution>
                         <execution>
