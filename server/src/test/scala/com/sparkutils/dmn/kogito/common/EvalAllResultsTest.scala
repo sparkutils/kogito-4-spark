@@ -49,7 +49,7 @@ class EvalAllResultsTest extends SparkTests {
       import session.implicits._
 
         val ds = data.toDS
-        val res = ds.withColumn("quality", dmn.DMN.dmnEval(dmn.DMNExecution(dmnFiles = dmnFiles, model = dmnModel,
+        val res = ds.withColumn("quality", dmnEval(dmn.DMNExecution(dmnFiles = dmnFiles, model = dmnModel,
           contextProviders = Seq(dmn.DMNInputField("value", "String", "inString")
           ))))
         val asSeqs = res.select("quality.*").as[AllTest].collect()
@@ -69,7 +69,7 @@ class EvalAllResultsTest extends SparkTests {
       import session.implicits._
         // only to verify debug mode is working in this scenario (null handling etc.)
         val ds = data.toDS
-        val res = ds.withColumn("quality", dmn.DMN.dmnEval(dmn.DMNExecution(dmnFiles = dmnFiles, model = dmnModel,
+        val res = ds.withColumn("quality", dmnEval(dmn.DMNExecution(dmnFiles = dmnFiles, model = dmnModel,
           contextProviders = Seq(dmn.DMNInputField("value", "String", "inString")
           )), debug = true))
         val asSeqs = res.select("quality.*").collect()
@@ -82,7 +82,7 @@ class EvalAllResultsTest extends SparkTests {
       import session.implicits._
 
     val ds = data.toDS
-    val res = ds.withColumn("quality", dmn.DMN.dmnEval(dmn.DMNExecution(dmnFiles = dmnFiles,
+    val res = ds.withColumn("quality", dmnEval(dmn.DMNExecution(dmnFiles = dmnFiles,
       model = dmnModel.copy(resultProvider = dmnModel.resultProvider.replace(s"badInputAndOutput: String, badInputAndOutput${C.evalStatusEnding}: Byte,","")),
       contextProviders = Seq(dmn.DMNInputField("value", "String", "inString")
       ))))
@@ -102,7 +102,7 @@ class EvalAllResultsTest extends SparkTests {
     import session.implicits._
 
     val ds = data.toDS
-    val res = ds.withColumn("quality", dmn.DMN.dmnEval(dmn.DMNExecution(dmnFiles = dmnFiles,
+    val res = ds.withColumn("quality", dmnEval(dmn.DMNExecution(dmnFiles = dmnFiles,
       model = dmnModel.copy(resultProvider = dmnModel.resultProvider.replace(s"badInputAndOutput: String, badInputAndOutput${C.evalStatusEnding}: Byte,",
         s"aBadInputAndOutput: String, aBadInputAndOutput${C.evalStatusEnding}: Byte,")),
       contextProviders = Seq(dmn.DMNInputField("value", "String", "inString")
@@ -124,7 +124,7 @@ class EvalAllResultsTest extends SparkTests {
     import session.implicits._
 
     val ds = (1 to 1000).map("a"+_).toDS.repartition(4)
-    val res = ds.withColumn("quality", dmn.DMN.dmnEval(dmn.DMNExecution(dmnFiles = dmnFiles, model = dmnModel.copy(resultProvider = "JSON"),
+    val res = ds.withColumn("quality", dmnEval(dmn.DMNExecution(dmnFiles = dmnFiles, model = dmnModel.copy(resultProvider = "JSON"),
       contextProviders = Seq(dmn.DMNInputField("value", "String", "inString")
       ))))
     res.write.mode(SaveMode.Overwrite).parquet(outputDir+"/jsonOut")

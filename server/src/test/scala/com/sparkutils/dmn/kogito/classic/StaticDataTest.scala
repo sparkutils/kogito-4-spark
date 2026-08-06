@@ -44,7 +44,7 @@ class StaticDataTest extends SparkTests {
 
     val config = DMNConfiguration.empty
 
-    val res = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(
+    val res = ds.withColumn("quality", dmnEval(
       DMNExecution(dmnFiles = scala.collection.immutable.Seq() ++ dmnFiles, model = modelService,
         contextProviders = inputFields.toVector,
         configuration = config

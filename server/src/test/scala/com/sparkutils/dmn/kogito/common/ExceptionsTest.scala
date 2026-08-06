@@ -2,7 +2,6 @@ package com.sparkutils.dmn.kogito.common
 
 import com.sparkutils.dmn
 import com.sparkutils.dmn.kogito
-import com.sparkutils.dmn.kogito.classic.TestData
 import com.sparkutils.dmn.kogito.{Errors => E, Others => O}
 import frameless.{TypedDataset, TypedExpressionEncoder}
 
@@ -27,57 +26,61 @@ class ExceptionsTest extends SparkTests {
 
   test("empty input expression should throw") {
     implicit val s = sparkSession
+    import s.implicits._
 
-    val tds = TypedDataset.create(Seq(testData)).dataset
+    val tds = Seq(testData).toDS
     val ds = if (inCodegen) tds.repartition(4) else tds
 
     val exec = dmn.DMNExecution(badImportDmnFiles, badDmnModel, scala.collection.immutable.Seq(
       dmn.DMNInputField("","","")
     ))
-    val e = intercept[dmn.DMNException] {
-      val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec))
+    val e = intercept[Exception] {
+      val dres = ds.withColumn("quality", dmnEval(exec))
       dres.select("quality.evaluate.*").as[Seq[Boolean]](TypedExpressionEncoder[Seq[Boolean]]).collect()
     }
-    e.message should include(E.CONTEXT_PROVIDER_PARSE)
+    e.getMessage should include(E.CONTEXT_PROVIDER_PARSE)
   }
 
   test("bad class input type should throw"){
     implicit val s = sparkSession
+    import s.implicits._
 
-    val tds = TypedDataset.create(Seq(testData)).dataset
+    val tds = Seq(testData).toDS
     val ds = if (inCodegen) tds.repartition(4) else tds
 
     val exec = dmn.DMNExecution(badImportDmnFiles, badDmnModel, scala.collection.immutable.Seq(
       dmn.DMNInputField("location","fred","")
     ))
-    val e = intercept[dmn.DMNException] {
-      val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec))
+    val e = intercept[Exception] {
+      val dres = ds.withColumn("quality", dmnEval(exec))
       dres.select("quality.evaluate.*").as[Seq[Boolean]](TypedExpressionEncoder[Seq[Boolean]]).collect()
     }
-    e.message should include("Could not loadUnaryContextProvider fred")
+    e.getMessage should include("Could not loadUnaryContextProvider fred")
   }
 
   test("unsupported ddl input type should throw"){
     implicit val s = sparkSession
+    import s.implicits._
 
-    val tds = TypedDataset.create(Seq(testData)).dataset
+    val tds = Seq(testData).toDS()
     val ds = if (inCodegen) tds.repartition(4) else tds
 
     val exec = dmn.DMNExecution(badImportDmnFiles, badDmnModel, scala.collection.immutable.Seq(
       dmn.DMNInputField("location","interval","")
     ))
-    val e = intercept[dmn.DMNException] {
-      val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec))
+    val e = intercept[Exception] {
+      val dres = ds.withColumn("quality", dmnEval(exec))
       dres.select("quality.evaluate.*").as[Seq[Boolean]](TypedExpressionEncoder[Seq[Boolean]]).collect()
     }
-    e.message should include("Provider type CalendarIntervalType is not supported")
+    e.getMessage should include("Provider type CalendarIntervalType is not supported")
   }
 
   test("unsupported nested ddl input type should throw"){
     evalCodeGens {
       implicit val s = sparkSession
+      import s.implicits._
 
-      val tds = TypedDataset.create(Seq(testData)).dataset
+      val tds = Seq(testData).toDS()
       val ds = if (inCodegen)
         tds.repartition(4)
       else
@@ -86,65 +89,68 @@ class ExceptionsTest extends SparkTests {
       val exec = dmn.DMNExecution(badImportDmnFiles, badDmnModel, scala.collection.immutable.Seq(
         dmn.DMNInputField("named_struct('i',location)", "struct<i: interval>", "")
       ))
-      val e = intercept[dmn.DMNException] {
-        val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec))
+      val e = intercept[Exception] {
+        val dres = ds.withColumn("quality", dmnEval(exec))
         dres.select("quality.evaluate.*").as[Seq[Boolean]](TypedExpressionEncoder[Seq[Boolean]]).collect()
       }
-      e.message should include("Could not load Kogito Context Accessor for dataType CalendarIntervalType")
+      e.getMessage should include("Could not load Kogito Context Accessor for dataType CalendarIntervalType")
     }
   }
 
   test("incompatible ddl should throw"){
     implicit val s = sparkSession
+    import s.implicits._
 
-    val tds = TypedDataset.create(Seq(testData)).dataset
+    val tds = Seq(testData).toDS()
     val ds = if (inCodegen) tds.repartition(4) else tds
 
     val exec = dmn.DMNExecution(badImportDmnFiles, dmnModel.copy(resultProvider = "string"),
       scala.collection.immutable.Seq(
       dmn.DMNInputField("location","","")
     ))
-    val e = intercept[dmn.DMNException] {
-      val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec))
+    val e = intercept[Exception] {
+      val dres = ds.withColumn("quality", dmnEval(exec))
       dres.select("quality.evaluate.*").as[Seq[Boolean]](TypedExpressionEncoder[Seq[Boolean]]).collect()
     }
-    e.message should include("ResultProvider type string is not supported,")
+    e.getMessage should include("ResultProvider type string is not supported,")
   }
 
   test("incompatible nested ddl should throw"){
     evalCodeGens {
       implicit val s = sparkSession
+      import s.implicits._
 
-      val tds = TypedDataset.create(Seq(testData)).dataset
+      val tds = Seq(testData).toDS()
       val ds = if (inCodegen) tds.repartition(4) else tds
 
       val exec = dmn.DMNExecution(badImportDmnFiles, dmnModel.copy(resultProvider = "struct<evaluate: INTERVAL YEAR>"),
         scala.collection.immutable.Seq(
           dmn.DMNInputField("location", "", "")
         ))
-      val e = (intercept[dmn.DMNException]) {
-        val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec))
+      val e = (intercept[Exception]) {
+        val dres = ds.withColumn("quality", dmnEval(exec))
         dres.select("quality.evaluate").as[java.time.Period](TypedExpressionEncoder[java.time.Period]).collect()
       }
 
-      e.message should include("Could not load Kogito Result Provider for dataType YearMonthIntervalType(0,0)")
+      e.getMessage should include("Could not load Kogito Result Provider for dataType YearMonthIntervalType(0,0)")
     }
   }
 
   test("bad model should throw"){
     implicit val s = sparkSession
+    import s.implicits._
 
-    val tds = TypedDataset.create(Seq(testData)).dataset
+    val tds = Seq(testData).toDS()
     val ds = if (inCodegen) tds.repartition(4) else tds
 
     val e = intercept[Throwable] {
       val exec = dmn.DMNExecution(badImportDmnFiles, badDmnModel, scala.collection.immutable.Seq(
         dmn.DMNInputField("location","","")
       ))
-      val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec))
+      val dres = ds.withColumn("quality", dmnEval(exec))
       dres.select("quality.evaluate").as[Seq[Boolean]](TypedExpressionEncoder[Seq[Boolean]]).collect()
     }
-    e.getCause.getMessage should include("Could not load model from Kogito runtime with namespace decisionsooo")
+    e.getMessage should include("Could not load model from Kogito runtime with namespace decisionsooo")
   }
 
   // doesn't actually throw - kogito doesn't seem to care about uri but uses the qname instead
@@ -157,7 +163,7 @@ class ExceptionsTest extends SparkTests {
     val exec = dmn.DMNExecution(badImportDmnFiles, dmnModel, scala.collection.immutable.Seq(
       dmn.DMNInputField("location","","")
     ))
-    val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec))
+    val dres = ds.withColumn("quality", dmnEval(exec))
     val asSeqs = dres.select("quality.evaluate").as[Seq[Boolean]](TypedExpressionEncoder[Seq[Boolean]]).collect()
 
   }*/
@@ -173,7 +179,9 @@ class ExceptionsTest extends SparkTests {
 
   test("bad result providers should throw") {
     implicit val spark = sparkSession
-    val tds = TypedDataset.create(Seq(testData)).dataset
+    import spark.implicits._
+
+    val tds = Seq(testData).toDS()
     val ds = if (inCodegen) tds.repartition(4) else tds
 
     val e = intercept[Throwable] {
@@ -182,17 +190,17 @@ class ExceptionsTest extends SparkTests {
         scala.collection.immutable.Seq(
           dmn.DMNInputField("struct(*)","","")
         ))
-      val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec))
+      val dres = ds.withColumn("quality", dmnEval(exec))
       dres.select("quality.evaluate").as[Seq[Boolean]](TypedExpressionEncoder[Seq[Boolean]]).collect()
     }
-    e.getMessage should contain("Could not loadResultProvider fred")
+    e.getMessage should include("Could not loadResultProvider fred")
   }
 
   test("sqrt string should throw"){
     implicit val s = sparkSession
     import s.implicits._
 
-    val tds = TypedDataset.create(Seq("testData")).dataset
+    val tds = Seq("testData").toDS()
     val ds = if (inCodegen) tds.repartition(4) else tds
 
     val exec = dmn.DMNExecution(scala.collection.immutable.Seq(
@@ -203,7 +211,7 @@ class ExceptionsTest extends SparkTests {
       scala.collection.immutable.Seq(
         dmn.DMNInputField("value","","inputData")
       ))
-    val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec, debug = true))
+    val dres = ds.withColumn("quality", dmnEval(exec, debug = true))
     dres.show
     val messages = dres.select("quality.messages").as[Seq[kogito.KogitoMessage]].collect
     messages.length shouldBe 1

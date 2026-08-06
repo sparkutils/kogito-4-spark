@@ -1,9 +1,13 @@
 package com.sparkutils.dmn.kogito
 
-import com.sparkutils.dmn.DMN4SparkExtension
+import com.sparkutils.dmn.impl.DMNExpressionImpl
+import com.sparkutils.dmn.{DMN, DMN4SparkExtension, DMNExecution}
+import com.sparkutils.testing.ConnectWhenForced.someOrForcedConnect
 import com.sparkutils.testing.SparkTestUtils._
 import com.sparkutils.testing.sessionStrategies.{GlobalSession, SharedSessions}
 import com.sparkutils.testing.{SessionsStateHolder, SparkTestSuite}
+import org.apache.spark.sql.{Column, ShimUtils}
+import org.apache.spark.sql.functions.lit
 import org.scalatest.Matchers
 
 trait BaseSparkTests extends SparkTestSuite with SharedSessions with TestEncoders with Matchers {
@@ -30,9 +34,14 @@ trait BaseSparkTests extends SparkTestSuite with SharedSessions with TestEncoder
       ("spark.sql.extensions" -> extensions)
 
   override val sparkConnectServerConfig: Map[String, String] =
-    super.sparkConnectServerConfig() + // useDebugConnectLogs +
+    super.sparkConnectServerConfig() + useDebugConnectLogs +
       scoverageClassPathsConfig +
       fullClassPathConfig +
       connectMemory("4g") +
       ("spark.sql.extensions" -> extensions)
+
+  def dmnEval(dmnExecution: DMNExecution, debug: Boolean = false): Column =
+    someOrForcedConnect(DMN.dmnEval(dmnExecution, debug)).
+      getOrElse(ShimUtils.callFunction("dmnEval", lit(DMNExecution.serialize(dmnExecution)), lit(debug)))
+
 }
