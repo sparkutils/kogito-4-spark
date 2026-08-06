@@ -1,4 +1,4 @@
-package com.sparkutils.dmn.kogito.classic
+package com.sparkutils.dmn.kogito.common
 
 import com.sparkutils.dmn._
 import frameless._
@@ -55,7 +55,7 @@ class StaticDataTest extends SparkTests {
     asSeqs.toVector
   }
 
-  lazy val md: Unit = {
+  def md: Unit = {
     implicit val s = sparkSession
     import s.implicits._
     mapData.toDS().createOrReplaceTempView("baseData")
