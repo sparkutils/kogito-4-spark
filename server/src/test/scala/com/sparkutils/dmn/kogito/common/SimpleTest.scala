@@ -62,7 +62,7 @@ class SimpleTest extends SparkTests {
     testResults(res)
     val dres = ds.withColumn("quality", dmnEval(exec, debug = true))
     testResults(dres)
-    val debugs = dres.select("quality.dmnDebugMode").as[Seq[KogitoResult]].collect
+    val debugs = dres.select("quality.dmnDebugMode").as[Seq[KogitoResult]].collect()
     debugs.forall( _ == Seq(testDebug)) shouldBe true
     if (exec.model.resultProvider.contains(C.evalStatusEnding)) {
       val statuses = dres.select(s"quality.evaluate${C.evalStatusEnding}").as[Byte](TypedExpressionEncoder[Byte]).collect()
@@ -74,7 +74,7 @@ class SimpleTest extends SparkTests {
     val s = sparkSession
     import s.implicits._
 
-    val ds = Seq(dataBasis).toDS.selectExpr("explode(value) as f").selectExpr("to_json(f) payload")
+    val ds = Seq(dataBasis).toDS().selectExpr("explode(value) as f").selectExpr("to_json(f) payload")
 
     val exec = DMNExecution(dmnFiles, service,
       scala.collection.immutable.Seq(DMNInputField("payload", "JSON", "testData")))
@@ -85,7 +85,7 @@ class SimpleTest extends SparkTests {
     val s = sparkSession
     import s.implicits._
 
-    val ds = Seq(dataBasis).toDS.selectExpr("explode(value) as f").selectExpr("f.*")
+    val ds = Seq(dataBasis).toDS().selectExpr("explode(value) as f").selectExpr("f.*")
 
     val exec = DMNExecution(dmnFiles, service,
       scala.collection.immutable.Seq(
@@ -102,7 +102,7 @@ class SimpleTest extends SparkTests {
     val s = sparkSession
     import s.implicits._
 
-    val ds = Seq(dataBasis).toDS.selectExpr("explode(value) as f")
+    val ds = Seq(dataBasis).toDS().selectExpr("explode(value) as f")
 
     val exec = DMNExecution(dmnFiles, service,
       scala.collection.immutable.Seq(DMNInputField("f", if (deriveContextTypes) "" else
@@ -115,7 +115,7 @@ class SimpleTest extends SparkTests {
     val s = sparkSession
     import s.implicits._
 
-    val ds = Seq(dataBasis).toDS.toDF.selectExpr("explode(value) f").select("f.*")
+    val ds = Seq(dataBasis).toDS().toDF().selectExpr("explode(value) f").select("f.*")
 
     val exec = DMNExecution(dmnFiles, service,
       scala.collection.immutable.Seq(DMNInputField("struct(*)", if (deriveContextTypes) "" else
@@ -219,7 +219,7 @@ class SimpleTest extends SparkTests {
     val s = sparkSession
     import s.implicits._
 
-    val ds = Seq(dataBasis).toDS.selectExpr("explode(value) as f").selectExpr("to_json(f) payload")
+    val ds = Seq(dataBasis).toDS().selectExpr("explode(value) as f").selectExpr("to_json(f) payload")
 
     val exec = DMNExecution(dmnFiles, dmnModel.copy(resultProvider = "JSON"),
       scala.collection.immutable.Seq(DMNInputField("payload", "JSON", "testData")))
@@ -237,7 +237,7 @@ class SimpleTest extends SparkTests {
     val s = sparkSession
     import s.implicits._
 
-    val ds = Seq(dataBasis).toDS.selectExpr("explode(value) as f").selectExpr("to_json(f) payload")
+    val ds = Seq(dataBasis).toDS().selectExpr("explode(value) as f").selectExpr("to_json(f) payload")
 
     val exec = DMNExecution(dmnFiles, dmnModel.copy(resultProvider = "JSON"),
       scala.collection.immutable.Seq(DMNInputField("payload", "JSON", "testData")))
@@ -281,7 +281,7 @@ class SimpleTest extends SparkTests {
     val s = sparkSession
     import s.implicits._
 
-    val ds = Seq(dataBasisNulls).toDS.selectExpr("explode(value) as f").selectExpr("f.*")
+    val ds = Seq(dataBasisNulls).toDS().selectExpr("explode(value) as f").selectExpr("f.*")
 
     val exec = DMNExecution(dmnFiles, dmnModel, fields)
     val dres = ds.withColumn("quality", dmnEval(exec, debug = true))
@@ -326,7 +326,7 @@ class SimpleTest extends SparkTests {
 
     implicit val enc = TypedExpressionEncoder[A]
 
-    val tds = Seq(data).toDS //TypedDataset.create(Seq(data)).dataset
+    val tds = Seq(data).toDS() //TypedDataset.create(Seq(data)).dataset
     val ds = if (inCodegen) tds.repartition(4) else tds
 
     val exec = DMNExecution(odmnFiles, odmnModel(resDDL), fields, configuration = DMNConfiguration(options = "useTreeMap=nottrue")) // triggers the case of a bad boolean parse
@@ -369,7 +369,7 @@ class SimpleTest extends SparkTests {
     import s.implicits._
 
     val service = dmnModel
-    val ds = Seq(dataBasis).toDS.selectExpr("explode(value) as f").selectExpr("f.*")
+    val ds = Seq(dataBasis).toDS().selectExpr("explode(value) as f").selectExpr("f.*")
 
     val exec = DMNExecution(dmnFiles, service,
       scala.collection.immutable.Seq(

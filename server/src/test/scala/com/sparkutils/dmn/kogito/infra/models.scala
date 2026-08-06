@@ -74,7 +74,7 @@ object Others {
   val bd = Some(java.math.BigDecimal.valueOf(1.0))
 
   val nulls = Others(None,None,None,None,None,None,None,None,None,None,None,None,None)
-  val vals = Others(Some(""),Some(1l),Some(true),Some(0.2),Some(0.2f),Some(0),
+  val vals = Others(Some(""),Some(1L),Some(true),Some(0.2),Some(0.2f),Some(0),
     Some(Array(0: Byte)),Some(1),Some(date), Some(dateTime), Some(Map(1 -> 1)), Some(Array(1,2)),
     bd)
 }

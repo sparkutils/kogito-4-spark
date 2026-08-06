@@ -28,7 +28,7 @@ class ExceptionsTest extends SparkTests {
     implicit val s = sparkSession
     import s.implicits._
 
-    val tds = Seq(testData).toDS
+    val tds = Seq(testData).toDS()
     val ds = if (inCodegen) tds.repartition(4) else tds
 
     val exec = dmn.DMNExecution(badImportDmnFiles, badDmnModel, scala.collection.immutable.Seq(
@@ -45,7 +45,7 @@ class ExceptionsTest extends SparkTests {
     implicit val s = sparkSession
     import s.implicits._
 
-    val tds = Seq(testData).toDS
+    val tds = Seq(testData).toDS()
     val ds = if (inCodegen) tds.repartition(4) else tds
 
     val exec = dmn.DMNExecution(badImportDmnFiles, badDmnModel, scala.collection.immutable.Seq(
@@ -212,8 +212,8 @@ class ExceptionsTest extends SparkTests {
         dmn.DMNInputField("value","","inputData")
       ))
     val dres = ds.withColumn("quality", dmnEval(exec, debug = true))
-    dres.show
-    val messages = dres.select("quality.messages").as[Seq[KogitoMessage]].collect
+    dres.show()
+    val messages = dres.select("quality.messages").as[Seq[KogitoMessage]].collect()
     messages.length shouldBe 1
     messages.head.length should be >= 1
     messages.head.head shouldBe KogitoMessage("_EEA70EE7-2AD0-4466-B326-8C0514EE2E6E","sqrt(\"my name\")",null,

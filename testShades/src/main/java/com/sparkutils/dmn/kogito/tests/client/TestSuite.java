@@ -1,6 +1,6 @@
 package com.sparkutils.dmn.kogito.tests.client;
 
-import com.sparkutils.dmn.kogito.common.ContextTest;
+import com.sparkutils.dmn.kogito.common.*;
 import org.scalatest.ConfigMap$;
 import org.scalatest.Suite;
 import org.scalatest.Suites;
@@ -19,7 +19,11 @@ public class TestSuite {
      */
     public static void runTests() {
         var arrayOfSuites = new ArrayList<Suite>() {{
-            add(new ContextTest());
+            add(new DeepTest());
+            add(new EvalAllResultsTest());
+            add(new ExceptionsTest());
+            add(new SimpleTest());
+            add(new StaticDataTest());
         }};
         var suites = JavaConverters
                 .asScalaIteratorConverter(arrayOfSuites.iterator())

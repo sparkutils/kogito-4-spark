@@ -52,6 +52,20 @@
                     <version>${revision}</version>
                     <classifier>tests</classifier>
                     <type>test-jar</type>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>com.sparkutils</groupId>
+                            <artifactId>kogito-4-spark_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>com.sparkutils</groupId>
+                            <artifactId>dmn-4-spark_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>com.sparkutils</groupId>
+                            <artifactId>kogito_shaded</artifactId>
+                        </exclusion>
+                    </exclusions>
                 </dependency>
             </dependencies>
         </profile>
@@ -209,6 +223,26 @@
                 <sparkVersion>4.1.0</sparkVersion>
                 <sparkCompatVersion>4.1</sparkCompatVersion>
                 <profileDir>4.1.0</profileDir>
+                <encodingDir>agnosticEncoding</encodingDir>
+                <elidebelow>2</elidebelow>
+
+                <framelessVersion>2.0.0-agEnc-baseline</framelessVersion>
+                <framelessCoreCompatVersion>_4.0</framelessCoreCompatVersion>
+                <framelessCompatVersion>_4.0</framelessCompatVersion>
+                <framelessOrg>com.sparkutils</framelessOrg>
+
+                <javaLangVersion>17</javaLangVersion>
+            </properties>
+        </profile>
+        <profile>
+            <id>Spark42</id>
+            <properties>
+                <shimRuntime>4.2.0.oss</shimRuntime>
+                <shimCompilationRuntime>4.2.0.oss</shimCompilationRuntime>
+                <dbrCompatVersion>4.2.0.oss_</dbrCompatVersion>
+                <sparkVersion>4.2.0</sparkVersion>
+                <sparkCompatVersion>4.2</sparkCompatVersion>
+                <profileDir>4.2.0</profileDir>
                 <encodingDir>agnosticEncoding</encodingDir>
                 <elidebelow>2</elidebelow>
 
