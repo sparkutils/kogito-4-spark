@@ -4,12 +4,9 @@ import com.sparkutils.dmn._
 import com.sparkutils.dmn.kogito.{Constants => C, _}
 import frameless.{TypedDataset, TypedEncoder, TypedExpressionEncoder}
 import org.apache.spark.sql.{DataFrame, SaveMode}
-import org.junit.runner.RunWith
-import org.scalatestplus.junit.JUnitRunner
 
 case class TestData(location: String, idPrefix: String, id: Int, page: Long, department: String)
 
-@RunWith(classOf[JUnitRunner])
 class SimpleTest extends SparkTests {
 
   val ns = "decisions"

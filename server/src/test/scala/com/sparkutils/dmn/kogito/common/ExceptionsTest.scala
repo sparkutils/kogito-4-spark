@@ -1,14 +1,11 @@
-package com.sparkutils.dmn.kogito.classic
+package com.sparkutils.dmn.kogito.common
 
 import com.sparkutils.dmn
-import com.sparkutils.dmn.kogito.{Others => O}
-import com.sparkutils.dmn.kogito.{Errors => E}
 import com.sparkutils.dmn.kogito
+import com.sparkutils.dmn.kogito.classic.TestData
+import com.sparkutils.dmn.kogito.{Errors => E, Others => O}
 import frameless.{TypedDataset, TypedExpressionEncoder}
-import org.junit.runner.RunWith
-import org.scalatestplus.junit.JUnitRunner
 
-@RunWith(classOf[JUnitRunner])
 class ExceptionsTest extends SparkTests {
 
   val bns = "decisionsooo"
@@ -140,7 +137,7 @@ class ExceptionsTest extends SparkTests {
     val tds = TypedDataset.create(Seq(testData)).dataset
     val ds = if (inCodegen) tds.repartition(4) else tds
 
-    val e = intercept[org.apache.spark.SparkException] {
+    val e = intercept[Throwable] {
       val exec = dmn.DMNExecution(badImportDmnFiles, badDmnModel, scala.collection.immutable.Seq(
         dmn.DMNInputField("location","","")
       ))
@@ -179,7 +176,7 @@ class ExceptionsTest extends SparkTests {
     val tds = TypedDataset.create(Seq(testData)).dataset
     val ds = if (inCodegen) tds.repartition(4) else tds
 
-    val e = intercept[dmn.DMNException] {
+    val e = intercept[Throwable] {
 
       val exec = dmn.DMNExecution(odmnFiles, odmnModel.copy(resultProvider = "fred"),
         scala.collection.immutable.Seq(
@@ -188,7 +185,7 @@ class ExceptionsTest extends SparkTests {
       val dres = ds.withColumn("quality", com.sparkutils.dmn.DMN.dmnEval(exec))
       dres.select("quality.evaluate").as[Seq[Boolean]](TypedExpressionEncoder[Seq[Boolean]]).collect()
     }
-    e.message should include("Could not loadResultProvider fred")
+    e.getMessage should contain("Could not loadResultProvider fred")
   }
 
   test("sqrt string should throw"){

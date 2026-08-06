@@ -1,10 +1,8 @@
-package com.sparkutils.dmn.kogito.classic
+package com.sparkutils.dmn.kogito.common
 
 import com.sparkutils.dmn
 import com.sparkutils.dmn.kogito.{Constants => C}
 import org.apache.spark.sql.SaveMode
-import org.junit.runner.RunWith
-import org.scalatestplus.junit.JUnitRunner
 
 case class AllTest(badInputAndOutput: String, badInputAndOutput_dmnEvalStatus: Byte,
                    outstring: String, outstring_dmnEvalStatus: Byte,
@@ -24,7 +22,6 @@ case class MissingInStruct(outstring: String, outstring_dmnEvalStatus: Byte,
                    badExpr: String, badExpr_dmnEvalStatus: Byte
                   )
 
-@RunWith(classOf[JUnitRunner])
 class EvalAllResultsTest extends SparkTests {
 
   val ns = "https://kie.org/dmn/_1C1F4E1D-5F6F-4EA0-8C06-32F8A67C4D98"

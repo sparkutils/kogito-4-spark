@@ -2,12 +2,9 @@ package com.sparkutils.dmn.kogito.classic
 
 import com.sparkutils.dmn._
 import frameless._
-import org.junit.runner.RunWith
-import org.scalatestplus.junit.JUnitRunner
 
 case class LookupRow[T](key: Int, value: T)
 
-@RunWith(classOf[JUnitRunner])
 class StaticDataTest extends SparkTests {
 
   val mapData = Seq(

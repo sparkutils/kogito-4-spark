@@ -1,6 +1,8 @@
 package com.sparkutils.dmn.kogito.tests.server;
 
 import com.sparkutils.dmn.kogito.classic.*;
+import com.sparkutils.dmn.kogito.common.EvalAllResultsTest;
+import com.sparkutils.dmn.kogito.common.ExceptionsTest;
 import org.scalatest.ConfigMap$;
 import org.scalatest.Suite;
 import org.scalatest.Suites;

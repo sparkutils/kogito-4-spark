@@ -2,12 +2,9 @@ package com.sparkutils.dmn.kogito.common
 
 import com.sparkutils.dmn._
 import com.sparkutils.dmn.kogito.{KogitoDMNContext, KogitoDMNContextPath, KogitoDMNRepository, Others => O, Types => T}
-import org.junit.runner.RunWith
-import org.scalatestplus.junit.JUnitRunner
 
 import java.util
 
-@RunWith(classOf[JUnitRunner])
 class ContextTest extends SparkTests {
 
   val ons = "onetoone"

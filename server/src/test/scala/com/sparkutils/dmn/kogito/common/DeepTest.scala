@@ -1,13 +1,10 @@
-package com.sparkutils.dmn.kogito.classic
+package com.sparkutils.dmn.kogito.common
 
 import com.sparkutils.dmn._
 import com.sparkutils.dmn.kogito._
 import frameless._
 import org.apache.spark.sql.Encoder
-import org.junit.runner.RunWith
-import org.scalatestplus.junit.JUnitRunner
 
-@RunWith(classOf[JUnitRunner])
 class DeepTest extends SparkTests {
 
   override val loggingLevel = "DEBUG"
@@ -80,7 +77,6 @@ class DeepTest extends SparkTests {
 
   test("Deep test JSON 1:1 Reply - String, String context") { evalCodeGens {
     val s = sparkSession
-    import s.implicits._
 
     val res = testResults[String, String, String]( (1 to 5). map( i => Map(s"a$i" -> s"b$i") ),
       "<String, String>", "JSON", deep_struct, useTreeMap = true)
@@ -96,7 +92,6 @@ class DeepTest extends SparkTests {
   //TODO: Collection Dependencies
   test("Deep test JSON 1:1 Reply - String, String context - null entries") { evalCodeGens {
     val s = sparkSession
-    import s.implicits._
 
     val res = testResults[String, Option[String], String]( (1 to 5). map( i => Map(s"a$i" -> null) ),
       "<String, String>", "JSON", deep_struct, useTreeMap = true)
@@ -112,7 +107,6 @@ class DeepTest extends SparkTests {
   //TODO: Collection Dependencies
   test("Deep test JSON 1:1 Reply - String, String context - null maps") { evalCodeGens {
     val s = sparkSession
-    import s.implicits._
 
     val res = testResults[String, String, String]( (1 to 5). map( i => null ),
       "<String, String>", "JSON", deep_struct, useTreeMap = true)
@@ -127,7 +121,6 @@ class DeepTest extends SparkTests {
 
   test("Deep test JSON 1:1 Reply - String, String context - debug") { forceCodeGen { ////evalCodeGens {
     val s = sparkSession
-    import s.implicits._
 
     val res = testResults[String, String, String]( (1 to 5). map( i => Map(s"a$i" -> s"b$i") ),
       "<String, String>", "JSON", deep_struct, debug = true)
@@ -142,7 +135,6 @@ class DeepTest extends SparkTests {
 
   test("Deep test JSON 1:1 Reply - String, Boolean context") {evalCodeGens {
     val s = sparkSession
-    import s.implicits._
 
     val res = testResults[String, Boolean, String]( (1 to 5). map( i => Map(s"a$i" -> true, s"b$i" -> false, s"c$i" -> true) ),
       "<String, Boolean>", "JSON", deep_struct, useTreeMap = true)
@@ -157,7 +149,6 @@ class DeepTest extends SparkTests {
 
   test("Deep test JSON 1:1 Reply - String, Boolean context - debug") {evalCodeGens {
     val s = sparkSession
-    import s.implicits._
 
     val res = testResults[String, Boolean, String]( (1 to 5). map( i => Map(s"a$i" -> true, s"b$i" -> false, s"c$i" -> true) ),
       "<String, Boolean>", "JSON", deep_struct, debug = true, useTreeMap = true)
@@ -172,7 +163,6 @@ class DeepTest extends SparkTests {
 
   test("Deep test JSON 1:1 Reply - String, Pair context") {evalCodeGens {
     val s = sparkSession
-    import s.implicits._
 
     val res = testResults[String, Pair, String]( (1 to 5). map( i => Map(s"a$i" -> Pair(true, false),
       s"b$i" -> Pair(false, true), s"c$i" -> Pair(true,false)) ),
@@ -188,7 +178,6 @@ class DeepTest extends SparkTests {
 
   test("Deep test JSON 1:1 Reply - String, Pair context - debug") {evalCodeGens {
     val s = sparkSession
-    import s.implicits._
 
     val res = testResults[String, Pair, String]( (1 to 5). map( i => Map(s"a$i" -> Pair(true, false),
       s"b$i" -> Pair(false, true), s"c$i" -> Pair(true,false)) ),
@@ -204,7 +193,6 @@ class DeepTest extends SparkTests {
 
   test("Deep test JSON 1:1 Reply - String, String context - derive context types") { evalCodeGens {
     val s = sparkSession
-    import s.implicits._
 
     val res = testResults[String, String, String]( (1 to 5). map( i => Map(s"a$i" -> s"b$i") ),
       "<String, String>", "JSON", deep_struct, useTreeMap = true, deriveContextTypes = true)
@@ -220,7 +208,6 @@ class DeepTest extends SparkTests {
 
   test("Deep test JSON 1:1 Reply - String, String context - debug - derive context types") { forceCodeGen { ////evalCodeGens {
     val s = sparkSession
-    import s.implicits._
 
     val res = testResults[String, String, String]( (1 to 5). map( i => Map(s"a$i" -> s"b$i") ),
       "<String, String>", "JSON", deep_struct, debug = true, deriveContextTypes = true)
@@ -235,7 +222,6 @@ class DeepTest extends SparkTests {
 
   test("Deep test JSON 1:1 Reply - String, Boolean context - derive context types") {evalCodeGens {
     val s = sparkSession
-    import s.implicits._
 
     val res = testResults[String, Boolean, String]( (1 to 5). map( i => Map(s"a$i" -> true, s"b$i" -> false, s"c$i" -> true) ),
       "<String, Boolean>", "JSON", deep_struct, useTreeMap = true, deriveContextTypes = true)
@@ -250,7 +236,6 @@ class DeepTest extends SparkTests {
 
   test("Deep test JSON 1:1 Reply - String, Boolean context - debug - derive context types") {evalCodeGens {
     val s = sparkSession
-    import s.implicits._
 
     val res = testResults[String, Boolean, String]( (1 to 5). map( i => Map(s"a$i" -> true, s"b$i" -> false, s"c$i" -> true) ),
       "<String, Boolean>", "JSON", deep_struct, debug = true, useTreeMap = true, deriveContextTypes = true)
@@ -265,7 +250,6 @@ class DeepTest extends SparkTests {
 
   test("Deep test JSON 1:1 Reply - String, Pair context - derive context types") {evalCodeGens {
     val s = sparkSession
-    import s.implicits._
 
     val res = testResults[String, Pair, String]( (1 to 5). map( i => Map(s"a$i" -> Pair(true, false),
       s"b$i" -> Pair(false, true), s"c$i" -> Pair(true,false)) ),
@@ -281,7 +265,6 @@ class DeepTest extends SparkTests {
 
   test("Deep test JSON 1:1 Reply - String, Pair context - debug - derive context types") {evalCodeGens {
     val s = sparkSession
-    import s.implicits._
 
     val res = testResults[String, Pair, String]( (1 to 5). map( i => Map(s"a$i" -> Pair(true, false),
       s"b$i" -> Pair(false, true), s"c$i" -> Pair(true,false)) ),
@@ -328,8 +311,6 @@ class DeepTest extends SparkTests {
   test("Deep test struct 1:1 Reply - String, String context - debug") {
     //    val s = sparkSession
     //    import s.implicits._
-
-    import frameless._
     val extra = "<String, String>"
     val maps = (1 to 5).map(i => Map(s"a$i" -> s"b$i"))
     testDebugStructs(extra, maps)
@@ -357,7 +338,6 @@ class DeepTest extends SparkTests {
 
   test("Deep test struct 1:1 Reply - String, Pair context - debug") {
     val s = sparkSession
-    import s.implicits._
 
     testDebugStructs("<String, struct<a: boolean, b: boolean>>",  (1 to 5). map( i => Map(s"a$i" -> Pair(true, false), s"b$i" -> Pair(false, true), s"c$i" -> Pair(true,false)) ),
       fullProxyDS = false)
@@ -375,8 +355,6 @@ class DeepTest extends SparkTests {
   test("Deep test struct 1:1 Reply - String, String context - debug - derive context types") {
 //    val s = sparkSession
 //    import s.implicits._
-
-    import frameless._
     val extra = "<String, String>"
     val maps = (1 to 5).map(i => Map(s"a$i" -> s"b$i"))
     testDebugStructs(extra, maps, deriveContextTypes = true)
@@ -391,7 +369,6 @@ class DeepTest extends SparkTests {
 
   test("Deep test struct 1:1 Reply - String, Boolean context - debug - derive context types") {
     val s = sparkSession
-    import s.implicits._
 
     testDebugStructs("<String, Boolean>", (1 to 5). map( i => Map(s"a$i" -> true, s"b$i" -> false, s"c$i" -> true) ), deriveContextTypes = true)
   }
@@ -406,7 +383,6 @@ class DeepTest extends SparkTests {
 
   test("Deep test struct 1:1 Reply - String, Pair context - debug - derive context types") {
     val s = sparkSession
-    import s.implicits._
 
     testDebugStructs("<String, struct<a: boolean, b: boolean>>",  (1 to 5). map( i => Map(
       s"a$i" -> Pair(true, false), s"b$i" -> Pair(false, true), s"c$i" -> Pair(true,false)) ),
@@ -415,7 +391,6 @@ class DeepTest extends SparkTests {
 
   test("Deep test struct 1:1 Reply - String, Pair context - debug - derive context types - deep deep with nulls") {
     val s = sparkSession
-    import s.implicits._
 
     implicit val oenc = TypedEncoder[Deep[Int, Int]]
 
@@ -426,7 +401,6 @@ class DeepTest extends SparkTests {
 
   test("Deep test struct 1:1 Reply - String, Pair context - debug - derive context types - deep deep with nulls all other types") {
     val s = sparkSession
-    import s.implicits._
 
     implicit val oenc = TypedEncoder[Others]
 
