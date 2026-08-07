@@ -237,4 +237,4 @@ jobs:
             cp target/coverage.txt .
             
             cp target/server_id.txt .
-            cp target/shared_id.txt .
+            cp target/api_id.txt .
