@@ -133,6 +133,7 @@
                 <framelessCoreCompatVersion>_3.5</framelessCoreCompatVersion>
                 <framelessCompatVersion>_3.5</framelessCompatVersion>
                 <framelessOrg>com.sparkutils</framelessOrg>
+                <scoverage.plugin.version>1.4.11</scoverage.plugin.version>
 
                 <javaLangVersion>9</javaLangVersion>
             </properties>
@@ -210,7 +211,7 @@
         <surefirePluginVersion>2.22.2</surefirePluginVersion>
         <surefireReportPluginVersion>2.22.2</surefireReportPluginVersion>
         <scalatestMavenPluginVersion>2.2.0</scalatestMavenPluginVersion>
-        <scoverage.plugin.version>2.5.2</scoverage.plugin.version>
+        <scoverage.plugin.version>2.1.3</scoverage.plugin.version>
         <naked-local-fs-version>0.1.0</naked-local-fs-version>
 
         <shimCompilationVersion>0.3.0-baseline3.6</shimCompilationVersion>
