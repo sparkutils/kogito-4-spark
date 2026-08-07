@@ -34,7 +34,6 @@ You can use the appropriate runtime kogito-4-spark_testshade artefact jar (e.g. 
 
 Then using:
 
-
 ```scala
 import com.sparkutils.dmn.kogito.DMNTestRunner
 import com.sparkutils.testing.SparkTestUtils
@@ -58,7 +57,7 @@ SparkTestUtils.setPath(root_path+"/kogito")
 DMNTestRunner.test()
 ```
 
-in your cell will run through all of the test suite used when building kogito-4-spark.
+in your cell will run through all the test suite used when building kogito-4-spark.
 
 Ideally, at the end of your runs you'll see - after 2 minutes or so and some stdout - for example a run on DBR 18.3 provides:
 
@@ -72,4 +71,24 @@ Kogito4Spark - gc'ing after finishing test batch 0
 all Kogito4Spark test batches completed
 ```
 
-The exact number of tests run depends on the test setup and connect usage.
+The exact number of tests run depends on the test setup and connect usage (82 are expected for standard classic clusters).
+
+## Spark Connect Session Extensions
+
+Starting with Spark 4 and dmn-4-spark 0.1.0 the api is now a separate jar that can be used remotely over Spark 4 Connect.
+
+In order to run against remote clusters the configuration option:
+
+```
+spark.sql.extensions=com.sparkutils.dmn.DMN4SparkExtension
+```
+
+must be used.  In Databricks this also requires using an init script to copy the implementation jars e.g.:
+
+```bash
+#!/bin/bash
+
+cp /Volumes/databricks_ws/default/jars/kogito-4-spark_testshade_4.1.0.oss_4.1_2.13-0.1.0.jar /databricks/jars/kogito-4-spark_testshade_4.1.0.oss_4.1_2.13-0.1.0.jar
+```
+
+When using this approach on a 'standard' shared Databricks cluster the cluster jar must be the _connect versions, based on the dmn-4-spark_api only and not the backend code.
