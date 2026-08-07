@@ -23,7 +23,7 @@ trait BaseSparkTests extends SparkTestSuite with SharedSessions with TestEncoder
 
   override val currentSessionsHolder: SessionsStateHolder = GlobalSession
 
-  override val sparkClassicConfig: Map[String, String] =
+  /*override val sparkClassicConfig: Map[String, String] =
     super.sparkClassicConfig() + // useDebugConnectLogs +
       scoverageClassPathsConfig +
       fullClassPathConfig +
@@ -31,11 +31,11 @@ trait BaseSparkTests extends SparkTestSuite with SharedSessions with TestEncoder
       connectMemory("4g") +
       ("spark.master" ->  s"local[$hostMode]") +
       ("spark.sql.extensions" -> extensions)
-
+*/
   override val sparkConnectServerConfig: Map[String, String] =
-    super.sparkConnectServerConfig() + useDebugConnectLogs +
+    super.sparkConnectServerConfig() + //useDebugConnectLogs +
       scoverageClassPathsConfig +
-      fullClassPathConfig +
+  //    fullClassPathConfig +
       connectMemory("4g") +
       ("spark.sql.extensions" -> extensions)
 
