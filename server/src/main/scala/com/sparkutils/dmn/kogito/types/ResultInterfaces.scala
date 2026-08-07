@@ -2,7 +2,8 @@ package com.sparkutils.dmn.kogito.types
 
 import com.sparkutils.dmn._
 import com.sparkutils.dmn.kogito.{Constants => C}
-import com.sparkutils.dmn.kogito.types.Utils.{exprCode, exprCodeInterim, nullOr => rnullOr}
+import com.sparkutils.dmn.kogito.types.Utils.{exprCode, exprCodeInterim}
+import com.sparkutils.dmn.kogito.Utils.{nullOr => rnullOr}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.GenericInternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper

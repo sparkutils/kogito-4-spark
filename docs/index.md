@@ -14,7 +14,8 @@
 
 A Kogito implementation of the [dmn-4-spark](https://github.com/sparkutils/dmn-4-spark) API.
 
-* :new:{.pulseABit} Spark 4.1, Databricks 17.3 and 18 runtime support
+* :new:{.pulseABit} Spark 4.1, 4.2, Databricks 17.3 and 18 runtime support
+* :new:{.pulseABit} Spark Connect support via dmn-4-spark
 
 ## Supported Runtimes
 
@@ -144,17 +145,17 @@ In order to identify if a null result is due to an error or not a "_dmnEvalStatu
 struct<evaluate: array<boolean>, evaluate_dmnEvalStatus: Byte>
 ```
 
-will store the Kogito DMNDecisionResult.getEvaluationStatus as a Byte with the following values:
+will store the Kogito DMNDecisionResult.getEvaluationStatus as a Byte with the following values (accessible via Constants):
 
-| DecisionEvaluationStatus (Severity)              | _dmnEvalStatus Int stored                |
-|--------------------------------------------------|------------------------------------------|
-| NOT_FOUND (kogito-4-spark only[^1])                  | -6 (Typically a sign of a name mismatch) |
-| NOT_EVALUATED                                    | -5 (Should not happen)                   |
-| EVALUATING                                       | -4 (Should not happen)                   |
-| SUCCEEDED                                        | 1                                        |
+| DecisionEvaluationStatus (Severity)                | _dmnEvalStatus Int stored                |
+|----------------------------------------------------|------------------------------------------|
+| NOT_FOUND (kogito-4-spark only[^1])                | -6 (Typically a sign of a name mismatch) |
+| NOT_EVALUATED                                      | -5 (Should not happen)                   |
+| EVALUATING                                         | -4 (Should not happen)                   |
+| SUCCEEDED                                          | 1                                        |
 | SKIPPED (WARN Msg.MISSING_EXPRESSION_FOR_DECISION) | -3                                       |
-| SKIPPED (ERROR)                                  | -2                                       |
-| FAILED                                           | 0                                        |
+| SKIPPED (ERROR)                                    | -2                                       |
+| FAILED                                             | 0                                        |
 
 These status' only replicate the Kogito [DecisionEvaluationStatus usage](https://github.com/kiegroup/drools/blob/7373d109e9020535f5f1c727852946405ea21912/kie-dmn/kie-dmn-core/src/main/java/org/kie/dmn/core/impl/DMNRuntimeImpl.java#L669) and do not represent any business logic from the underlying DMN, that must of course be encoded in the result DLL directly.
 

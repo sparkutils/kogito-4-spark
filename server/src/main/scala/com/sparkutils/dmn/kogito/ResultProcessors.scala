@@ -4,8 +4,9 @@ import com.sparkutils.dmn
 import com.sparkutils.dmn.kogito.{Constants => C}
 import com.sparkutils.dmn.{impl => dmnimpl}
 import com.sparkutils.dmn.kogito.ResultProcessors.messagesDDL
+import com.sparkutils.dmn.kogito.Utils.nullOr
 import com.sparkutils.dmn.kogito.types.ResultInterfaces
-import com.sparkutils.dmn.kogito.types.Utils.{exprCode, nullOr}
+import com.sparkutils.dmn.kogito.types.Utils.exprCode
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}

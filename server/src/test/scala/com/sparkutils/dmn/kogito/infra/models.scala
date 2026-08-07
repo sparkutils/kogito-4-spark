@@ -1,7 +1,7 @@
 package com.sparkutils.dmn.kogito.infra // separate package to make sure we don't include kogito server impl in connect tests
 
 import com.sparkutils.dmn.DMNInputField
-import com.sparkutils.dmn.kogito.types.{Utils => U}
+import com.sparkutils.dmn.kogito.Utils.optEqual
 import com.sparkutils.dmn.kogito.{KogitoMessage, KogitoResult}
 
 import java.time.temporal.ChronoUnit
@@ -37,8 +37,8 @@ case class Others(s: Option[String], l: Option[Long], b: Option[Boolean], d: Opt
     case o: Others =>
       s == o.s && l == o.l && b == o.b && d == o.d && f == o.f && by == o.by &&
         sh == o.sh && date == o.date &&
-        U.optEqual(dateTime, o.dateTime)(_.truncatedTo(ChronoUnit.MICROS) == _.truncatedTo(ChronoUnit.MICROS)) &&
-        U.optEqual(bytes, o.bytes)(_ sameElements _) && m == o.m && ar == o.ar
+        optEqual(dateTime, o.dateTime)(_.truncatedTo(ChronoUnit.MICROS) == _.truncatedTo(ChronoUnit.MICROS)) &&
+        optEqual(bytes, o.bytes)(_ sameElements _) && m == o.m && ar == o.ar
     case _ => false
   }
 }

@@ -1,7 +1,8 @@
 package com.sparkutils.dmn.kogito.types
 
 import com.sparkutils.dmn._
-import com.sparkutils.dmn.kogito.types.Utils.{exprCode, exprCodeInterim, exprCodeIsNullAt, nullOr}
+import com.sparkutils.dmn.kogito.Utils.nullOr
+import com.sparkutils.dmn.kogito.types.Utils.{exprCode, exprCodeInterim, exprCodeIsNullAt}
 import org.apache.spark.sql.catalyst.expressions.codegen.Block.BlockHelper
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeGenerator, CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Expression, SpecializedGetters}

@@ -1,7 +1,6 @@
 package com.sparkutils.dmn.kogito
 
-import com.sparkutils.dmn.impl.DMNExpressionImpl
-import com.sparkutils.dmn.{DMN, DMN4SparkExtension, DMNExecution}
+import com.sparkutils.dmn.{DMN, DMNExecution}
 import com.sparkutils.testing.ConnectWhenForced.someOrForcedConnect
 import com.sparkutils.testing.SparkTestUtils._
 import com.sparkutils.testing.sessionStrategies.{GlobalSession, SharedSessions}
@@ -20,7 +19,7 @@ trait BaseSparkTests extends SparkTestSuite with SharedSessions with TestEncoder
       tmp
   }
 
-  private val extensions = Seq(classOf[DMN4SparkExtension]).map(_.getName).reduce(_ + "," + _)
+  private val extensions = "com.sparkutils.dmn.DMN4SparkExtension" // the extension isn't present on connect builds
 
   override val currentSessionsHolder: SessionsStateHolder = GlobalSession
 
