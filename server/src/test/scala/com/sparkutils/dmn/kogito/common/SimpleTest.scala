@@ -336,22 +336,20 @@ class SimpleTest extends SparkTests {
     asSeqs.head shouldBe data
   }
 
-  // TODO on connect these are null - why? possibly frameless encoding rather than kogito
-  test("top fields others nulls - straight through") { classicOnly {
+  test("top fields others nulls - straight through") {
     testOneToOne(Others.nulls, Others.fields)
-  } }
+  }
 
-  // TODO Date expected to be more precise
+  // 57160 - no nanoseconds on connect 4.3.0 only
   test("top fields others - straight through") {
     testOneToOne(Others.vals, Others.fields)
   }
 
-  // TODO on connect these are null - why?
-  test("top struct others nulls - straight through") { classicOnly {
+  test("top struct others nulls - straight through") {
     testOneToOne(Others.nulls, Others.struct)
-  } }
+  }
 
-  // TODO Date expected to be more precise
+  // 57160 - no nanoseconds on connect 4.3.0 only
   test("top struct others - straight through") {
     testOneToOne(Others.vals, Others.struct)
   }

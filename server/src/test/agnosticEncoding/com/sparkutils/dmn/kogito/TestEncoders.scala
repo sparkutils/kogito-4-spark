@@ -19,9 +19,11 @@ trait TestEncoders {
     override def agnosticEncoder: AgnosticEncoder[jsql.Timestamp] = STRICT_TIMESTAMP_ENCODER
   }
 
+  // also need null handling for connect / arrow usage
   // need the codec because the type for LocalDateTime is not an exact instant but TimestampNTZType
   implicit val localDateTimeCodec = frameless.InjectionCodecs.codec[LocalDateTime, jsql.Timestamp](
-    ld => jsql.Timestamp.valueOf(ld), jt => jt.toLocalDateTime)
+    ld => if (ld == null) null else jsql.Timestamp.valueOf(ld),
+    jt => if (jt == null) null else jt.toLocalDateTime)
 
   implicit val yearMonthIntervalType = new TypedEncoder[java.time.Period]() {
     override def agnosticEncoder: AgnosticEncoder[java.time.Period] = YearMonthIntervalEncoder
