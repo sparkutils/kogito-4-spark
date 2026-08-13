@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>  <!-- rebuild -->
+
+    <parent>
+        <groupId>com.sparkutils</groupId>
+        <artifactId>kogito-4-spark_root_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>kogito-4-spark_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
+
+    <packaging>jar</packaging>
+    <name>Kogito 4 Spark Server</name>
+    <description>A Kogito implementation for the dmn-4-spark API</description>
+
+    <profiles>
+
+        <profile>
+            <id>Spark4</id>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.spark</groupId>
+                    <artifactId>spark-connect-client-jvm_${scalaCompatVersion}</artifactId>
+                    <version>${sparkVersion}</version>
+                    <classifier>tests</classifier>
+                    <scope>test</scope>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.apache.spark</groupId>
+                    <artifactId>spark-connect_${scalaCompatVersion}</artifactId>
+                    <version>${sparkVersion}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>Spark41</id>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.spark</groupId>
+                    <artifactId>spark-connect-client-jvm_${scalaCompatVersion}</artifactId>
+                    <version>${sparkVersion}</version>
+                    <classifier>tests</classifier>
+                    <scope>test</scope>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.apache.spark</groupId>
+                    <artifactId>spark-connect_${scalaCompatVersion}</artifactId>
+                    <version>${sparkVersion}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>Spark42</id>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.spark</groupId>
+                    <artifactId>spark-connect-client-jvm_${scalaCompatVersion}</artifactId>
+                    <version>${sparkVersion}</version>
+                    <classifier>tests</classifier>
+                    <scope>test</scope>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.apache.spark</groupId>
+                    <artifactId>spark-connect_${scalaCompatVersion}</artifactId>
+                    <version>${sparkVersion}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.globalmentor</groupId>
+            <artifactId>hadoop-bare-naked-local-fs</artifactId>
+            <version>${naked-local-fs-version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-commons</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sparkutils</groupId>
+            <artifactId>shim_compilation_${shimCompilationRuntime}_${sparkCompatVersion}_${scalaCompatVersion}
+            </artifactId>
+            <version>${shimCompilationVersion}</version>
+            <scope>provided</scope>
+            <classifier>sources</classifier>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.spark</groupId>
+                    <artifactId>spark-sql_${scalaCompatVersion}</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sparkutils</groupId>
+            <artifactId>shim_runtime_${shimRuntime}_${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
+            <version>${shimRuntimeVersion}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sparkutils</groupId>
+            <artifactId>testing-runtime_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
+            <version>${testingVersion}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sparkutils.</groupId>
+            <artifactId>testing_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
+            <version>${testingVersion}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${framelessOrg}</groupId>
+            <!-- framelessCoreCompatVersion is used as sparkutils.frameless always publishes the spark major.minor -->
+            <artifactId>frameless-core${framelessCoreCompatVersion}_${scalaCompatVersion}</artifactId>
+            <version>${framelessVersion}</version>
+            <exclusions>
+                <!-- exclude the shim -->
+                <exclusion>
+                    <groupId>com.sparkutils</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>${framelessOrg}</groupId>
+            <!-- framelessCoreCompatVersion is used as sparkutils.frameless always publishes the spark major.minor -->
+            <artifactId>frameless-dataset${framelessCompatVersion}_${scalaCompatVersion}</artifactId>
+            <version>${framelessVersion}</version>
+            <exclusions>
+                <!-- exclude the shim -->
+                <exclusion>
+                    <groupId>com.sparkutils</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>${scalaVersion}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.scalatest</groupId>
+            <artifactId>scalatest_${scalaCompatVersion}</artifactId>
+            <version>${scalatestVersion}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junitVersion}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-compiler</artifactId>
+            <version>${scalaVersion}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sparkutils</groupId>
+            <artifactId>kogito_shaded</artifactId>
+            <version>${shadedKogitoVersion}</version>
+            <!--
+            <exclusions>
+                <exclusion>
+                    <groupId>org.antlr</groupId>
+                    <artifactId>antlr4-runtime</artifactId> <! - - 4.10.1 from here, 4.9.3 needed by spark - ->
+                </exclusion>
+            </exclusions>-->
+        </dependency>
+
+        <dependency>
+            <groupId>com.sparkutils</groupId>
+            <artifactId>kogito-4-spark_api_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sparkutils</groupId>
+            <artifactId>kogito_shaded</artifactId>
+            <version>${shadedKogitoVersion}</version>
+            <!--
+            <exclusions>
+                <exclusion>
+                    <groupId>org.antlr</groupId>
+                    <artifactId>antlr4-runtime</artifactId> <! - - 4.10.1 from here, 4.9.3 needed by spark - ->
+                </exclusion>
+            </exclusions>-->
+        </dependency>
+
+        <dependency>
+            <groupId>com.sparkutils</groupId>
+            <artifactId>dmn-4-spark_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
+            <version>${dmn4SparkVersion}</version>
+            <exclusions>
+                <!-- exclude the default remote call, only api and server are needed, dependents on 0.1.0 Spark4 should be dmn-4-spark only -->
+                <exclusion>
+                    <groupId>com.sparkutils</groupId>
+                    <artifactId>dmn-4-spark_api_stub_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+<!--
+        <dependency>
+            <groupId>com.sparkutils</groupId>
+            <artifactId>dmn-4-spark_${dbrCompatVersion}${sparkCompatVersion}_${scalaCompatVersion}</artifactId>
+            <version>${dmn4SparkVersion}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.spark</groupId>
+                    <artifactId>spark-sql_${scalaCompatVersion}</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+-->
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-sql_${scalaCompatVersion}</artifactId>
+            <version>${sparkVersion}</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+
+    <build>
+
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+            </testResource>
+        </testResources>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.scalatest</groupId>
+                <artifactId>scalatest-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+
+    </build>
+
+</project>
