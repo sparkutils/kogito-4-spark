@@ -23,10 +23,11 @@ The following test combinations are supported as of 0.1.0:
 | Non Shared     | kogito-4-spark_testshade_18.3.dbr          | kogito-4-spark_testshade_18.3.dbr   | :octicons-checkbox-24:      |                                                  |                                                  |
 | Shared Compute | kogito-4-spark_connect_testshade_18.3.dbr  | kogito-4-spark_testshade_18.3.dbr   | :octicons-checkbox-24:      | true                                             |                                                  |
 | Shared Compute | kogito-4-spark_connect_testshade_4.1.0.oss | kogito-4-spark_testshade_18.3.dbr   | :octicons-checkbox-24:      | true                                             |                                                  |
-| Shared Compute | kogito-4-spark_api_18.3.dbr                | kogito-4-spark_18.3.dbr             | :octicons-checkbox-24:      |                                                  |                                                  |
-| Shared Compute | kogito-4-spark_api_4.1.0.oss               | kogito-4-spark_18.3.dbr             | :octicons-checkbox-24:      |                                                  |                                                  |
+| Shared Compute | dmn-4-spark_connect_api_18.3.dbr           | kogito-4-spark_18.3.dbr             | :octicons-checkbox-24:      |                                                  |                                                  |
+| Shared Compute | dmn-4-spark_connect_api_4.1.0.oss          | kogito-4-spark_18.3.dbr             | :octicons-checkbox-24:      |                                                  |                                                  |
 
-Databricks 18 has been tested as of release__18.3.x-snapshot-photon-scala2.13__databricks__18.3.3__bfd1bbf__b0356d3__jenkins__bc102bd__format-3 (search for spark.databricks.clusterUsageTags.sparkImageLabel on the environment spark properties page for the exact version your cluster uses)
+Databricks 18 has been tested as of release__18.3.x-snapshot-photon-scala2.13__databricks__18.3.3__bfd1bbf__b0356d3__jenkins__bc102bd__format-3 (search for spark.databricks.clusterUsageTags.sparkImageLabel on the environment spark properties page for the exact version your cluster uses).
+Similarly, 19 works with 18.3 artifacts as of release__19.x-snapshot-photon-scala2.13__databricks__19.2.4__affc832__32d3219__jenkins__59c4a83__format-3, ymmv on later releases and a full 19.dbr release may be needed.
 
 ## Testing out kogito-4-spark via Notebooks
 
@@ -63,15 +64,15 @@ Ideally, at the end of your runs you'll see - after 2 minutes or so and some std
 
 ```
 Run completed in 1 minute, 41 seconds.
-Total number of tests run: 79
+Total number of tests run: 82
 Suites: completed 5, aborted 0
-Tests: succeeded 79, failed 0, canceled 0, ignored 0, pending 0
+Tests: succeeded 82, failed 0, canceled 0, ignored 0, pending 0
 All tests passed.
 Kogito4Spark - gc'ing after finishing test batch 0
 all Kogito4Spark test batches completed
 ```
 
-The exact number of tests run depends on the test setup and connect usage (82 are expected for standard classic clusters).
+The exact number of tests run depends on the test setup and connect usage (82 are expected for standard classic clusters, 79 for connect).
 
 ## Spark Connect Session Extensions
 
