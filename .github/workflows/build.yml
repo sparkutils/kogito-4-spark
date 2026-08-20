@@ -123,7 +123,7 @@ jobs:
     secrets: inherit
 
   publish_2_12_18:
-    needs: [ noTestBuilds_2_12_18_dbr, testBuilds_2_12_18 ]
+    needs: [ noTestBuilds_2_12_18_dbr ]
     uses: sparkutils/building/.github/workflows/publish_build.yml@main
     with:
       theMatrix: |
