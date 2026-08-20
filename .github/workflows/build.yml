@@ -16,14 +16,28 @@ env:
 # kogito is built on a higher classfile version, so 21 is used as a base line throughout
 
 jobs:
-  testBuilds_2_12_18:
+  testBuilds_2_12_18_and_13_12:
     uses: sparkutils/building/.github/workflows/run_build.yml@main
     with:
       testString: test
       theMatrix: |
         {
           "profile": [ "Spark350" ],
-          "scala": [ "scala_2.12.18" ]
+          "scala": [ "scala_2.12.18", "scala_2.13.12" ]
+        }
+      jdk: 21
+      mvnCliOpts: *MAVEN_CLI_OPTS
+      mvnOpts: *MAVEN_OPTS_21
+    secrets: inherit
+
+  noTestBuilds_2_12_18_and_13_12:
+    uses: sparkutils/building/.github/workflows/run_build.yml@main
+    with:
+      testString: test
+      theMatrix: |
+        {
+          "profile": [ "16.4.dbr" ],
+          "scala": [ "scala_2.12.18", "scala_2.13.12" ]
         }
       jdk: 21
       mvnCliOpts: *MAVEN_CLI_OPTS
@@ -36,7 +50,7 @@ jobs:
       testString: -DskipTests
       theMatrix: |
         {
-          "profile": [ "14.3.dbr" ],
+          "profile": [ "14.3.dbr", "15.4.dbr" ],
           "scala": [ "scala_2.12.18" ]
         }
       jdk: 21
@@ -76,13 +90,45 @@ jobs:
       mvnOpts: *MAVEN_OPTS_21
     secrets: inherit
 
+  publish_2_12_18_and_13_12:
+    needs: [testBuilds_2_12_18_and_13_12, noTestBuilds_2_12_18_and_13_12]
+    uses: sparkutils/building/.github/workflows/publish_build.yml@main
+    with:
+      theMatrix: |
+        {
+          "profile": [ "Spark350", "16.4.dbr"  ],
+          "scala": [ "scala_2.12.18", "scala_2.13.12" ]
+        }
+      sparkVersion: 3.5.5
+      hadoopVersion: 3
+      jdk: 21
+      mvnCliOpts: *MAVEN_CLI_OPTS
+      mvnOpts: *MAVEN_OPTS_21
+    secrets: inherit
+
+  publishTestShades_2_12_18_and_13_12:
+    needs: [ publish_2_12_18_and_13_12 ]
+    uses: sparkutils/building/.github/workflows/publish_build.yml@main
+    with:
+      theMatrix: |
+        {
+          "profile": [ "Spark350", "16.4.dbr" ],
+          "scala": [ "scala_2.12.18", "scala_2.13.12" ]
+        }
+      sparkVersion: 3.5.5
+      hadoopVersion: 3
+      jdk: 21
+      mvnCliOpts: *MAVEN_CLI_OPTS
+      mvnOpts: *MAVEN_OPTS_21
+    secrets: inherit
+
   publish_2_12_18:
     needs: [ noTestBuilds_2_12_18_dbr, testBuilds_2_12_18 ]
     uses: sparkutils/building/.github/workflows/publish_build.yml@main
     with:
       theMatrix: |
         {
-          "profile": [ "Spark350", "14.3.dbr" ],
+          "profile": [ "14.3.dbr", "15.4.dbr" ],
           "scala": [ "scala_2.12.18" ]
         }
       sparkVersion: 3.5.5
@@ -98,7 +144,7 @@ jobs:
     with:
       theMatrix: |
         {
-          "profile": [ "Spark350", "14.3.dbr" ],
+          "profile": [ "14.3.dbr", "15.4.dbr" ],
           "scala": [ "scala_2.12.18" ],
           "third": [ "server" ],
         }
